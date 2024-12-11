@@ -22,16 +22,20 @@ app_ui <- function(request) {
       mainPanel(
         # Main content area
         tabsetPanel(
-          tabPanel("Live Games",
+          tabPanel("Data",
                     fluidRow(
-                      h2("Data Section"),
-                      mod_DB_Summary_ui("DB_Summary")
+                      mod_Data_Summary_ui("Data_Summary")
                     )),
           tabPanel("Admin",
                     fluidRow(
-                      mod_API_Reload_ui("API_Reload")
+                      mod_Update_Games_Table_ui("Update_Games_Table")
                       # Add UI elements for player rankings here
-                    ))
+                    ),
+                    fluidRow(
+                      mod_Update_Throws_Table_ui("Update_Throws_Table")
+                      # Add UI elements for player rankings here
+                    )
+                  )
         )
       )
 

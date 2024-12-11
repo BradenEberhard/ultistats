@@ -8,7 +8,7 @@
 #'
 #' @importFrom shiny NS tagList 
 
-mod_DB_Summary_ui <- function(id) {
+mod_Data_Summary_ui <- function(id) {
   ns <- NS(id)  # Namespace for module IDs
   tagList(
     h2("Database Summary"),
@@ -30,7 +30,7 @@ mod_DB_Summary_ui <- function(id) {
 #' DB_Summary Server Functions
 #'
 #' @noRd 
-mod_DB_Summary_server <- function(id) {
+mod_Data_Summary_server <- function(id) {
   moduleServer(id, function(input, output, session) {  # moduleServer should wrap your logic
     db_path <- get_golem_config("db_path")
     

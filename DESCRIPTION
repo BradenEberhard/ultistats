@@ -19,7 +19,11 @@ Imports:
     bslib,
     thematic,
     lubridate,
-    R6
+    reticulate,
+    R6,
+    dplyr,
+    tibble,
+    jsonlite
 Suggests: 
     spelling,
     testthat (>= 3.0.0)

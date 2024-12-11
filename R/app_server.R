@@ -5,6 +5,7 @@
 #' @import shiny
 #' @noRd
 app_server <- function(input, output, session) {
-  mod_DB_Summary_server("DB_Summary")
-  mod_API_Reload_server("API_Reload")
+  mod_Data_Summary_server("Data_Summary")
+  mod_Update_Games_Table_server("Update_Games_Table")
+  mod_Update_Throws_Table_server("Update_Throws_Table")
 }
