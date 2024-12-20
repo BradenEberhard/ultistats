@@ -134,8 +134,7 @@ create_table <- function(conn, table_name, data, index_cols = NULL, override = F
 }
 
 
-update_table <- function(conn, table_name, data, index_col) {
-  browser()
+update_table <- function(conn, table_name, data, index_col, whole_table) {
   # Check if the index_col exists in the data
   if (!(index_col %in% colnames(data))) {
     stop(paste("Column", index_col, "does not exist in the provided data"))
@@ -145,22 +144,26 @@ update_table <- function(conn, table_name, data, index_col) {
   game_id <- unique(data[[index_col]])
   
   # Ensure there's exactly one unique gameID in the data
-  if (length(game_id) != 1) {
+  if (!whole_table && length(game_id) != 1) {
     stop(paste("Data must contain only one unique", index_col))
   }
-  
-  # Delete existing rows with the same gameID
-  delete_sql <- paste("DELETE FROM", table_name, "WHERE", index_col, "=", game_id)
-  DBI::dbExecute(conn, delete_sql)
-  
-  # Insert the new data into the table
-  # Convert the data to a format suitable for SQL insertion
-  column_names <- colnames(data)
-  placeholders <- paste(rep("?", length(column_names)), collapse = ", ")
-  insert_sql <- paste("INSERT INTO", table_name, "(", paste(column_names, collapse = ", "), ") VALUES(", placeholders, ")")
-  
-  # Use DBI::dbExecute to insert the new data
-  DBI::dbExecute(conn, insert_sql, params = as.list(data))
-  
+
+  # Delete existing rows with the same gameID if not updating the whole table
+  if (!whole_table) {
+    delete_sql <- glue::glue("DELETE FROM {table_name} WHERE {index_col} = '{game_id}'")
+    DBI::dbExecute(conn, delete_sql)
+  } else {
+    # Delete all data in the table if updating the whole table
+    delete_sql <- glue::glue("DELETE FROM {table_name}")
+    DBI::dbExecute(conn, delete_sql)
+  }
+
+  DBI::dbWriteTable(conn, table_name, data, append = TRUE, row.names = FALSE)
   invisible(TRUE)  # Return nothing, but indicate success
+}
+
+get_player_ids <- function(conn) {
+  query <- "SELECT DISTINCT playerID FROM players"
+  result <- DBI::dbGetQuery(conn, query)
+  return(result$playerID)
 }

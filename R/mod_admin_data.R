@@ -116,22 +116,30 @@ mod_admin_data_server <- function(id){
 
     observeEvent(input$update_all, {
       withProgress(message = 'Processing All Tables', value = 0, {
-        incProgress(0, detail = "Team Data ... Processing       Game Data ... Waiting       Pull Data ... Waiting")
+        incProgress(1/9, detail = "Processing Games")
         conn <- open_db_connection(db_path)
         update_games(conn, base_url)
-        incProgress(0.25, detail = "Team Data ... Complete       Game Data ... Processing       Pull Data ... Waiting")
+        incProgress(1/9, detail = "Finished Games, Processing Players")
+        update_players(conn, base_url)
+        incProgress(1/9, detail = "Finished Players, Processing Player Stats")
+        update_player_stats(conn, base_url)
+        incProgress(1/9, detail = "Finished Player Stats, Processing Teams")
         update_teams(conn, base_url)
-        incProgress(0.75, detail = "Team Data ... Complete       Game Data ... Complete       Pull Data ... Processing")
-        update_pulls(conn, base_url)
-        incProgress(0.75, detail = "Team Data ... Complete       Game Data ... Complete       Pull Data ... Processing")
+        incProgress(1/9, detail = "Finished Teams, Processing Blocks")
         update_blocks(conn, base_url)
-        incProgress(0.75, detail = "Team Data ... Complete       Game Data ... Complete       Pull Data ... Processing")
+        incProgress(1/9, detail = "Finished Blocks, Processing Pulls")
+        update_pulls(conn, base_url)
+        incProgress(1/9, detail = "Finished Pulls, Processing Throws")
+        update_throws(conn, base_url)
+        incProgress(1/9, detail = "Finished Throws, Processing Penalties")
         update_penalties(conn, base_url)
+        incProgress(1/9, detail = "Finished Penalties, Closing DB")
         close_db_connection(conn)
         timestamps(NULL)
-        incProgress(1, detail = "Team Data ... Complete       Game Data ... Complete       Pull Data ... Complete")
+        incProgress(1/9, detail = "All Processing Complete")
       })
     })
+    
 
     timestamps <- reactiveVal(NULL)
     tables <- reactive({

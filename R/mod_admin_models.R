@@ -45,7 +45,7 @@ mod_admin_models_server <- function(id){
         ))
       
       create_table(conn=conn, table_name="advanced_stats", data=advanced_stats_df, index_col="gameID", override=TRUE)
-      append_data(conn=conn, table_name='advanced_stats', data=advanced_stats_df, index_col="gameID")
+      update_table(conn=conn, table_name='advanced_stats', data=advanced_stats_df, index_col="gameID", whole_table = FALSE)
       close_db_connection(conn)
       showNotification("Advanced Stats table successfully updated!", type = "message", duration = 3)
     })

@@ -86,7 +86,7 @@ update_games <- function(conn, base_url) {
       "%Y-%m-%d %H:%M:%S"
     ))
   create_table(conn=conn, table_name='games', data=games_data, index_col="gameID", override=TRUE)
-  append_data(conn=conn, table_name='games', data=games_data, index_col="gameID")
+  update_table(conn=conn, table_name='games', data=games_data, index_col="gameID", whole_table = TRUE)
 }
 
 # Function to process and update player stats
@@ -99,7 +99,7 @@ update_player_stats <- function(conn, base_url) {
       "%Y-%m-%d %H:%M:%S"
     ))
   create_table(conn=conn, table_name='player_stats', data=player_stats_data, index_col="playerID", override=TRUE)
-  append_data(conn=conn, table_name='player_stats', data=player_stats_data, index_col="playerID")
+  update_table(conn=conn, table_name='player_stats', data=player_stats_data, index_col="playerID", whole_table = TRUE)
 }
 
 # Function to process and update players
@@ -112,7 +112,7 @@ update_players <- function(conn, base_url) {
       "%Y-%m-%d %H:%M:%S"
     ))
   create_table(conn=conn, table_name='players', data=players_data, index_col="playerID", override=TRUE)
-  append_data(conn=conn, table_name='players', data=players_data, index_col="playerID")
+  update_table(conn=conn, table_name='players', data=players_data, index_col="playerID", whole_table = TRUE)
 }
 
 # Function to process and update teams
@@ -125,7 +125,7 @@ update_teams <- function(conn, base_url) {
       "%Y-%m-%d %H:%M:%S"
     ))
   create_table(conn=conn, table_name='teams', data=teams_data, index_col="teamID", override=TRUE)
-  append_data(conn=conn, table_name='teams', data=teams_data, index_col="teamID")
+  update_table(conn=conn, table_name='teams', data=teams_data, index_col="teamID", whole_table = TRUE)
 }
 
 update_pulls <- function(conn, base_url) {
@@ -141,7 +141,7 @@ update_pulls <- function(conn, base_url) {
           "%Y-%m-%d %H:%M:%S"
         ))
       create_table(conn=conn, table_name='pulls', data=pull_data, index_col="gameID", override=FALSE)
-      update_table(conn=conn, table_name='pulls', data=pull_data, index_col="gameID")
+      update_table(conn=conn, table_name='pulls', data=pull_data, index_col="gameID", whole_table = FALSE)
       incProgress(1 / length(game_ids), detail = paste("Processing game ID", current_game_id))
     }
   })
@@ -165,7 +165,7 @@ update_throws <- function(conn, base_url) {
       throws_data$y_diff <- throws_data$receiver_y - throws_data$thrower_y
       throws_data$throw_angle <- atan2(throws_data$y_diff, throws_data$x_diff) * (180 / pi)
       create_table(conn=conn, table_name='throws', data=throws_data, index_col="gameID", override=FALSE)
-      update_table(conn=conn, table_name='throws', data=throws_data, index_col="gameID")
+      update_table(conn=conn, table_name='throws', data=throws_data, index_col="gameID", whole_table = FALSE)
       incProgress(1 / length(game_ids), detail = paste("Processing game ID", current_game_id))
     }
   })
@@ -184,7 +184,7 @@ update_blocks <- function(conn, base_url) {
           "%Y-%m-%d %H:%M:%S"
         ))
       create_table(conn=conn, table_name='blocks', data=blocks_data, index_col="gameID", override=FALSE)
-      update_table(conn=conn, table_name='blocks', data=blocks_data, index_col="gameID")
+      update_table(conn=conn, table_name='blocks', data=blocks_data, index_col="gameID", whole_table = FALSE)
       incProgress(1 / length(game_ids), detail = paste("Processing game ID", current_game_id))
     }
   })
@@ -203,7 +203,7 @@ update_penalties <- function(conn, base_url) {
           "%Y-%m-%d %H:%M:%S"
         ))
       create_table(conn=conn, table_name='penalties', data=penalties_data, index_col="gameID", override=FALSE)
-      update_table(conn=conn, table_name='penalties', data=penalties_data, index_col="gameID")
+      update_table(conn=conn, table_name='penalties', data=penalties_data, index_col="gameID", whole_table = FALSE)
       incProgress(1 / length(game_ids), detail = paste("Processing game ID", current_game_id))
     }
   })
