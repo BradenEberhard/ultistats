@@ -1,0 +1,5 @@
+.Rproj.user
+*.csv
+*.model
+*.rds
+*.sqlite
