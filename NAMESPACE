@@ -3,6 +3,7 @@
 export(run_app)
 import(bslib)
 import(dplyr)
+import(ggplot2)
 import(shiny)
 import(xgboost)
 importFrom(dplyr,select)

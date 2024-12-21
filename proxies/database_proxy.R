@@ -201,3 +201,13 @@ get_player_stats <- function(conn, player_id) {
   
   return(player_stats)
 }
+
+get_player_throws <- function(conn, player_id) {
+  # SQL query to fetch player stats by playerID
+  query <- glue::glue("SELECT * FROM throws WHERE thrower = '{player_id}'")
+  
+  # Execute the query and return the result
+  player_throws <- DBI::dbGetQuery(conn, query)
+  
+  return(player_throws)
+}

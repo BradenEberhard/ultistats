@@ -22,6 +22,27 @@ create_stat_value_box <- function(title, output_id, css_class = "mb-4", ns) {
   bslib::value_box(
     title = title,
     value = textOutput(ns(output_id)),
+    class = css_class
+  )
+}
+
+create_stat_value_box_dual <- function(title, output_ids, css_class = "mb-4", ns, fixed_height = "150px") {
+  bslib::value_box(
+    title = title,
+    value = div(
+      div(
+        class = "col",
+        style = "display: inline-block; width: 50%; text-align: center;",
+        div(style = "font-weight: bold;", "Throwing Yards"),
+        textOutput(ns(output_ids$throwing))
+      ),
+      div(
+        class = "col",
+        style = "display: inline-block; width: 50%; text-align: center;",
+        div(style = "font-weight: bold;", "Receiving Yards"),
+        textOutput(ns(output_ids$receiving))
+      )
+    ),
     class = css_class,
     min_height = "100px"
   )

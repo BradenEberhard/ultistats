@@ -12,8 +12,10 @@ Imports:
     bslib,
     caret,
     config,
+    ggplot2,
     glue,
     golem,
+    plotly,
     pROC,
     shiny,
     xgboost

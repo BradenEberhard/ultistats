@@ -10,7 +10,7 @@ app_ui <- function(request) {
   bslib::page_navbar(
     title = "Game Dashboard",
     theme = bslib::bs_theme(
-      preset = "lux",   # Choose the theme (e.g., "lux", "cosmo", "flatly", etc.)
+      preset = "darkly",   # Choose the theme (e.g., "lux", "cosmo", "flatly", etc.)
       version = 5       # Ensure you're using Bootstrap 5
     ),
     # First nav_panel: Player
