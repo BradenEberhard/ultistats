@@ -167,3 +167,37 @@ get_player_ids <- function(conn) {
   result <- DBI::dbGetQuery(conn, query)
   return(result$playerID)
 }
+
+
+#' Get Throws Data
+#'
+#' This function retrieves all the data from the throws table in the database.
+#'
+#' @param conn An active database connection object.
+#' @param table_name A string representing the name of the table (default is 'throws').
+#'
+#' @return A data frame containing all the data from the throws table.
+#' @export
+get_throws_data <- function(conn, table_name = "throws") {
+  # Check if the connection is valid
+  if (is.null(conn)) {
+    stop("The database connection is not open.")
+  }
+  
+  # Query the throws table to retrieve all data
+  query <- glue::glue("SELECT * FROM {table_name};")
+  result <- DBI::dbGetQuery(conn, query)
+  
+  # Return the result as a data frame
+  return(result)
+}
+
+get_player_stats <- function(conn, player_id) {
+  # SQL query to fetch player stats by playerID
+  query <- glue::glue("SELECT * FROM player_stats WHERE playerID = '{player_id}'")
+  
+  # Execute the query and return the result
+  player_stats <- DBI::dbGetQuery(conn, query)
+  
+  return(player_stats)
+}

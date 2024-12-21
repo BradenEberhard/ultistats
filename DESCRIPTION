@@ -10,9 +10,11 @@ Description: What the package does (one paragraph).
 License: What license is it under?
 Imports: 
     bslib,
+    caret,
     config,
     glue,
     golem,
+    pROC,
     shiny,
     xgboost
 Encoding: UTF-8

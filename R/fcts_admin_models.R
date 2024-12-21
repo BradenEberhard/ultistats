@@ -14,7 +14,7 @@
 #' throws_data <- some_throws_data
 #' output_df <- predict_fv(model_path, preprocessing_info_path, throws_data)
 #' 
-#' @importFrom xgboost xgb.load xgb.DMatrix predict
+#' @import xgboost
 #' @importFrom dplyr select
 predict_fv <- function(model_path, preprocessing_info_path, throws_data) {
   # Load model and preprocessing info
@@ -67,7 +67,7 @@ predict_fv <- function(model_path, preprocessing_info_path, throws_data) {
 #' throws_data <- some_throws_data
 #' output_df <- predict_cp(model_path, preprocessing_info_path, throws_data)
 #' 
-#' @importFrom xgboost xgb.load xgb.DMatrix predict
+#' @import xgboost
 #' @importFrom dplyr select
 predict_cp <- function(model_path, preprocessing_info_path, throws_data) {
   xgb_model <- xgb.load(model_path)
@@ -88,7 +88,7 @@ predict_cp <- function(model_path, preprocessing_info_path, throws_data) {
     throwID = id_column,
     gameID = throws_data$gameID,
     cp = thrower_pred_probs,
-    cpoe = throws_data$completion - thrower_pred_probs
+    cpoe = throws_data$turnover - thrower_pred_probs
   )
   
   return(output_dataframe)

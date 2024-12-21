@@ -17,7 +17,8 @@ app_ui <- function(request) {
     nav_panel(
       title = "Player", 
       value = "player", 
-      icon = shiny::icon("chart-line")
+      icon = shiny::icon("chart-line"),
+      mod_player_display_ui("player_display")
     ),
     # Second nav_panel: Team
     nav_panel(
