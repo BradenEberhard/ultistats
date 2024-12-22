@@ -164,7 +164,7 @@ update_throws <- function(conn, base_url) {
       throws_data$x_diff <- throws_data$receiver_x - throws_data$thrower_x
       throws_data$y_diff <- throws_data$receiver_y - throws_data$thrower_y
       throws_data$throw_angle <- atan2(throws_data$y_diff, throws_data$x_diff) * (180 / pi)
-      create_table(conn=conn, table_name='throws', data=throws_data, index_col=list("gameID","playerID"), override=FALSE)
+      create_table(conn=conn, table_name='throws', data=throws_data, index_col=list("gameID","thrower", "throwID"), override=FALSE)
       update_table(conn=conn, table_name='throws', data=throws_data, index_col="gameID", whole_table = FALSE)
       incProgress(1 / length(game_ids), detail = paste("Processing game ID", current_game_id))
     }
@@ -230,6 +230,7 @@ get_throw_row <- function(current_state, thrower=NULL, thrower_x=NULL, thrower_y
   throw_row$point_start_time <- current_state$point_start_time
   throw_row$possession_num <- current_state$possession_num
   throw_row$possession_throw <- current_state$possession_throw
+  throw_row$throwID <- paste(gameID, current_state$game_quarter, current_state$quarter_point, current_state$possession_num, current_state$possession_throw, sep = "-")
   return(throw_row)
 }
 

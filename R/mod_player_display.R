@@ -26,6 +26,21 @@ mod_player_display_ui <- function(id) {
         create_stat_value_box(title = "Throwing Yards", output_id = "yardsThrown", ns = ns),
         create_stat_value_box(title = "Blocks", output_id = "blocks", ns = ns)
       ),
+      value_box(
+        title="Completion Percentage",
+        class="mb-4",
+        value = textOutput(ns("completion_percentage"))
+      ),
+      value_box(
+        title="Expected Completion Percentage",
+        class="mb-4",
+        value = textOutput(ns("xcomp"))
+      ),
+      value_box(
+        title="CPOE",
+        class="mb-4",
+        value = textOutput(ns("cpoe"))
+      ),
       card(
         plotOutput(ns("radial_histogram_plot"))
       )
@@ -40,17 +55,19 @@ mod_player_display_ui <- function(id) {
 mod_player_display_server <- function(id) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
-    player_id <- "jkerr"  # You can dynamically set this player ID based on user input or another source
+    player_id <- "jkerr" 
     db_path <- get_golem_config("db_path")
+  
+    conn <- open_db_connection(db_path)
+    all_player_stats <- get_all_player_stats(conn)
+    close_db_connection(conn)
     
-    # Reactive expression to get player stats
     player_stats <- reactive({
       conn <- open_db_connection(db_path)
-      stats <- get_player_stats(conn, player_id)  # Assuming this function fetches the player data
+      stats <- get_player_stats(conn, player_id)  
       close_db_connection(conn)
       stats
     })
-
 
     filtered_stats <- reactive({
       stats <- player_stats()
@@ -66,8 +83,7 @@ mod_player_display_server <- function(id) {
       conn <- open_db_connection(db_path)
       player_throws <- get_player_throws(conn, player_stats()$playerID[[1]])
       close_db_connection(conn)
-
-      player_throws$adjusted_angle <- (player_throws$throw_angle + 90) %% 360 - 180
+      player_throws$adjusted_angle <- (as.integer(player_throws$throw_angle) + 90) %% 360 - 180
       player_throws$year <- substr(player_throws$gameID, 1, 4)
 
       if (input$year_selector == "Career") {
@@ -75,19 +91,41 @@ mod_player_display_server <- function(id) {
       } else {
         return(player_throws[player_throws$year == input$year_selector, ])  # Filter stats by year
       }
-  })
+    })
+
     output$player_name <- renderText({
       stats <- player_stats()
       paste(stats$firstName[[1]], stats$lastName[[1]])
     })
-    output$goals <- render_stat("goals", filtered_stats)
-    output$assists <- render_stat("assists", filtered_stats)
-    output$hockeyAssists <- render_stat("hockeyAssists", filtered_stats)
-    output$completions <- render_stat("completions", filtered_stats)
-    output$throwaways <- render_stat("throwaways", filtered_stats)
-    output$yardsReceived <- render_stat("yardsReceived", filtered_stats)
-    output$yardsThrown <- render_stat("yardsThrown", filtered_stats)
-    output$blocks <- render_stat("blocks", filtered_stats)
+    output$goals <- render_stat("goals", filtered_stats, all_player_stats)
+    output$assists <- render_stat("assists", filtered_stats, all_player_stats)
+    output$hockeyAssists <- render_stat("hockeyAssists", filtered_stats, all_player_stats)
+    output$completions <- render_stat("completions", filtered_stats, all_player_stats)
+    output$throwaways <- render_stat("throwaways", filtered_stats, all_player_stats)
+    output$yardsReceived <- render_stat("yardsReceived", filtered_stats, all_player_stats)
+    output$yardsThrown <- render_stat("yardsThrown", filtered_stats, all_player_stats)
+    output$blocks <- render_stat("blocks", filtered_stats, all_player_stats)
+
+    output$completion_percentage <- renderText({
+      req(filtered_throws())
+      completion_pct <- 1 - mean(as.integer(filtered_throws()$turnover), na.rm = TRUE)
+      cp <- scales::percent(completion_pct, accuracy = 0.01)
+      cp
+    })
+
+    output$xcomp <- renderText({
+      req(filtered_throws())
+      xcomp <- mean(as.numeric(filtered_throws()$cp), na.rm = TRUE)
+      xcomp <- scales::percent(xcomp, accuracy = 0.01)
+      xcomp
+    })
+
+    output$cpoe <- renderText({
+      req(filtered_throws())
+      cpoe <- mean(as.numeric(filtered_throws()$cpoe), na.rm = TRUE)
+      cpoe <- scales::percent(cpoe, accuracy = 0.01)
+      cpoe
+    })
 
 
     observe({
@@ -96,6 +134,7 @@ mod_player_display_server <- function(id) {
     })
 
     output$radial_histogram_plot <- renderPlot({
+      req(filtered_throws)
       test_data <- data.frame(
         angle = c(0, 90, 180, 270, 360),
         value = c(1, 2, 3, 4, 5)
@@ -118,9 +157,3 @@ mod_player_display_server <- function(id) {
   })
 }
 
-    
-## To be copied in the UI
-# mod_player_display_ui("player_display_1")
-    
-## To be copied in the server
-# mod_player_display_server("player_display_1")

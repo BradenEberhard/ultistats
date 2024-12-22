@@ -88,7 +88,7 @@ predict_cp <- function(model_path, preprocessing_info_path, throws_data) {
     throwID = id_column,
     gameID = throws_data$gameID,
     cp = thrower_pred_probs,
-    cpoe = throws_data$turnover - thrower_pred_probs
+    cpoe = ifelse(throws_data$turnover == 1, 0, 1) - thrower_pred_probs
   )
   
   return(output_dataframe)

@@ -1,20 +1,14 @@
-render_stat <- function(stat_name, filtered_stats) {
+render_stat <- function(stat_name, filtered_stats, all_player_stats) {
+  all_player_stats[[stat_name]] <- as.numeric(all_player_stats[[stat_name]])
+  player_mean_stats <- all_player_stats %>%
+    group_by(playerID) %>%
+    summarize(mean_stat = sum(get(stat_name), na.rm = TRUE))
   renderText({
-    tryCatch({
-      stats <- filtered_stats()
-      if (!stat_name %in% colnames(stats)) {
-        warning(paste("Column", stat_name, "not found in player stats"))
-        return("N/A")
-      }
-      total <- sum(as.integer(stats[[stat_name]]), na.rm = TRUE)
-      if (is.na(total) || length(total) == 0) {
-        return("N/A")
-      }
-      as.character(total)
-    }, error = function(e) {
-      warning(paste("Error in rendering", stat_name, ":", e$message))
-      "Error"
-    })
+    stats <- filtered_stats()
+    total <- sum(as.integer(stats[[stat_name]]), na.rm = TRUE)
+    total <- as.character(scales::comma(total))
+    percentile <- sum(player_mean_stats$mean_stat <= total) / nrow(player_mean_stats) * 100
+    paste0(total, "; ", round(percentile, 0), "th percentile")
   })
 }
 
