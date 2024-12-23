@@ -41,3 +41,29 @@ create_stat_value_box_dual <- function(title, output_ids, css_class = "mb-4", ns
     min_height = "100px"
   )
 }
+
+#' Calculate Percentiles for Stats
+#'
+#' Calculates the percentile ranks for specified stats (e.g., goals, assists) of a player,
+#' and filters out rows where the sum of `dPointsPlayed` and `oPointsPlayed` is less than 50.
+#'
+#' @param stats Data frame of player stats.
+#' @param player_id Player ID to filter.
+#' @param stats_to_include Vector of stat columns (e.g., `c("goals", "assists")`).
+#'
+#' @return Data frame with player ID, stat name, stat value, and percentile.
+#' @export
+calculate_percentiles <- function(stats, player_id, stats_to_include) {
+  stats <- stats[(stats$oPointsPlayed + stats$dPointsPlayed) >= 50, ]
+
+  percentile_df <- stats %>% 
+    group_by(playerID) %>%
+    summarise(across(all_of(stats_to_include), sum, na.rm = TRUE)) %>%
+    ungroup() %>%
+    gather(key = "stats", value = "value", all_of(stats_to_include)) %>%
+    mutate(percentile = percent_rank(value) * 100) %>%
+    filter(playerID == player_id) %>%
+    arrange(percentile)
+  
+  return(percentile_df)
+}

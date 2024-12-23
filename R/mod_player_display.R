@@ -7,6 +7,7 @@
 #' @noRd 
 #'
 #' @importFrom shiny NS tagList 
+#' @import plotly
 mod_player_display_ui <- function(id) {
   ns <- NS(id)
   tagList(
@@ -17,32 +18,21 @@ mod_player_display_ui <- function(id) {
         open=FALSE
       ),
       layout_column_wrap(
-        create_stat_value_box(title = "Goals", output_id = "goals", ns = ns),
-        create_stat_value_box(title = "Assists", output_id = "assists", ns = ns),
-        create_stat_value_box(title = "Hockey Assists", output_id = "hockeyAssists", ns = ns),
-        create_stat_value_box(title = "Completions", output_id = "completions", ns = ns),
-        create_stat_value_box(title = "Turnovers", output_id = "throwaways", ns = ns),
-        create_stat_value_box(title = "Receiving Yards", output_id = "yardsReceived", ns = ns),
-        create_stat_value_box(title = "Throwing Yards", output_id = "yardsThrown", ns = ns),
-        create_stat_value_box(title = "Blocks", output_id = "blocks", ns = ns)
-      ),
-      value_box(
-        title="Completion Percentage",
-        class="mb-4",
-        value = textOutput(ns("completion_percentage"))
-      ),
-      value_box(
-        title="Expected Completion Percentage",
-        class="mb-4",
-        value = textOutput(ns("xcomp"))
-      ),
-      value_box(
-        title="CPOE",
-        class="mb-4",
-        value = textOutput(ns("cpoe"))
-      ),
-      card(
-        plotOutput(ns("radial_histogram_plot"))
+        # First value box for Plotly plot
+        value_box(
+          plotlyOutput(ns("percentiles_plot")), 
+          title = "Percentiles Plot", 
+          subtitle = "Categorical Percentile Distribution",
+          width = 12
+        ),
+        
+        # Second value box for Radial Histogram plot
+        value_box(
+          plotOutput(ns("radial_histogram_plot")), 
+          title = "Radial Histogram", 
+          subtitle = "Plot of Radial Histogram",
+          width = 12
+        )
       )
     )
   )
@@ -51,85 +41,74 @@ mod_player_display_ui <- function(id) {
     
 #' player_display Server Functions
 #' @import ggplot2
+#' @import plotly
+#' @importFrom tidyr gather
 #' @noRd 
 mod_player_display_server <- function(id) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
-    player_id <- "jkerr" 
+    player_id <- "tmounga" 
     db_path <- get_golem_config("db_path")
-  
-    conn <- open_db_connection(db_path)
-    all_player_stats <- get_all_player_stats(conn)
-    close_db_connection(conn)
     
-    player_stats <- reactive({
-      conn <- open_db_connection(db_path)
-      stats <- get_player_stats(conn, player_id)  
-      close_db_connection(conn)
-      stats
-    })
+    conn <- open_db_connection(db_path)
+    all_player_stats <- get_all_player_stats(conn)  
+    close_db_connection(conn)
 
     filtered_stats <- reactive({
-      stats <- player_stats()
       if (input$year_selector == "Career") {
-        return(stats)  # Return all stats for the player
+        return(all_player_stats)
       } else {
-        return(stats[stats$year == input$year_selector, ])  # Filter stats by year
+        return(all_player_stats[all_player_stats$year == input$year_selector, ])
       }
     })
 
     filtered_throws <- reactive({
-      req(player_stats)
       conn <- open_db_connection(db_path)
-      player_throws <- get_player_throws(conn, player_stats()$playerID[[1]])
+      player_throws <- get_player_throws(conn, player_id)
       close_db_connection(conn)
       player_throws$adjusted_angle <- (as.integer(player_throws$throw_angle) + 90) %% 360 - 180
       player_throws$year <- substr(player_throws$gameID, 1, 4)
 
       if (input$year_selector == "Career") {
-        return(player_throws)  # Return all stats for the player
+        return(player_throws)
       } else {
         return(player_throws[player_throws$year == input$year_selector, ])  # Filter stats by year
       }
     })
 
     output$player_name <- renderText({
-      stats <- player_stats()
+      stats <- all_player_stats %>% filter(playerID == player_id)
       paste(stats$firstName[[1]], stats$lastName[[1]])
     })
-    output$goals <- render_stat("goals", filtered_stats, all_player_stats)
-    output$assists <- render_stat("assists", filtered_stats, all_player_stats)
-    output$hockeyAssists <- render_stat("hockeyAssists", filtered_stats, all_player_stats)
-    output$completions <- render_stat("completions", filtered_stats, all_player_stats)
-    output$throwaways <- render_stat("throwaways", filtered_stats, all_player_stats)
-    output$yardsReceived <- render_stat("yardsReceived", filtered_stats, all_player_stats)
-    output$yardsThrown <- render_stat("yardsThrown", filtered_stats, all_player_stats)
-    output$blocks <- render_stat("blocks", filtered_stats, all_player_stats)
 
-    output$completion_percentage <- renderText({
-      req(filtered_throws())
-      completion_pct <- 1 - mean(as.integer(filtered_throws()$turnover), na.rm = TRUE)
-      cp <- scales::percent(completion_pct, accuracy = 0.01)
-      cp
-    })
+    output$percentiles_plot <- renderPlotly({
+      stats <- filtered_stats()
+      if (nrow(stats) > 0) {
+        stats_to_include <- c("goals", "assists", "yardsThrown", "yardsReceived", "hockeyAssists", "completions", "blocks", "assists")
+        player_percentiles <- calculate_percentiles(stats, player_id = player_id, stats_to_include)
 
-    output$xcomp <- renderText({
-      req(filtered_throws())
-      xcomp <- mean(as.numeric(filtered_throws()$cp), na.rm = TRUE)
-      xcomp <- scales::percent(xcomp, accuracy = 0.01)
-      xcomp
-    })
-
-    output$cpoe <- renderText({
-      req(filtered_throws())
-      cpoe <- mean(as.numeric(filtered_throws()$cpoe), na.rm = TRUE)
-      cpoe <- scales::percent(cpoe, accuracy = 0.01)
-      cpoe
-    })
+        p <- ggplot(player_percentiles, aes(x = reorder(stats, percentile), y = percentile, text = paste(stats, ": ", scales::comma(value)))) +
+          geom_point(color = "black", size = 3) + # Points for each category
+          geom_segment(aes(x = stats, xend = stats, y = 0, yend = percentile), 
+                      color = "black", size = 1) + # Lines from 0 to Percentiles
+          labs(title = "Categorical Percentile Distribution",
+              x = "Metric",
+              y = "Percentile") + scale_y_continuous(limits = c(0, 100)) +
+          theme_minimal() + coord_flip() 
+        
+          # Convert ggplot to plotly for interactivity
+          ggplotly(p, tooltip = c("text", "y")) %>%
+            config(
+              displaylogo = FALSE,
+              displayModeBar = FALSE
+            )
+        }
+  
+      })
 
 
     observe({
-      stats <- player_stats()
+      stats <- all_player_stats %>% filter(playerID == player_id)
       updateSelectInput(session, "year_selector", choices = c("Career", sort(stats$year)), selected = "Career")
     })
 
@@ -151,7 +130,6 @@ mod_player_display_server <- function(id) {
           x = "Angle (Degrees)",
           y = "Frequency"
         )
-
       radial_plot
     })
   })

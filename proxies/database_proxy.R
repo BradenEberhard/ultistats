@@ -108,6 +108,10 @@ get_game_ids <- function(conn) {
 #' @return NULL
 #' @export
 create_table <- function(conn, table_name, data, index_cols = NULL, override = FALSE) {
+  timestamp_cols <- grep("Timestamp", names(data), ignore.case = TRUE, value = TRUE)
+  for (col in timestamp_cols) {
+    data[[col]] <- as.POSIXct(data[[col]], format = "%Y-%m-%d %H:%M:%S")
+  }
   # Check if the connection is valid
   if (is.null(conn)) {
     stop("The database connection is not open.")
@@ -118,9 +122,29 @@ create_table <- function(conn, table_name, data, index_cols = NULL, override = F
     DBI::dbExecute(conn, paste0("DROP TABLE IF EXISTS ", table_name, ";"))
   }
   
-  # Build the SQL query to create the table based on the column names of the provided data
-  column_definitions <- paste(names(data), "TEXT", collapse = ", ")
-  create_query <- paste0("CREATE TABLE IF NOT EXISTS ", table_name, " (", column_definitions, ");")
+  # Function to map R types to SQL types
+  map_r_to_sql_type <- function(r_type) {
+    switch(r_type,
+           "logical" = "BOOLEAN",
+           "integer" = "INTEGER",
+           "numeric" = "REAL",
+           "double" = "REAL",
+           "character" = "TEXT",
+           "factor" = "TEXT",
+           "Date" = "DATE",
+           "POSIXct" = "DATETIME",  # For timestamp data types
+           stop("Unsupported column type: ", r_type)
+    )
+  }
+  
+  # Get the column names and types for the data
+  column_definitions <- sapply(names(data), function(col_name) {
+    col_type <- map_r_to_sql_type(class(data[[col_name]])[1])  # Get the first class of the column
+    paste(col_name, col_type)
+  })
+  
+  # Create the SQL query to create the table
+  create_query <- paste0("CREATE TABLE IF NOT EXISTS ", table_name, " (", paste(column_definitions, collapse = ", "), ");")
   DBI::dbExecute(conn, create_query)
   
   # Create the index if index_cols is provided
@@ -132,6 +156,7 @@ create_table <- function(conn, table_name, data, index_cols = NULL, override = F
   
   return(NULL)
 }
+
 
 
 update_table <- function(conn, table_name, data, index_col, whole_table) {
