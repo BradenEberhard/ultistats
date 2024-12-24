@@ -10,7 +10,22 @@
 #' @import plotly
 mod_player_display_ui <- function(id) {
   ns <- NS(id)
+  
   tagList(
+    tags$style(HTML("
+  .selectize-input {
+    color: white; /* Text color inside the input box */
+  }
+  .selectize-dropdown {
+    color: white; /* Text color in the dropdown options */
+  }
+  .selectize-input > .selectize-control.single .selectize-input.focus {
+    color: white !important; /* Color for the selected text */
+  }
+  .selectize-dropdown .option {
+    color: white !important; /* Color for the dropdown options */
+  }
+")),
     bslib::page_sidebar(
       h1(textOutput(ns("player_name"))),
       sidebar = sidebar(
@@ -57,15 +72,10 @@ mod_player_display_server <- function(id) {
     all_player_stats <- get_all_player_stats(conn)  
     close_db_connection(conn)
 
-    filtered_stats <- reactive({
-      req(input$year_selector)
-      filter_stats_by_year(all_player_stats, input$year_selector)
-    })
-
-    filtered_throws <- reactive({
-      req(input$player_selector)
-      get_filtered_throws(db_path, input$player_selector)
-    })
+    # filtered_throws <- reactive({
+    #   req(input$player_selector)
+    #   get_filtered_throws(db_path, input$player_selector)
+    # })
 
     output$player_name <- renderText({
       req(input$player_selector)
@@ -75,25 +85,52 @@ mod_player_display_server <- function(id) {
 
     output$percentiles_plot <- renderPlotly({
       req(input$player_selector)
-      stats <- filtered_stats()
-      if (nrow(stats) > 0) {
-        per_possession <- input$per_possession == "Yes"
-        player_percentiles <- calculate_percentiles(stats, input$player_selector, per_possession)
-        percentiles_plot(player_percentiles, per_possession)
-      }
+      req(input$year_selector)
+      plot_data <- all_player_stats %>% filter(playerID == input$player_selector) %>% filter(year == input$year_selector) 
+      plot_data <- convert_to_metric_df(plot_data)
+      plot_ly() %>%
+    # Add horizontal lines for each metric
+    add_segments(
+      data = plot_data,
+      x = 0, 
+      xend = ~percentile, 
+      y = ~metric, 
+      yend = ~metric,
+      line = list(color = "black", width = 2),
+      showlegend = FALSE
+    ) %>%
+    # Add markers
+    add_trace(
+      data = plot_data,
+      x = ~percentile, 
+      y = ~metric, 
+      type = "scatter", 
+      mode = "markers", 
+      marker = list(size = 8, color = "black"),
+      text = ~paste(metric, ":",value, "<br>Percentile:", percentile), # Hover text for markers
+      hoverinfo = "text", # Display custom hover text
+      showlegend = FALSE
+    ) %>%
+    # Layout settings
+    layout(
+      xaxis = list(title = "Skill", range = c(0, 100)), 
+      yaxis = list(title = "Metric"),
+      showlegend = FALSE 
+    ) %>%
+    config(displayModeBar = FALSE)
     })    
 
 
     observe({
       stats <- all_player_stats %>% filter(playerID == input$player_selector)
-      updateSelectInput(session, "year_selector", choices = c("Career", sort(stats$year)), selected = "Career")
+      updateSelectInput(session, "year_selector", choices = c(sort(stats$year)), selected = sort(stats$year)[length(stats$year)])
     })
 
-    output$radial_histogram_plot <- renderPlot({
-      req(input$player_selector)
-      throws <- na.omit(filtered_throws()$adjusted_angle)
-      radial_histogram_plot(throws)
-    })
+    # output$radial_histogram_plot <- renderPlot({
+    #   req(input$player_selector)
+    #   throws <- na.omit(filtered_throws()$adjusted_angle)
+    #   radial_histogram_plot(throws)
+    # })
 
     observe({
       updateSelectizeInput(session, "player_selector", server = TRUE, choices = unique(all_player_stats$playerID), selected = "jkerr")

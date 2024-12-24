@@ -42,3 +42,21 @@ filter_stats_by_year <- function(all_player_stats, year_selector) {
   }
 }
 
+
+
+convert_to_metric_df <- function(df) {
+  metrics <- c("goals", "assists", "blocks", "completions", "hockeyAssists", 
+               "yardsThrown", "yardsReceived", "completion_percentage", "cpoe", "xcp")
+  
+  percentiles <- paste0(metrics, "_percentile")
+  
+  # Create a data frame for the result
+  metric_df <- data.frame(
+    metric = metrics,
+    value = as.numeric(df[metrics]),
+    percentile = as.numeric(df[percentiles]),
+    stringsAsFactors = FALSE
+  )
+  
+  return(metric_df)
+}
