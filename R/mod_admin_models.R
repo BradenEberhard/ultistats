@@ -33,6 +33,9 @@ mod_admin_models_server <- function(id){
       
       fv_df <- predict_fv(fv_model_path, fv_preprocessing_info_path, throws_data)
       fv_df <- fv_df 
+      fv_df$thrower <- throws_data$thrower
+      fv_df$receiver <- throws_data$receiver
+      fv_df$year <- throws_data$year
 
       cp_df <- predict_cp(cp_model_path, cp_preprocessing_info_path, throws_data)
       cp_df <- cp_df 

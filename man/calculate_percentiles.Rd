@@ -4,7 +4,7 @@
 \alias{calculate_percentiles}
 \title{Calculate Percentiles for Stats}
 \usage{
-calculate_percentiles(stats, player_id, stats_to_include)
+calculate_percentiles(stats, player_id, per_possession)
 }
 \arguments{
 \item{stats}{Data frame of player stats.}
