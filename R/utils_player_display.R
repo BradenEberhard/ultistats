@@ -21,42 +21,66 @@ get_filtered_throws <- function(db_path, player_id) {
   return(player_throws)
 }
 
-#' Filter Player Stats by Year
-#'
-#' Filters player statistics for a selected year or returns career statistics.
-#'
-#' @param all_player_stats A data frame containing player statistics with a `year` column.
-#' @param year_selector A string indicating the selected year or "Career" for all stats.
-#' @return A data frame with the filtered player statistics.
-#' @examples
-#' \dontrun{
-#'   filtered_stats <- filter_stats_by_year(all_player_stats, "2023")
-#'   filtered_stats <- filter_stats_by_year(all_player_stats, "Career")
-#' }
-#' @export
-filter_stats_by_year <- function(all_player_stats, year_selector) {
-  if (year_selector == "Career") {
-    return(all_player_stats)
-  } else {
-    return(all_player_stats[all_player_stats$year == year_selector, ])
+get_HTML <- function() {
+  output <- HTML("
+  .selectize-input {
+    color: white; /* Text color inside the input box */
   }
+  .selectize-dropdown {
+    color: white; /* Text color in the dropdown options */
+  }
+  .selectize-input > .selectize-control.single .selectize-input.focus {
+    color: white !important; /* Color for the selected text */
+  }
+  .selectize-dropdown .option {
+    color: white !important; /* Color for the dropdown options */
+  }
+")
+  return(output)
+}
+
+
+convert_to_metric_df <- function(df, category) {
+  addition <- ifelse(category == "Per Possession", "_per_possession", ifelse(category == "Per Game", "_per_game", ""))
+  counting_metrics <- c("goals", "assists", "blocks", "completions", "hockeyAssists", 
+               "yardsThrown", "yardsReceived")
+  counting_metrics <-paste0(counting_metrics,addition)
+  percentage_metrics <- c("completion_percentage", "cpoe", "xcp")
+
+  all_metrics <- c(counting_metrics, percentage_metrics)
+  percentiles <- paste0(all_metrics, "_percentile")
+  
+  # Create a data frame for the result
+  metric_df <- data.frame(
+    metric = all_metrics,
+    value = as.numeric(df[all_metrics]),
+    percentile = as.numeric(df[percentiles]),
+    stringsAsFactors = FALSE
+  )
+
+  metric_df <- metric_df %>% mutate(value = ifelse(metric %in% percentage_metrics, round(value * 100, 2), value))
+
+  return(metric_df)
 }
 
 
 
-convert_to_metric_df <- function(df) {
-  metrics <- c("goals", "assists", "blocks", "completions", "hockeyAssists", 
-               "yardsThrown", "yardsReceived", "completion_percentage", "cpoe", "xcp")
-  
-  percentiles <- paste0(metrics, "_percentile")
-  
-  # Create a data frame for the result
-  metric_df <- data.frame(
-    metric = metrics,
-    value = as.numeric(df[metrics]),
-    percentile = as.numeric(df[percentiles]),
-    stringsAsFactors = FALSE
+rename_metrics <- function(data, column = "metric") {
+  rename_map <- c(
+    goals = "Goals",
+    hockeyAssists = "Hockey Assists",
+    assists = "Assists",
+    yardsThrown = "Throwing Yards",
+    yardsReceived = "Receiving Yards",
+    cpoe = "CPOE",
+    completion_percentage = "Completion Percentage",
+    blocks = "Blocks",
+    xcp = "xCP"
   )
-  
-  return(metric_df)
+  data %>%
+    mutate(
+      !!column := sub("_per_possession$", "", !!sym(column)),  # Remove "_per_possession"
+      !!column := sub("_per_game$", "", !!sym(column)),        # Remove "_per_game"
+      !!column := recode(!!sym(column), !!!rename_map)          # Apply the rename map
+    )
 }

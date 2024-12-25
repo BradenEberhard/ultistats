@@ -138,33 +138,33 @@ update_player_stats <- function(conn, base_url) {
         assists_per_game = if_else(games == 0, NA_real_, assists / games),
         blocks_per_game = if_else(games == 0, NA_real_, blocks / games),
         completions_per_game = if_else(games == 0, NA_real_, completions / games),
-        hockey_assists_per_game = if_else(games == 0, NA_real_, hockeyAssists / games),
-        yards_thrown_per_game = if_else(games == 0, NA_real_, yardsThrown / games),
-        yards_received_per_game = if_else(games == 0, NA_real_, yardsReceived / games),
+        hockeyAssists_per_game = if_else(games == 0, NA_real_, hockeyAssists / games),
+        yardsThrown_per_game = if_else(games == 0, NA_real_, yardsThrown / games),
+        yardsReceived_per_game = if_else(games == 0, NA_real_, yardsReceived / games),
         
         # Per-possession stats based on oOpportunities
-        offensive_goals_per_possession = if_else(oOpportunities == 0, NA_real_, goals / oOpportunities),
-        offensive_assists_per_possession = if_else(oOpportunities == 0, NA_real_, assists / oOpportunities),
-        offensive_completions_per_possession = if_else(oOpportunities == 0, NA_real_, completions / oOpportunities),
-        offensive_hockey_assists_per_possession = if_else(oOpportunities == 0, NA_real_, hockeyAssists / oOpportunities),
-        offensive_yards_thrown_per_possession = if_else(oOpportunities == 0, NA_real_, yardsThrown / oOpportunities),
-        offensive_yards_received_per_possession = if_else(oOpportunities == 0, NA_real_, yardsReceived / oOpportunities),
+        goals_per_possession = if_else(oOpportunities == 0, NA_real_, goals / oOpportunities),
+        assists_per_possession = if_else(oOpportunities == 0, NA_real_, assists / oOpportunities),
+        completions_per_possession = if_else(oOpportunities == 0, NA_real_, completions / oOpportunities),
+        hockeyAssists_per_possession = if_else(oOpportunities == 0, NA_real_, hockeyAssists / oOpportunities),
+        yardsThrown_per_possession = if_else(oOpportunities == 0, NA_real_, yardsThrown / oOpportunities),
+        yardsReceived_per_possession = if_else(oOpportunities == 0, NA_real_, yardsReceived / oOpportunities),
         
         # Defensive per-possession stats based on dOpportunities
-        defensive_blocks_per_possession = if_else(dOpportunities == 0, NA_real_, blocks / dOpportunities)
+        blocks_per_possession = if_else(dOpportunities == 0, NA_real_, blocks / dOpportunities)
     )
   
   columns_to_percentile <- c(
     "defensive_efficiency", "offensive_efficiency", 
     "goals", "assists", "blocks", "completions", "hockeyAssists", "yardsThrown", 
     "yardsReceived", "goals_per_game", "assists_per_game", "blocks_per_game", 
-    "completions_per_game", "hockey_assists_per_game", 
-    "yards_thrown_per_game", "yards_received_per_game", 
-    "offensive_goals_per_possession", "offensive_assists_per_possession", 
-    "offensive_completions_per_possession", 
-    "offensive_hockey_assists_per_possession", "offensive_yards_thrown_per_possession", 
-    "offensive_yards_received_per_possession", 
-    "defensive_blocks_per_possession", "xcp", "completion_percentage", "cpoe"
+    "completions_per_game", "hockeyAssists_per_game", 
+    "yardsThrown_per_game", "yardsReceived_per_game", 
+    "goals_per_possession", "assists_per_possession", 
+    "completions_per_possession", 
+    "hockeyAssists_per_possession", "yardsThrown_per_possession", 
+    "yardsReceived_per_possession", 
+    "blocks_per_possession", "xcp", "completion_percentage", "cpoe"
   )
   player_stats_data <- player_stats_data %>%
     group_by(year) %>%

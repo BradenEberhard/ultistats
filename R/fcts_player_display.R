@@ -25,7 +25,7 @@ calculate_percentiles <- function(stats, player_id, per_possession) {
         total_assists = coalesce(sum(assists, na.rm = TRUE) / sum(oOpportunities, na.rm = TRUE), 0),
         total_blocks = coalesce(sum(blocks, na.rm = TRUE) / sum(dOpportunities, na.rm = TRUE), 0),
         total_yardsReceived = coalesce(sum(yardsReceived, na.rm = TRUE) / sum(oOpportunities, na.rm = TRUE), 0),
-        total_hockey_assists = coalesce(sum(hockeyAssists, na.rm = TRUE) / sum(oOpportunities, na.rm = TRUE), 0)
+        total_hockeyAssists = coalesce(sum(hockeyAssists, na.rm = TRUE) / sum(oOpportunities, na.rm = TRUE), 0)
       )
    } else {
     sum_stats <- stats %>%
@@ -37,7 +37,7 @@ calculate_percentiles <- function(stats, player_id, per_possession) {
         total_assists = sum(assists, na.rm = TRUE),
         total_blocks = sum(blocks, na.rm = TRUE),
         total_yardsReceived = sum(yardsReceived, na.rm = TRUE),
-        total_hockey_assists = sum(hockeyAssists, na.rm = TRUE)
+        total_hockeyAssists = sum(hockeyAssists, na.rm = TRUE)
       )
    }
 
@@ -50,12 +50,12 @@ calculate_percentiles <- function(stats, player_id, per_possession) {
       assists_percentile = sum(total_assists < total_assists[playerID == player_id]) / n() * 100,
       blocks_percentile = sum(total_blocks < total_blocks[playerID == player_id]) / n() * 100,
       yardsReceived_percentile = sum(total_yardsReceived < total_yardsReceived[playerID == player_id]) / n() * 100,
-      hockeyAssists_percentile = sum(total_hockey_assists < total_hockey_assists[playerID == player_id]) / n() * 100
+      hockeyAssists_percentile = sum(total_hockeyAssists < total_hockeyAssists[playerID == player_id]) / n() * 100
     )
   
   sum_stats <- sum_stats %>%
     filter(playerID == player_id) %>%
-    pivot_longer(cols = c(total_yards, total_goals, total_completions, total_assists, total_blocks, total_yardsReceived, total_hockey_assists),
+    pivot_longer(cols = c(total_yards, total_goals, total_completions, total_assists, total_blocks, total_yardsReceived, total_hockeyAssists),
                  names_to = "stats", values_to = "value") %>%
     mutate(
       stats = case_when(
@@ -65,7 +65,7 @@ calculate_percentiles <- function(stats, player_id, per_possession) {
         stats == "total_completions" ~ "Completions",
         stats == "total_blocks" ~ "Blocks",
         stats == "total_yardsReceived" ~ "Yards Received",
-        stats == "total_hockey_assists" ~ "Hockey Assists",
+        stats == "total_hockeyAssists" ~ "Hockey Assists",
         TRUE ~ stats
       ),
       percentile = case_when(
