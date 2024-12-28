@@ -94,12 +94,7 @@ update_games <- function(conn, base_url) {
 update_player_stats <- function(conn, base_url) {
   players <- get_player_ids(conn)
   player_stats_data <- fetch_player_stats(base_url, players)
-  player_stats_data <- player_stats_data %>%
-    mutate(insertTimestamp = format(
-      lubridate::ymd_hms(gsub("Z$", "", Sys.time()), tz = "UTC"), 
-      "%Y-%m-%d %H:%M:%S"
-    ))
-  
+  # add games
   throws_data <- get_throws_data(conn)
   games_per_player <- throws_data %>% 
     mutate(year = as.numeric(substr(gameID, 1, 4))) %>% 
@@ -111,69 +106,69 @@ update_player_stats <- function(conn, base_url) {
   player_stats_data <- player_stats_data %>%
     left_join(games_per_player, by = c("playerID" = "line", "year" = "year")) %>%
     mutate(games = replace_na(games, 0))
+
+  career_data <- compute_career_data(player_stats_data, advanced_stats)
+  player_stats_data$year <- as.character(player_stats_data$year); career_data$year <- as.character(career_data$year)
+  player_stats_data <- bind_rows(player_stats_data, career_data)
   
+  player_stats_data <- player_stats_data %>%
+    mutate(insertTimestamp = format(
+      lubridate::ymd_hms(gsub("Z$", "", Sys.time()), tz = "UTC"), 
+      "%Y-%m-%d %H:%M:%S"
+    ))
+  
+
+  
+  player_stats_data <- player_stats_data %>%
+    mutate(
+      handler = ifelse(yardsThrown > yardsReceived, TRUE, FALSE),
+      offense = ifelse(oPointsPlayed > dPointsPlayed, TRUE, FALSE)
+    )
   advanced_stats <- get_table(conn, "advanced_stats")
 
-  advanced_stats <- advanced_stats %>%
-  mutate(year = as.integer(substr(gameID, 1, 4))) %>% # Extract year and convert to integer
-  group_by(thrower, year) %>%                        # Group by thrower and year
-  summarise(xcp = mean(cp, na.rm = TRUE), .groups = "drop") # Calculate average cp
+  yearly_advanced_stats <- advanced_stats %>%
+  mutate(year = as.integer(substr(gameID, 1, 4))) %>% 
+  group_by(thrower, year) %>%                        
+  summarise(xcp = mean(cp, na.rm = TRUE), .groups = "drop") 
+  
+  career_stats <- advanced_stats %>%
+    group_by(thrower) %>%  # Group by player (thrower)
+    summarise(xcp = mean(cp, na.rm = TRUE), .groups = "drop") %>%  
+    mutate(year = "Career")  # Label this row as Career
 
-  # Step 2: Join the average cp to player_stats_data
+  yearly_advanced_stats$year <- as.character(yearly_advanced_stats$year); career_stats$year <- as.character(career_stats$year)
+  advanced_stats <- bind_rows(yearly_advanced_stats, career_stats)
+
   player_stats_data <- player_stats_data %>%
     left_join(advanced_stats, by = c("playerID" = "thrower", "year" = "year"))
 
   player_stats_data <- player_stats_data %>% 
     mutate(
         total_points = oPointsPlayed + dPointsPlayed,
-        
-        # Use if_else to avoid division by zero
         offensive_efficiency = if_else(oOpportunities == 0, NA_real_, oOpportunityScores / oOpportunities),
         defensive_efficiency = if_else(dOpportunities == 0, NA_real_, dOpportunityStops / dOpportunities),
         completion_percentage = if_else(throwAttempts == 0, NA_real_, completions / throwAttempts),
         cpoe = completion_percentage - xcp,
-        
-        # Per-game stats
-        goals_per_game = if_else(games == 0, NA_real_, goals / games),
-        assists_per_game = if_else(games == 0, NA_real_, assists / games),
-        blocks_per_game = if_else(games == 0, NA_real_, blocks / games),
-        completions_per_game = if_else(games == 0, NA_real_, completions / games),
-        hockeyAssists_per_game = if_else(games == 0, NA_real_, hockeyAssists / games),
-        yardsThrown_per_game = if_else(games == 0, NA_real_, yardsThrown / games),
-        yardsReceived_per_game = if_else(games == 0, NA_real_, yardsReceived / games),
-        
-        # Per-possession stats based on oOpportunities
-        goals_per_possession = if_else(oOpportunities == 0, NA_real_, goals / oOpportunities),
-        assists_per_possession = if_else(oOpportunities == 0, NA_real_, assists / oOpportunities),
-        completions_per_possession = if_else(oOpportunities == 0, NA_real_, completions / oOpportunities),
-        hockeyAssists_per_possession = if_else(oOpportunities == 0, NA_real_, hockeyAssists / oOpportunities),
-        yardsThrown_per_possession = if_else(oOpportunities == 0, NA_real_, yardsThrown / oOpportunities),
-        yardsReceived_per_possession = if_else(oOpportunities == 0, NA_real_, yardsReceived / oOpportunities),
-        
-        # Defensive per-possession stats based on dOpportunities
-        blocks_per_possession = if_else(dOpportunities == 0, NA_real_, blocks / dOpportunities)
     )
-  
-  columns_to_percentile <- c(
-    "defensive_efficiency", "offensive_efficiency", 
-    "goals", "assists", "blocks", "completions", "hockeyAssists", "yardsThrown", 
-    "yardsReceived", "goals_per_game", "assists_per_game", "blocks_per_game", 
-    "completions_per_game", "hockeyAssists_per_game", 
-    "yardsThrown_per_game", "yardsReceived_per_game", 
-    "goals_per_possession", "assists_per_possession", 
-    "completions_per_possession", 
-    "hockeyAssists_per_possession", "yardsThrown_per_possession", 
-    "yardsReceived_per_possession", 
-    "blocks_per_possession", "xcp", "completion_percentage", "cpoe"
-  )
-  player_stats_data <- player_stats_data %>%
-    group_by(year) %>%
-    mutate(across(all_of(columns_to_percentile), 
-                  ~ if_else(total_points >= 10, ntile(.x, 100), NA_real_), 
-                  .names = "{.col}_percentile")) %>%
+
+  player_stats_data <- player_stats_data %>% filter((oPointsPlayed + dPointsPlayed) > 0)
+
+  df_first_rows <- player_stats_data %>%
+    group_by(playerID) %>%
+    slice_head(n = 1) %>%
     ungroup()
 
+  df_first_rows <- df_first_rows %>%
+  mutate(fullName = paste(firstName, lastName)) %>%
+  mutate(
+    fullName = ifelse(duplicated(fullName) | duplicated(fullName, fromLast = TRUE),
+                      paste(fullName, "(", playerID, ")"), 
+                      fullName)
+  )
 
+  player_stats_data <- player_stats_data %>%
+    left_join(df_first_rows %>% select(playerID, fullName), by = "playerID")
+    
   create_table(conn=conn, table_name='player_stats', data=player_stats_data, index_col="playerID", override=TRUE)
   update_table(conn=conn, table_name='player_stats', data=player_stats_data, index_col="playerID", whole_table = TRUE)
 }
@@ -187,6 +182,23 @@ update_players <- function(conn, base_url) {
       lubridate::ymd_hms(gsub("Z$", "", Sys.time()), tz = "UTC"), 
       "%Y-%m-%d %H:%M:%S"
     ))
+  df_first_rows <- players_data %>%
+    group_by(playerID) %>%
+    slice_head(n = 1) %>%
+    ungroup()
+
+  df_first_rows <- df_first_rows %>%
+  mutate(fullName = paste(firstName, lastName)) %>%
+  mutate(
+    fullName = ifelse(duplicated(fullName) | duplicated(fullName, fromLast = TRUE),
+                      paste(fullName, "(", playerID, ")"), 
+                      fullName)
+  )
+
+  players_data <- players_data %>%
+    left_join(df_first_rows %>% select(playerID, fullName), by = "playerID")
+    
+
   create_table(conn=conn, table_name='players', data=players_data, index_col="playerID", override=TRUE)
   update_table(conn=conn, table_name='players', data=players_data, index_col="playerID", whole_table = TRUE)
 }
@@ -368,4 +380,55 @@ update_time_left <- function(group_data, interpolated_times) {
 update_game_df <- function(group_data, game_df) {
   game_df[game_df$group_id == group_data$group_id[1], ] <- group_data
   return(game_df)
+}
+
+# Helper function to compute career stats for a player
+compute_career_data <- function(player_stats_data, advanced_stats) {
+  # Filter players with at least one year >= 2021
+  players_with_career_data <- player_stats_data %>%
+    filter(year >= 2021) %>%
+    select(playerID) %>%
+    distinct()
+
+  # Summing career stats for each player and recalculating percentages
+  career_data <- player_stats_data %>%
+    filter(playerID %in% players_with_career_data$playerID) %>%
+    group_by(playerID) %>%
+    summarise(
+      firstName = first(firstName),
+      lastName = first(lastName),
+      year = "Career",  
+      assists = sum(assists, na.rm = TRUE),
+      goals = sum(goals, na.rm = TRUE),
+      hockeyAssists = sum(hockeyAssists, na.rm = TRUE),
+      completions = sum(completions, na.rm = TRUE),
+      throwAttempts = sum(throwAttempts, na.rm = TRUE),
+      throwaways = sum(throwaways, na.rm = TRUE),
+      stalls = sum(stalls, na.rm = TRUE),
+      callahansThrown = sum(callahansThrown, na.rm = TRUE),
+      yardsReceived = sum(yardsReceived, na.rm = TRUE),
+      yardsThrown = sum(yardsThrown, na.rm = TRUE),
+      hucksAttempted = sum(hucksAttempted, na.rm = TRUE),
+      hucksCompleted = sum(hucksCompleted, na.rm = TRUE),
+      catches = sum(catches, na.rm = TRUE),
+      drops = sum(drops, na.rm = TRUE),
+      blocks = sum(blocks, na.rm = TRUE),
+      callahans = sum(callahans, na.rm = TRUE),
+      pulls = sum(pulls, na.rm = TRUE),
+      obPulls = sum(obPulls, na.rm = TRUE),
+      recordedPulls = sum(recordedPulls, na.rm = TRUE),
+      recordedPullsHangtime = sum(recordedPullsHangtime, na.rm = TRUE),
+      oPointsPlayed = sum(oPointsPlayed, na.rm = TRUE),
+      oPointsScored = sum(oPointsScored, na.rm = TRUE),
+      dPointsPlayed = sum(dPointsPlayed, na.rm = TRUE),
+      dPointsScored = sum(dPointsScored, na.rm = TRUE),
+      secondsPlayed = sum(secondsPlayed, na.rm = TRUE),
+      oOpportunities = sum(oOpportunities, na.rm = TRUE),
+      oOpportunityScores = sum(oOpportunityScores, na.rm = TRUE),
+      dOpportunities = sum(dOpportunities, na.rm = TRUE),
+      dOpportunityStops = sum(dOpportunityStops, na.rm = TRUE),
+      games = sum(games, na.rm = TRUE),
+
+    ) 
+  return(career_data)
 }

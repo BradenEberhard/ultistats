@@ -4,12 +4,12 @@
 \alias{calculate_percentiles}
 \title{Calculate Percentiles for Stats}
 \usage{
-calculate_percentiles(stats, player_id, per_possession)
+calculate_percentiles(stats, player_full_name, per_possession)
 }
 \arguments{
 \item{stats}{Data frame of player stats.}
 
-\item{player_id}{Player ID to filter.}
+\item{player_full_name}{Player fullName to filter.}
 
 \item{stats_to_include}{Vector of stat columns (e.g., `c("goals", "assists")`).}
 }

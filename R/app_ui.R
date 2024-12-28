@@ -24,7 +24,8 @@ app_ui <- function(request) {
     nav_panel(
       title = "Team", 
       value = "team", 
-      icon = shiny::icon("users")
+      icon = shiny::icon("users"),
+      mod_team_display_ui("team_display")
     ),
     # Admin section using nav_menu
     nav_menu(
@@ -69,6 +70,7 @@ golem_add_external_resources <- function() {
       path = app_sys("app/www"),
       app_title = "ultistats"
     )
+    # tags$link(rel = "stylesheet", type = "text/css", href = "www/card-reveal-full-screen.css")
     # Add here other external resources
     # for example, you can add shinyalert::useShinyalert()
   )

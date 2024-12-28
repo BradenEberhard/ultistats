@@ -9,7 +9,7 @@ get_filtered_throws(db_path, player_id)
 \arguments{
 \item{db_path}{Path to the database file.}
 
-\item{player_id}{Player's ID.}
+\item{player_full_name}{Player's fullName}
 }
 \value{
 A data frame with processed throw data, including `adjusted_angle` and `year`.
