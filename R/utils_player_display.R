@@ -61,7 +61,36 @@ filter_year <- function(df, year) {
   return(df[df$year == year, ])
 }
 
-rename_metrics <- function(data, column = "metric") {
+rename_metrics <- function(data, keep_category=FALSE, column = "metric") {
+  if (keep_category){
+    rename_map <- c(
+      games = "Games",
+      yardsThrown = "Throwing Yards",
+      yardsThrown_per_game = "Throwing Yards Per Game",
+      yardsThrown_per_possession = "Throwing Yards Per Possession",
+      yardsReceived = "Receiving Yards",
+      yardsReceived_per_game = "Receiving Yards Per Game",
+      yardsReceived_per_possession = "Receiving Yards Per Possession",
+      completions = "Completions",
+      completions_per_game = "Completions Per Game",
+      completions_per_possession = "Completions Per Possession",
+      oOpportunities = "Possessions",
+      completion_percentage = "Completion Percentage",
+      cpoe = "CPOE",
+      xcp = "xCP",
+      assists = "Assists",
+      assists_per_possession = "Assists Per Possession",
+      hockeyAssists = "Hockey Assists",
+      hockeyAssists_per_possession = "Hockey Assists Per Possession",
+      turnovers = "Turnovers",
+      turnovers_per_possession = "Turnovers Per Possession"
+    )
+    data <- data %>%
+    mutate(    
+      !!column := recode(!!sym(column), !!!rename_map)
+    )
+    return(data)
+  }
   rename_map <- c(
     goals = "Goals ",
     hockeyAssists = "Hockey Assists ",
@@ -77,12 +106,13 @@ rename_metrics <- function(data, column = "metric") {
     offensive_efficiency = "Offensive Efficiency",
     turnovers = "Turnovers"
   )
-  data %>%
+  data <- data %>%
     mutate(
       !!column := sub("_per_possession$", "", !!sym(column)),  
       !!column := sub("_per_game$", "", !!sym(column)),        
       !!column := recode(!!sym(column), !!!rename_map)
     )
+  return(data)
 }
 
 adjust_for_role <- function(df, handler_value, offense_value, player_year, player_full_name) {
@@ -143,3 +173,75 @@ get_playerID_by_fullName <- function(data, fullName_filter) {
     return(NA)  # Return NA if fullName does not exist
   }
 }
+
+prepare_metric_data <- function(df, player_full_name, thrower_handler_value, thrower_offense_value, all_metrics) {
+  metric_data <- list()
+  
+  player_df <- df %>% filter(fullName == player_full_name, year != "Career") %>% arrange(year)
+  
+  for (i in 1:nrow(player_df)) {
+    year <- player_df[i, "year"]
+    df_year <- adjust_for_role(df, thrower_handler_value, thrower_offense_value, year, player_full_name)
+    filtered_df <- df_year %>% filter(fullName == player_full_name, year != "Career") %>% arrange(year)
+    player_value <- filtered_df[i, all_metrics]
+    
+    df_final_players <- df_year %>% filter(games >= 3)
+    for (metric in all_metrics) {
+      if (!is.na(player_value[[metric]])) {
+        metric_values <- df_final_players[df_final_players$year == year, metric]
+        percentile_value <- calc_percentile(player_value[[metric]], metric_values) %>% round(2)
+        if (grepl("turnover", metric)) {
+          percentile_value <- 100 - percentile_value
+        }
+        metric_data[[length(metric_data) + 1]] <- list(
+          year = year,
+          metric = metric,
+          percentile = percentile_value,
+          value = player_value[[metric]]
+        )
+      }
+    }
+  }
+  
+  return(metric_data)
+}
+
+format_metric_data <- function(metric_data) {
+  metric_df <- bind_rows(lapply(metric_data, function(x) {
+    data.frame(
+      year = x$year,
+      metric = x$metric,
+      percentile = x$percentile,
+      value = x$value
+    )
+  })) %>% arrange(year) %>% rename_metrics(keep_category = TRUE)
+  
+  return(metric_df)
+}
+
+
+generate_percentile_plot <- function(metric_df, title) {
+  plot <- plot_ly(metric_df, 
+    x = ~year, 
+    y = ~percentile, 
+    color = ~metric, 
+    type = 'scatter', 
+    mode = 'lines+markers', 
+    line = list(width = 2),
+    marker = list(size = 6),
+    hoverinfo = 'text',
+    text = ~paste0(
+      metric, ": ", 
+      ifelse(value %% 1 == 0, scales::comma(value, accuracy = 1), sprintf("%.2f", value)), 
+      "\nPercentile: ", percentile
+    )) %>%
+    layout(title = title,
+           xaxis = list(title = "Year"),
+           yaxis = list(title = "Percentile", range = c(0, 102), tickvals = seq(0, 100, by = 20)),
+           margin = list(t = 50),
+           showlegend = TRUE) %>%
+    config(displayModeBar = FALSE)
+  
+  return(plot)
+}
+

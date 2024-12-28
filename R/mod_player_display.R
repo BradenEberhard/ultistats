@@ -39,7 +39,7 @@ mod_player_display_ui <- function(id) {
         ),
         card_body(
           class = "thrower-card-full-screen",
-          h1(textOutput(ns("player_name"))),
+          h1(textOutput(ns("player_name1"))),
           fluidRow(
             column(3, selectInput(ns("thrower_year_selector"), "Year", choices = NULL)),
             column(3, selectInput(ns("thrower_stat_category"), "Category", choices = c("Total", "Per Game", "Per Possession"), selected = "Total")),
@@ -50,8 +50,10 @@ mod_player_display_ui <- function(id) {
           ),
           layout_column_wrap(
             plotOutput(ns("radial_histogram_plot")) |> withSpinner() |> bslib::as_fill_carrier(),
+            plotlyOutput(ns("thrower_usage_plot")) |> withSpinner() |> bslib::as_fill_carrier(),
+            plotlyOutput(ns("thrower_efficiency_plot")) |> withSpinner() |> bslib::as_fill_carrier(),
             plotlyOutput(ns("thrower_metrics_plot")) |> withSpinner() |> bslib::as_fill_carrier(),
-            min_height="500px"
+            min_height="1000px"
           )
         ),
         fill=FALSE,
@@ -77,6 +79,12 @@ mod_player_display_server <- function(id) {
     close_db_connection(conn)
 
     output$player_name <- renderText({
+      req(input$player_selector)
+      stats <- all_player_stats %>% filter(fullName == input$player_selector)
+      paste(stats$firstName[[1]], stats$lastName[[1]])
+    })
+
+    output$player_name1 <- renderText({
       req(input$player_selector)
       stats <- all_player_stats %>% filter(fullName == input$player_selector)
       paste(stats$firstName[[1]], stats$lastName[[1]])
@@ -180,9 +188,19 @@ mod_player_display_server <- function(id) {
       radial_histogram_plot(throws)
     })
 
+    output$thrower_usage_plot <- renderPlotly({
+      req(input$player_selector)
+      percentiles_plot <- get_thrower_usage_plot(all_player_stats, input$player_selector, input$thrower_handler_switch_value, input$thrower_offense_switch_value)
+    })
+
+    output$thrower_efficiency_plot <- renderPlotly({
+      req(input$player_selector)
+      percentiles_plot <- get_thrower_efficiency_plot(all_player_stats, input$player_selector, input$thrower_handler_switch_value, input$thrower_offense_switch_value)
+    })
+
     output$thrower_metrics_plot <- renderPlotly({
       req(input$player_selector)
-      percentiles_plot <- get_thrower_metrics_plot(all_player_stats, input$player_selector, input$thrower_handler_switch_value, input$thrower_offense_switch_value, input$thrower_stat_category)
+      percentiles_plot <- get_thrower_metrics_plot(all_player_stats, input$player_selector, input$thrower_handler_switch_value, input$thrower_offense_switch_value)
     })
 
     observe({

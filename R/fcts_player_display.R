@@ -135,14 +135,29 @@ calculate_percentiles <- function(stats, player_full_name, per_possession) {
 #' @export
 radial_histogram_plot <- function(throws, bin_width = 24) {
   bin_cutoffs <- seq(-180, 180, by = bin_width)
+  max_y <- max(table(cut(throws, breaks = bin_cutoffs)))
+
   ggplot(data.frame(throws), aes(x = throws)) +
     geom_histogram(breaks = bin_cutoffs, fill = "blue", color = "white", boundary = 0) +
-    coord_polar(start = pi) +
-    scale_x_continuous(limits = c(-180, 180), breaks = seq(-180, 180, 30)) +
+    coord_polar(start = pi, clip = "off") +
+    scale_x_continuous(limits = c(-180, 180), breaks = seq(-180, 180, 45)) +
     theme_minimal() +
+    annotate("text", x = 0, y = max_y+5, label = "Forward", size = 5, fontface = "bold", hjust=0.5, vjust=0) +
+    annotate("text", x = -90, y = max_y+5, label = "Left", size = 5, fontface = "bold", hjust=1, vjust=0.5) +
+    annotate("text", x = 90, y = max_y+5, label = "Right", size = 5, fontface = "bold", hjust=0, vjust=0.5) +
+    annotate("text", x = 180, y = max_y+5, label = "Backward", size = 5, fontface = "bold", hjust=0.5, vjust=1) +
+    theme(
+      axis.title.y = element_text(size = 14, margin = margin(r = 10)),  # Adjust y-axis label size
+      axis.text.y = element_text(size = 12, margin = margin(r = 20)),
+      axis.title.x = element_text(size = 14),  # Adjust y-axis label size
+      axis.text.x = element_blank(),  # Hides angle labels
+      axis.ticks = element_blank(),
+      plot.title = element_text(size = 18),  # Adjust title size
+    ) +
     labs(
-      x = "Angle (Degrees)",
-      y = "Frequency"
+      title = "Throwing Direction Distribution",
+      x = "Angle",
+      y = "Number of Throws"
     )
 }
 
@@ -248,10 +263,10 @@ convert_to_metric_df <- function(df, category, player_full_name, year, handler_v
   
   for (metric in all_metrics) {
     player_value <- df_year[df_year$fullName == player_full_name, metric]
-    
+    df_final_players <- df_year %>% filter(games >= 3)
     if (length(player_value) > 0) {
       
-      metric_values <- df_year[[metric]]
+      metric_values <- df_final_players[[metric]]
       percentile_value <- calc_percentile(player_value, metric_values) %>% round(2)
       if (metric %in% percentage_metrics) {
         player_value <- player_value * 100
@@ -268,81 +283,58 @@ convert_to_metric_df <- function(df, category, player_full_name, year, handler_v
 }
 
 
-get_thrower_metrics_plot <- function(df, player_full_name, thrower_handler_value, thrower_offense_value, category) {
+get_thrower_usage_plot <- function(df, player_full_name, thrower_handler_value, thrower_offense_value) {
   thrower_handler_value <- ifelse(is.null(thrower_handler_value), FALSE, thrower_handler_value)
   thrower_offense_value <- ifelse(is.null(thrower_offense_value), FALSE, thrower_offense_value)
-  counting_metrics <- c("assists", "completions", "hockeyAssists", 
-                        "yardsThrown", "turnovers")
-  percentage_metrics <- c("completion_percentage", "cpoe", "xcp")
-  addition <- ifelse(category == "Per Possession", "_per_possession", 
-                     ifelse(category == "Per Game", "_per_game", ""))
-  counting_metrics <- paste0(counting_metrics, addition)
-  all_metrics <- c(counting_metrics, percentage_metrics)
-  metric_data <- list()
-  df <- df %>% mutate(turnovers = throwAttempts - completions)
-  player_df <- df %>% filter(fullName == player_full_name, year != "Career") %>% arrange(year)
-
-  for (i in 1:nrow(player_df)) {
-    # Get the player value for each metric in the current row
-    year <- player_df[i, "year"]
-    df_year <- adjust_for_category(df, category)
-    df_year <- adjust_for_role(df_year, thrower_handler_value, thrower_offense_value, year, player_full_name)
-    
-    filtered_df <- df_year %>% filter(fullName == player_full_name, year != "Career") %>% arrange(year)
-    player_value <- filtered_df[i, all_metrics]
-    # For each metric, calculate the percentile and store the result
-    for (metric in all_metrics) {
-      if (!is.na(player_value[[metric]])) {
-        # Get all values for the current metric and year
-        metric_values <- df_year[df_year$year == year, metric]
-        
-        # Calculate the percentile for the player's value
-        percentile_value <- calc_percentile(player_value[[metric]], metric_values) %>% round(2)
-        if (metric == "turnovers") {
-          percentile_value <- 100 - percentile_value  # Reverse the percentile scale
-        }
-        if (metric %in% percentage_metrics) {
-          player_value[[metric]] <- player_value[[metric]] * 100  # Convert to percentage if necessary
-        }
-        
-        # Store the data (metric, percentile, year, and value)
-        metric_data[[length(metric_data) + 1]] <- list(
-          year = year,
-          metric = metric,
-          percentile = percentile_value,
-          value = player_value[[metric]]
-        )
-      }
-    }
-  }
-  metric_df <- bind_rows(lapply(metric_data, function(x) {
-    data.frame(
-      year = x$year,
-      metric = x$metric,
-      percentile = x$percentile,
-      value = x$value
+  
+  all_metrics <- c("completions", "yardsThrown", "completions_per_game", "yardsThrown_per_game", 
+                   "completions_per_possession", "yardsThrown_per_possession", "games", "oOpportunities")
+  df <- df %>% mutate(
+      completions_per_game = completions / games,
+      yardsThrown_per_game = yardsThrown / games,
+      completions_per_possession = completions / oOpportunities,
+      yardsThrown_per_possession = yardsThrown / oOpportunities
     )
-  })) %>% arrange(year) %>% rename_metrics()
-  plot <- plot_ly(metric_df, 
-    x = ~year, 
-    y = ~percentile, 
-    color = ~metric, 
-    type = 'scatter', 
-    mode = 'lines+markers', 
-    line = list(width = 2),
-    marker = list(size = 6),
-    hoverinfo = 'text',  # Specify custom hover info
-    text = ~paste0(
-      metric, ": ", 
-      ifelse(value %% 1 == 0, scales::comma(value, accuracy = 1), sprintf("%.2f", value)), 
-      "\nPercentile: ", scales::percent(percentile / 100)
-    )) %>%
-  layout(title = "Metrics Over Time",
-    xaxis = list(title = "Year"),
-    yaxis = list(title = "Percentile", range=c(0,102), tickvals = seq(0, 100, by = 20)),
-    margin = list(t = 50),
-    showlegend = TRUE) %>%
-  config(displayModeBar = FALSE)
+  
+  metric_data <- prepare_metric_data(df, player_full_name, thrower_handler_value, thrower_offense_value, all_metrics)
+  metric_df <- format_metric_data(metric_data)
+  plot <- generate_percentile_plot(metric_df, "Usage")
+  
+  return(plot)
+}
 
+
+get_thrower_efficiency_plot <- function(df, player_full_name, thrower_handler_value, thrower_offense_value) {
+  thrower_handler_value <- ifelse(is.null(thrower_handler_value), FALSE, thrower_handler_value)
+  thrower_offense_value <- ifelse(is.null(thrower_offense_value), FALSE, thrower_offense_value)
+  
+  all_metrics <- c("completion_percentage", "xcp", "cpoe")
+  df[all_metrics] <- df[all_metrics] * 100         
+  metric_data <- prepare_metric_data(df, player_full_name, thrower_handler_value, thrower_offense_value, all_metrics)
+  metric_df <- format_metric_data(metric_data)
+  plot <- generate_percentile_plot(metric_df, "Efficiency")
+  
+  return(plot)
+}
+
+get_thrower_metrics_plot <- function(df, player_full_name, thrower_handler_value, thrower_offense_value) {
+  thrower_handler_value <- ifelse(is.null(thrower_handler_value), FALSE, thrower_handler_value)
+  thrower_offense_value <- ifelse(is.null(thrower_offense_value), FALSE, thrower_offense_value)
+
+  
+  all_metrics <- c("assists", "hockeyAssists", "turnovers", "assists_per_possession", "hockeyAssists_per_possession",
+    "turnovers_per_possession")
+  
+  df <- df %>% mutate(
+    turnovers = throwAttempts - completions,
+    assists_per_possession = assists / oOpportunities,
+    hockeyAssists_per_possession = hockeyAssists / oOpportunities,
+    turnovers_per_possession = turnovers / oOpportunities
+  )
+
+  metric_data <- prepare_metric_data(df, player_full_name, thrower_handler_value, thrower_offense_value, all_metrics)
+  metric_df <- format_metric_data(metric_data)
+  plot <- generate_percentile_plot(metric_df, "Metrics")
+  
   return(plot)
 }
