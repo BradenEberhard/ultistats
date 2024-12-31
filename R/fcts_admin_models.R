@@ -14,7 +14,7 @@
 #' throws_data <- some_throws_data
 #' output_df <- predict_fv(model_path, preprocessing_info_path, throws_data)
 #' 
-#' @import xgboost
+#' @importFrom xgboost xgb.load xgb.DMatrix
 #' @importFrom dplyr select
 predict_fv <- function(model_path, preprocessing_info_path, throws_data) {
   # Load model and preprocessing info
@@ -29,14 +29,23 @@ predict_fv <- function(model_path, preprocessing_info_path, throws_data) {
   
   # Rename receiver features
   names(receiver_throws) <- gsub("receiver", "thrower", names(receiver_throws))
+  opponent_throws <- receiver_throws %>%
+    mutate(
+      thrower_x = -thrower_x, # Multiply thrower_x by -1
+      thrower_y = pmin(pmax(120 - thrower_y, 20), 100) # Transform thrower_y and clip between 20 and 100
+    )
+
   
   # Scale data
   thrower_throws_scaled <- xgb.DMatrix(data = as.matrix(predict(scaling_params, thrower_throws)))
   receiver_throws_scaled <- xgb.DMatrix(data = as.matrix(predict(scaling_params, receiver_throws)))
+  opponent_throws_scaled <- xgb.DMatrix(data = as.matrix(predict(scaling_params, opponent_throws)))
   
   # Get predictions
   thrower_pred_probs <- predict(xgb_model, thrower_throws_scaled)
   receiver_pred_probs <- predict(xgb_model, receiver_throws_scaled)
+  opponent_pred_probs <- predict(xgb_model, opponent_throws_scaled)
+
   
   # Create ID column and return output
   id_column <- paste(throws_data$gameID, throws_data$game_quarter, throws_data$quarter_point, throws_data$possession_num, throws_data$possession_throw, sep = "-")
@@ -44,7 +53,8 @@ predict_fv <- function(model_path, preprocessing_info_path, throws_data) {
     throwID = id_column,
     gameID = throws_data$gameID,
     fv_thrower = thrower_pred_probs,
-    fv_receiver = receiver_pred_probs
+    fv_receiver = receiver_pred_probs,
+    fv_opponent = opponent_pred_probs
   )
   
   return(output_dataframe)
@@ -67,7 +77,7 @@ predict_fv <- function(model_path, preprocessing_info_path, throws_data) {
 #' throws_data <- some_throws_data
 #' output_df <- predict_cp(model_path, preprocessing_info_path, throws_data)
 #' 
-#' @import xgboost
+#' @importFrom xgboost xgb.load xgb.DMatrix
 #' @importFrom dplyr select
 predict_cp <- function(model_path, preprocessing_info_path, throws_data) {
   xgb_model <- xgb.load(model_path)

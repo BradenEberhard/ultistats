@@ -58,7 +58,6 @@ update_possession_num <- function(event_type, current_state) {
   }
   return(current_state)
 }
-
 reset_state <- function() {
   state <- list(
     home_team_score = 0,
@@ -126,16 +125,58 @@ update_player_stats <- function(conn, base_url) {
     )
   advanced_stats <- get_table(conn, "advanced_stats")
 
-  yearly_advanced_stats <- advanced_stats %>%
-  mutate(year = as.integer(substr(gameID, 1, 4))) %>% 
-  group_by(thrower, year) %>%                        
-  summarise(xcp = mean(cp, na.rm = TRUE), .groups = "drop") 
-  
-  career_stats <- advanced_stats %>%
-    group_by(thrower) %>%  # Group by player (thrower)
-    summarise(xcp = mean(cp, na.rm = TRUE), .groups = "drop") %>%  
-    mutate(year = "Career")  # Label this row as Career
+  # Compute thrower stats
+  yearly_advanced_stats_thrower <- advanced_stats %>%
+    filter(dropped_throw != 1) %>% 
+    mutate(year = as.integer(substr(gameID, 1, 4))) %>% 
+    group_by(thrower, year) %>%                        
+    summarise(
+      xcp = mean(cp, na.rm = TRUE),
+      thrower_ec = sum(ec, na.rm = TRUE),
+      thrower_aec = sum(aec, na.rm = TRUE),
+      .groups = "drop"
+    )
 
+  # Compute receiver stats
+  yearly_advanced_stats_receiver <- advanced_stats %>%
+    mutate(year = as.integer(substr(gameID, 1, 4))) %>% 
+    group_by(receiver, year) %>%                        
+    summarise(
+      receiver_ec = sum(ec, na.rm = TRUE),
+      receiver_aec = sum(aec, na.rm = TRUE),
+      .groups = "drop"
+    )
+
+  # Join thrower and receiver stats by thrower and year
+  yearly_advanced_stats <- yearly_advanced_stats_thrower %>%
+    left_join(yearly_advanced_stats_receiver, by = c("thrower" = "receiver", "year" = "year"))
+
+
+    
+  career_stats_thrower <- advanced_stats %>%
+    filter(dropped_throw != 1) %>% 
+    group_by(thrower) %>%  # Group by player (thrower)
+    summarise(
+      xcp = mean(cp, na.rm = TRUE),
+      thrower_ec = sum(ec, na.rm = TRUE),
+      thrower_aec = sum(aec, na.rm = TRUE),
+      .groups = "drop"
+    )
+
+  # Compute receiver career stats
+  career_stats_receiver <- advanced_stats %>%
+    group_by(receiver) %>%  # Group by player (receiver)
+    summarise(
+      receiver_ec = sum(ec, na.rm = TRUE),
+      receiver_aec = sum(aec, na.rm = TRUE),
+      .groups = "drop"
+    ) 
+
+  # Join thrower and receiver career stats by player
+  career_stats <- career_stats_thrower %>%
+    left_join(career_stats_receiver, by = c("thrower" = "receiver")) %>%
+    mutate(year = "Career")
+  
   yearly_advanced_stats$year <- as.character(yearly_advanced_stats$year); career_stats$year <- as.character(career_stats$year)
   advanced_stats <- bind_rows(yearly_advanced_stats, career_stats)
 

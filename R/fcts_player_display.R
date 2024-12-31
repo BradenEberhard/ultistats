@@ -152,7 +152,8 @@ radial_histogram_plot <- function(throws, bin_width = 24) {
       axis.title.x = element_text(size = 14),  # Adjust y-axis label size
       axis.text.x = element_blank(),  # Hides angle labels
       axis.ticks = element_blank(),
-      plot.title = element_text(size = 18),  # Adjust title size
+      plot.title = element_text(size = 18), 
+      plot.margin = margin(t = 10, r = 20, b = 10, l = 10)  
     ) +
     labs(
       title = "Throwing Direction Distribution",
@@ -219,6 +220,7 @@ percentiles_plot <- function(player_percentiles, per_possession) {
 #' @importFrom tidyr drop_na
 create_percentiles_plot <- function(plot_data, addition) {
   plot_data <- plot_data %>% drop_na()
+  
   plot_ly() %>%
     add_segments(
       data = plot_data,
@@ -229,6 +231,7 @@ create_percentiles_plot <- function(plot_data, addition) {
       line = list(color = "black", width = 2),
       text = ~paste(metric, addition, ":", sub("\\.0+$", "", scales::comma(value, accuracy = 0.01)), "<br>Percentile:", percentile),
       hoverinfo = "text", # Display custom hover text
+      hoveron = "points+fills",  # Enable hover effects on both points and lines
       showlegend = FALSE
     ) %>%
     add_trace(
@@ -240,6 +243,7 @@ create_percentiles_plot <- function(plot_data, addition) {
       marker = list(size = 8, color = "black"),
       text = ~paste(metric, addition, ":", sub("\\.0+$", "", scales::comma(value, accuracy = 0.01)), "<br>Percentile:", percentile),
       hoverinfo = "text", # Display custom hover text
+      hoveron = "points+fills",  # Enable hover effects on both points and lines
       showlegend = FALSE
     ) %>%
     layout(
@@ -249,6 +253,7 @@ create_percentiles_plot <- function(plot_data, addition) {
     ) %>%
     config(displayModeBar = FALSE)
 }
+
 
 
 convert_to_metric_df <- function(df, category, player_full_name, year, handler_value, offense_value) {
@@ -287,13 +292,9 @@ get_thrower_usage_plot <- function(df, player_full_name, thrower_handler_value, 
   thrower_handler_value <- ifelse(is.null(thrower_handler_value), FALSE, thrower_handler_value)
   thrower_offense_value <- ifelse(is.null(thrower_offense_value), FALSE, thrower_offense_value)
   
-  all_metrics <- c("completions", "yardsThrown", "completions_per_game", "yardsThrown_per_game", 
-                   "completions_per_possession", "yardsThrown_per_possession", "games", "oOpportunities")
+  all_metrics <- c("completions",  "completions_per_possession", "games", "oOpportunities")
   df <- df %>% mutate(
-      completions_per_game = completions / games,
-      yardsThrown_per_game = yardsThrown / games,
       completions_per_possession = completions / oOpportunities,
-      yardsThrown_per_possession = yardsThrown / oOpportunities
     )
   
   metric_data <- prepare_metric_data(df, player_full_name, thrower_handler_value, thrower_offense_value, all_metrics)
@@ -303,12 +304,30 @@ get_thrower_usage_plot <- function(df, player_full_name, thrower_handler_value, 
   return(plot)
 }
 
+get_thrower_contribution_plot <- function(df, player_full_name, thrower_handler_value, thrower_offense_value) {
+  thrower_handler_value <- ifelse(is.null(thrower_handler_value), FALSE, thrower_handler_value)
+  thrower_offense_value <- ifelse(is.null(thrower_offense_value), FALSE, thrower_offense_value)
+  
+  all_metrics <- c("yardsThrown",  "thrower_ec", "thrower_aec")
+  df <- df %>% mutate(
+    yardsThrown = 100 * yardsThrown / oOpportunities,
+    thrower_ec = 100 * thrower_ec / oOpportunities,
+    thrower_aec = 100 * thrower_aec / oOpportunities,
+    )
+  
+  metric_data <- prepare_metric_data(df, player_full_name, thrower_handler_value, thrower_offense_value, all_metrics)
+  metric_df <- format_metric_data(metric_data)
+  plot <- generate_percentile_plot(metric_df, "Contribution Per 100 Possessions")
+  
+  return(plot)
+}
+
 
 get_thrower_efficiency_plot <- function(df, player_full_name, thrower_handler_value, thrower_offense_value) {
   thrower_handler_value <- ifelse(is.null(thrower_handler_value), FALSE, thrower_handler_value)
   thrower_offense_value <- ifelse(is.null(thrower_offense_value), FALSE, thrower_offense_value)
   
-  all_metrics <- c("completion_percentage", "xcp", "cpoe")
+  all_metrics <- c("completion_percentage", "xcp", "cpoe", "offensive_efficiency")
   df[all_metrics] <- df[all_metrics] * 100         
   metric_data <- prepare_metric_data(df, player_full_name, thrower_handler_value, thrower_offense_value, all_metrics)
   metric_df <- format_metric_data(metric_data)
@@ -317,24 +336,86 @@ get_thrower_efficiency_plot <- function(df, player_full_name, thrower_handler_va
   return(plot)
 }
 
-get_thrower_metrics_plot <- function(df, player_full_name, thrower_handler_value, thrower_offense_value) {
+get_thrower_scores_plot <- function(df, player_full_name, thrower_handler_value, thrower_offense_value) {
   thrower_handler_value <- ifelse(is.null(thrower_handler_value), FALSE, thrower_handler_value)
   thrower_offense_value <- ifelse(is.null(thrower_offense_value), FALSE, thrower_offense_value)
 
   
-  all_metrics <- c("assists", "hockeyAssists", "turnovers", "assists_per_possession", "hockeyAssists_per_possession",
-    "turnovers_per_possession")
+  all_metrics <- c("assists", "hockeyAssists", "turnovers")
   
   df <- df %>% mutate(
     turnovers = throwAttempts - completions,
-    assists_per_possession = assists / oOpportunities,
-    hockeyAssists_per_possession = hockeyAssists / oOpportunities,
-    turnovers_per_possession = turnovers / oOpportunities
+    assists = 100 * assists / oOpportunities,
+    hockeyAssists = 100 * hockeyAssists / oOpportunities,
+    turnovers = 100 * turnovers / oOpportunities
   )
 
   metric_data <- prepare_metric_data(df, player_full_name, thrower_handler_value, thrower_offense_value, all_metrics)
   metric_df <- format_metric_data(metric_data)
-  plot <- generate_percentile_plot(metric_df, "Metrics")
+  plot <- generate_percentile_plot(metric_df, "Scoring Per 100 Possessions")
   
   return(plot)
+}
+
+get_thrower_grade <- function(df, player_full_name, handler_value, offense_value, player_year) {
+  handler_value <- ifelse(is.null(handler_value), FALSE, handler_value)
+  offense_value <- ifelse(is.null(offense_value), FALSE, offense_value)
+
+  usage_metrics <- c("oOpportunities", "completions", "completions_per_possession", "games")
+  efficiency_metrics <- c("cpoe", "xcp", "offensive_efficiency", "completion_percentage")
+  contribution_metrics <- c("thrower_ec", "thrower_aec", "yardsThrown")
+  scoring_metrics <- c("assists", "hockeyAssists", "turnovers")
+  df <- df %>% mutate(
+    yardsThrown = 100 * yardsThrown / oOpportunities,
+    thrower_ec = 100 * thrower_ec / oOpportunities,
+    thrower_aec = 100 * thrower_aec / oOpportunities,
+    turnovers = throwAttempts - completions,
+    assists = 100 * assists / oOpportunities,
+    hockeyAssists = 100 * hockeyAssists / oOpportunities,
+    turnovers = 100 * turnovers / oOpportunities,
+    completions_per_possession = completions / oOpportunities,
+  )
+
+  df_year <- filter_year(df, player_year)
+  df_year <- adjust_for_role(df_year, handler_value, offense_value, player_year, player_full_name)
+  metric_data <- list()
+  
+  for (metric in c(usage_metrics, efficiency_metrics, scoring_metrics, contribution_metrics)) {
+    player_value <- df_year[df_year$fullName == player_full_name, metric]
+    df_final_players <- df_year %>% filter(games >= 3)
+    if (length(player_value) > 0) {
+      
+      metric_values <- df_final_players[[metric]]
+      percentile_value <- calc_percentile(player_value, metric_values) %>% round(2)
+      metric_data[[length(metric_data) + 1]] <- list(
+        metric = metric,
+        percentile = percentile_value,
+        value = player_value
+      )
+    }
+  }
+  
+  metric_df <- do.call(rbind, lapply(metric_data, function(x) data.frame(x, stringsAsFactors = FALSE))) %>% rename_metrics(keep_category = TRUE)
+  usage_percentile <- metric_df %>% 
+    filter(metric %in% rename_metrics(data.frame(metric = usage_metrics), keep_category = TRUE)$metric) %>% 
+    summarize(median_value = median(percentile, na.rm = TRUE)) %>% 
+    pull(median_value) %>% round(2)
+  efficiency_percentile <- metric_df %>% 
+    filter(metric %in% rename_metrics(data.frame(metric = efficiency_metrics), keep_category = TRUE)$metric) %>% 
+    summarize(median_value = median(percentile, na.rm = TRUE)) %>% 
+    pull(median_value) %>% round(2)
+  scoring_percentile <- metric_df %>% 
+    filter(metric %in% rename_metrics(data.frame(metric = scoring_metrics), keep_category = TRUE)$metric) %>% 
+    summarize(median_value = median(percentile, na.rm = TRUE)) %>% 
+    pull(median_value) %>% round(2)
+  contribution_percentile <- metric_df %>% 
+    filter(metric %in% rename_metrics(data.frame(metric = contribution_metrics), keep_category = TRUE)$metric) %>% 
+    summarize(median_value = median(percentile, na.rm = TRUE)) %>% 
+    pull(median_value) %>% round(2)
+  return(list(
+    usage_percentile = usage_percentile,
+    efficiency_percentile = efficiency_percentile,
+    scoring_percentile = scoring_percentile,
+    contribution_percentile = contribution_percentile
+  ))
 }

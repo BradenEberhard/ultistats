@@ -64,31 +64,69 @@ filter_year <- function(df, year) {
 rename_metrics <- function(data, keep_category=FALSE, column = "metric") {
   if (keep_category){
     rename_map <- c(
-      games = "Games",
-      yardsThrown = "Throwing Yards",
-      yardsThrown_per_game = "Throwing Yards Per Game",
-      yardsThrown_per_possession = "Throwing Yards Per Possession",
-      yardsReceived = "Receiving Yards",
-      yardsReceived_per_game = "Receiving Yards Per Game",
-      yardsReceived_per_possession = "Receiving Yards Per Possession",
-      completions = "Completions",
+      games = "G",
+      yardsThrown = "TY",
+      yardsThrown_per_game = "TY PG",
+      yardsThrown_per_possession = "TY PP",
+      yardsReceived = "RY",
+      yardsReceived_per_game = "RY PG",
+      yardsReceived_per_possession = "RY PP",
+      completions = "C",
+      completions_per_game = "C PG",
+      completions_per_possession = "C PP",
+      oOpportunities = "P",
+      completion_percentage = "CP",
+      cpoe = "CPOE",
+      xcp = "xCP",
+      assists = "A",
+      assists_per_possession = "A PP",
+      hockeyAssists = "HA",
+      hockeyAssists_per_possession = "HA PP",
+      turnovers = "Turns",
+      turnovers_per_possession = "Turns PP",
+      thrower_ec_per_possession = "T-EC PP",
+      thrower_aec_per_possession = "T-aEC PP",
+      thrower_ec = "T-EC",
+      thrower_aec = "T-aEC",
+      offensive_efficiency = "OE"
+    )
+  
+    # Mapping for full names
+    full_metric_map <- c(
+      games = "Games Played",
+      yardsThrown = "Total Yards Thrown",
+      yardsThrown_per_game = "Yards Thrown Per Game",
+      yardsThrown_per_possession = "Yards Thrown Per Possession",
+      yardsReceived = "Total Yards Received",
+      yardsReceived_per_game = "Yards Received Per Game",
+      yardsReceived_per_possession = "Yards Received Per Possession",
+      completions = "Total Completions",
       completions_per_game = "Completions Per Game",
       completions_per_possession = "Completions Per Possession",
       oOpportunities = "Possessions",
       completion_percentage = "Completion Percentage",
-      cpoe = "CPOE",
-      xcp = "xCP",
-      assists = "Assists",
+      cpoe = "Completion Percentage Over Expected",
+      xcp = "Expected Completion Percentage",
+      assists = "Total Assists",
       assists_per_possession = "Assists Per Possession",
       hockeyAssists = "Hockey Assists",
       hockeyAssists_per_possession = "Hockey Assists Per Possession",
-      turnovers = "Turnovers",
-      turnovers_per_possession = "Turnovers Per Possession"
+      turnovers = "Total Turnovers",
+      turnovers_per_possession = "Turnovers Per Possession",
+      thrower_ec = "Thrower Expected Contribution",
+      thrower_aec = "Thrower Adjusted Expected Contribution",
+      thrower_ec_per_possession = "Thrower Expected Contribution Per Possession",
+      thrower_aec_per_possession = "Thrower Adjusted Expected Contribution Per Possession",
+      offensive_efficiency = "Offensive Efficiency"
     )
+    
+    # Mutate the dataframe to include the full_metric column
     data <- data %>%
-    mutate(    
-      !!column := recode(!!sym(column), !!!rename_map)
-    )
+      mutate(
+        full_metric = recode(!!sym(column), !!!full_metric_map),
+        !!column := recode(!!sym(column), !!!rename_map)
+      )
+    
     return(data)
   }
   rename_map <- c(
@@ -219,29 +257,97 @@ format_metric_data <- function(metric_data) {
   return(metric_df)
 }
 
-
+#' @importFrom ggiraph geom_line_interactive geom_point_interactive girafe girafe_options opts_hover opts_hover_inv opts_toolbar opts_sizing opts_selection
+#' @importFrom ggrepel geom_text_repel
 generate_percentile_plot <- function(metric_df, title) {
-  plot <- plot_ly(metric_df, 
-    x = ~year, 
-    y = ~percentile, 
-    color = ~metric, 
-    type = 'scatter', 
-    mode = 'lines+markers', 
-    line = list(width = 2),
-    marker = list(size = 6),
-    hoverinfo = 'text',
-    text = ~paste0(
-      metric, ": ", 
-      ifelse(value %% 1 == 0, scales::comma(value, accuracy = 1), sprintf("%.2f", value)), 
-      "\nPercentile: ", percentile
-    )) %>%
-    layout(title = title,
-           xaxis = list(title = "Year"),
-           yaxis = list(title = "Percentile", range = c(0, 102), tickvals = seq(0, 100, by = 20)),
-           margin = list(t = 50),
-           showlegend = TRUE) %>%
-    config(displayModeBar = FALSE)
+  metric_df$year <- as.numeric(metric_df$year)
+  last_points <- metric_df %>%
+    group_by(metric) %>%
+    filter(year == max(year))
+  # Create the ggplot
+  plot <- ggplot(
+    metric_df, 
+    aes(
+      x = year, 
+      y = percentile, 
+      color = metric, 
+      group=metric,
+      data_id = metric
+    )
+  ) +
+    geom_line_interactive(aes(tooltip = full_metric), size = 1.2) +
+    geom_point_interactive(aes(tooltip = paste(metric, ": ", round(value,2), "\nPercentile: ", percentile)), size = 3) +
+    geom_text_repel(
+      data=last_points,
+      aes(color = metric, label = metric),  
+      family = "Lato",  # Adjust the font family
+      size = 8,
+      direction = "y",  # Direction of text (either 'x', 'y', or 'both')
+      xlim = c(max(metric_df$year) + 0.1, NA),  # Limit for x-axis labels
+      hjust = 0,
+      vjust = 0,
+      segment.size = 0.7,
+      segment.alpha = 0.5,
+      segment.linetype = "dotted",
+      box.padding = 0.4,
+      segment.curvature = -0.1,
+      segment.ncp = 3,
+      segment.angle = 20
+    ) +
+    labs(title = title, x = "Year", y = "Percentile") +
+    scale_y_continuous(limits = c(0, 102), breaks = seq(0, 100, 20)) +
+    scale_x_continuous(limits = c(min(metric_df$year), max(metric_df$year) + 1), breaks = seq(min(metric_df$year), max(metric_df$year), 1)) +
+    theme_minimal() +
+    theme(
+  legend.position = "none",
+      plot.title = element_text(size = 20, face = "bold"),
+      axis.title = element_text(size = 18),
+      axis.text = element_text(size = 16),
+    ) + coord_cartesian(clip = "off")
   
-  return(plot)
+  # Convert to interactive plot using ggiraph
+  interactive_plot <- girafe(ggobj = plot)
+  interactive_plot <- girafe_options(
+    interactive_plot,
+    opts_hover(
+      css = "stroke:attr(color); stroke-width:4px; r:4px; transition: all 0.1s ease;"
+    ),
+    opts_hover_inv(css = "opacity:0.5; filter:saturate(10%);"),
+    opts_toolbar(saveaspng = FALSE, hidden = c("selection")),
+    opts_selection(type = "none")
+  )
+
+  return(interactive_plot)
+}
+
+
+get_letter_grade <- function(percentile) {
+  if (percentile >= 90) {
+    return("A+")
+  } else if (percentile >= 85) {
+    return("A")
+  } else if (percentile >= 80) {
+    return("A-")
+  } else if (percentile >= 75) {
+    return("B+")
+  } else if (percentile >= 70) {
+    return("B")
+  } else if (percentile >= 65) {
+    return("B-")
+  } else if (percentile >= 60) {
+    return("C+")
+  } else if (percentile >= 55) {
+    return("C")
+  } else if (percentile >= 50) {
+    return("C-")
+  } else if (percentile >= 45) {
+    return("D+")
+  } else if (percentile >= 40) {
+    return("D")
+  } else if (percentile >= 35) {
+    return("D-")
+  } else {
+    return("F")
+  }
 }
 

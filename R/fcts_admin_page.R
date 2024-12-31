@@ -139,10 +139,10 @@ get_throws_from_id = function(game, gameID) {
       throw_row <- get_throw_row(current_state, thrower=event$thrower, thrower_x=event$throwerX, thrower_y=event$throwerY, receiver_x=event$turnoverX, receiver_y=event$turnoverY, turnover=1, is_home_team=is_home_team, gameID=gameID)
       rows <<- append(rows, list(throw_row))
     } else if (event$type == 20) { # drop
-      throw_row <- get_throw_row(current_state, thrower=event$thrower, thrower_x=event$throwerX, thrower_y=event$throwerY, receiver=event$receiver, receiver_x=event$turnoverX, receiver_y=event$turnoverY, turnover=1, drop=1, is_home_team=is_home_team, gameID=gameID)
+      throw_row <- get_throw_row(current_state, thrower=event$thrower, thrower_x=event$throwerX, thrower_y=event$throwerY, receiver=event$receiver, receiver_x=event$receiverX, receiver_y=event$receiverY, turnover=1, drop=1, is_home_team=is_home_team, gameID=gameID)
       rows <<- append(rows, list(throw_row))
     } else if (event$type == 24) { # stall
-      throw_row <- get_throw_row(current_state, thrower=event$thrower, thrower_x=event$throwerX, thrower_y=event$throwerY, turnover=1, stall=1, is_home_team=is_home_team, gameID=gameID)
+      throw_row <- get_throw_row(current_state, thrower=event$thrower, thrower_x=event$throwerX, thrower_y=event$throwerY, receiver_x=event$throwerX, receiver_y=event$throwerY, turnover=1, stall=1, is_home_team=is_home_team, gameID=gameID)
       rows <<- append(rows, list(throw_row))
     }
     current_state <<- update_score(event$type, is_home_team, current_state)

@@ -8,56 +8,86 @@
 #'
 #' @importFrom shiny NS tagList 
 #' @importFrom shinycssloaders withSpinner
-#' @import plotly
+#' @importFrom ggiraph girafeOutput
+#' @importFrom plotly plotlyOutput
 mod_player_display_ui <- function(id) {
   ns <- NS(id)
-  
+
   tagList(
     tags$style(get_HTML()),
-    includeCSS("inst/app/www/full-screen-config.css"),
     bslib::page_sidebar(
-      h1(textOutput(ns("player_name"))),
       sidebar = sidebar(
-        selectizeInput(ns("player_selector"), "Player:", choices = NULL, options = list(maxItems = 1)),
-        open=FALSE
+        title="Controls",
+        selectInput(ns("year_selector"), "Year", choices = NULL), 
+        selectInput(ns("stat_category"), "Category", choices = c("Total", "Per Game", "Per Possession"), selected = "Total"),
+        uiOutput(ns("handler_switch")),
+        uiOutput(ns("offense_switch"))
       ),
-      layout_sidebar(
-        sidebar = sidebar(
-          title="Controls",
-          selectInput(ns("year_selector"), "Year", choices = NULL), 
-          selectInput(ns("stat_category"), "Category", choices = c("Total", "Per Game", "Per Possession"), selected = "Total"),
-          uiOutput(ns("handler_switch")),
-          uiOutput(ns("offense_switch"))
-        ),
-        h2("Skill Percentiles"),
-        withSpinner(plotlyOutput(ns("percentiles_plot")))
+      fluidRow(
+        column(6, h1(textOutput(ns("player_name")))),  # Set the h1 to take 6 columns
+        column(6, selectizeInput(ns("player_selector"), "Search for Player:", choices = NULL, options = list(maxItems = 1, hideSelected = TRUE)))  # Set the selectizeInput to take 6 columns
       ),
-      card(
-        card_header("Thrower Grade"),
-        card_body(
-          h1("A+")
-        ),
-        card_body(
-          class = "thrower-card-full-screen",
-          h1(textOutput(ns("player_name1"))),
-          fluidRow(
-            column(3, selectInput(ns("thrower_year_selector"), "Year", choices = NULL)),
-            column(3, selectInput(ns("thrower_stat_category"), "Category", choices = c("Total", "Per Game", "Per Possession"), selected = "Total")),
-          ),
-          fluidRow(
-            column(1, uiOutput(ns("thrower_handler_switch"))),
-            column(1, uiOutput(ns("thrower_offense_switch")))
-          ),
-          layout_column_wrap(
-            plotOutput(ns("radial_histogram_plot")) |> withSpinner() |> bslib::as_fill_carrier(),
-            plotlyOutput(ns("thrower_usage_plot")) |> withSpinner() |> bslib::as_fill_carrier(),
-            plotlyOutput(ns("thrower_efficiency_plot")) |> withSpinner() |> bslib::as_fill_carrier(),
-            plotlyOutput(ns("thrower_metrics_plot")) |> withSpinner() |> bslib::as_fill_carrier(),
-            min_height="1000px"
+      fluidRow(
+        card(
+          h2("Skill Percentiles"),
+          withSpinner(plotlyOutput(ns("percentiles_plot")))
+        )
+      ),
+      bslib::accordion(
+        id = ns("accordion"),
+        open = FALSE,
+        bslib::accordion_panel(
+          title = "Thrower Grade:",
+          id = ns("thrower_grade"),  # ID for this accordion item
+          page_fluid(
+            card(
+              class = "mb-3 text-center",
+              card_header("Overall Grade:"),
+              card_body(
+                h2(textOutput(ns("overall_grade")))
+              ),
+              card_footer(
+                textOutput(ns("overall_percentile"))
+              )
+            ),
+            div(
+              class = "mb-4", 
+              column(
+                width = 4,  # Full width of the row
+                offset = 4,  # Offset 4 columns to center it
+                plotOutput(ns("radial_histogram_plot")) |> withSpinner() |> bslib::as_fill_carrier()
+              )
+            ),
+            layout_column_wrap(
+              width = 1 / 4, # Adjust the column width for a 2x2 grid
+              !!!lapply(c("Contribution", "Efficiency", "Scoring", "Usage"), function(category) {
+                card(
+                  class = "mb-3 text-center",
+                  card_header(paste0(category, ":")),
+                  card_body(
+                    h2(textOutput(ns(paste0(tolower(category), "_grade"))))
+                  ),
+                  card_footer(
+                    textOutput(ns(paste0(tolower(category), "_percentile")))
+                  )
+                )
+              })
+            ),
+            layout_column_wrap(
+              width=1/4,
+              girafeOutput(ns("thrower_contribution_plot")) |> withSpinner() |> bslib::as_fill_carrier(),
+              girafeOutput(ns("thrower_efficiency_plot")) |> withSpinner() |> bslib::as_fill_carrier(),
+              girafeOutput(ns("thrower_scores_plot")) |> withSpinner() |> bslib::as_fill_carrier(),
+              girafeOutput(ns("thrower_usage_plot")) |> withSpinner() |> bslib::as_fill_carrier()
+            )
           )
         ),
-        fill=FALSE,
-        full_screen=TRUE
+        bslib::accordion_panel(
+          title = "Receiver Grade: A+"
+        ),
+        bslib::accordion_panel(
+          title = "Defense Grade: A+"
+        )
       )
     )
   )
@@ -66,8 +96,9 @@ mod_player_display_ui <- function(id) {
     
 #' player_display Server Functions
 #' @import ggplot2
-#' @import plotly
+#' @importFrom plotly renderPlotly config layout add_trace add_segments plot_ly 
 #' @importFrom tidyr gather
+#' @importFrom ggiraph renderGirafe
 #' @noRd 
 mod_player_display_server <- function(id) {
   moduleServer(id, function(input, output, session) {
@@ -96,16 +127,9 @@ mod_player_display_server <- function(id) {
         filter(fullName == input$player_selector & year == input$year_selector)
     })
 
-    thrower_selected_player_stats <- reactive({
-      req(input$player_selector, input$thrower_year_selector)
-      all_player_stats %>% 
-        filter(fullName == input$player_selector & year == input$thrower_year_selector)
-    })
-
     observe({
       req(input$player_selector)
-      
-      # Freeze the value of the switches when a new player is selected
+    
       freezeReactiveValue(input, "handler_switch_value")
       freezeReactiveValue(input, "offense_switch_value")
     })
@@ -132,38 +156,12 @@ mod_player_display_server <- function(id) {
         value = FALSE
       )
     })
-
-    output$thrower_handler_switch <- renderUI({
-      req(thrower_selected_player_stats())
-      player_stats <- thrower_selected_player_stats()
-      handler_label <- ifelse(player_stats$handler == TRUE, "Handler", "Cutter")
-      input_switch(
-        id = ns("thrower_handler_switch_value"),
-        label = handler_label,
-        value = FALSE
-      )
-    })
-
-    output$thrower_offense_switch <- renderUI({
-      req(thrower_selected_player_stats())
-      player_stats <- thrower_selected_player_stats()
-      offense_label <- ifelse(player_stats$offense == TRUE, "Offense", "Defense")
-      input_switch(
-        id = ns("thrower_offense_switch_value"),
-        label = offense_label,
-        value = FALSE
-      )
-    })
-    
+  
     observeEvent(input$player_selector, {
       req(input$player_selector)
       freezeReactiveValue(input, "year_selector")
-      freezeReactiveValue(input, "thrower_year_selector")
       stats <- all_player_stats %>% filter(fullName == input$player_selector)
       updateSelectInput(session, "year_selector", 
-        choices = sort(stats$year), 
-        selected = max(stats$year))
-      updateSelectInput(session, "thrower_year_selector", 
         choices = sort(stats$year), 
         selected = max(stats$year))
     })
@@ -176,31 +174,36 @@ mod_player_display_server <- function(id) {
     })
 
     output$radial_histogram_plot <- renderPlot({
-      req(input$player_selector, input$thrower_year_selector)
+      req(input$player_selector, input$year_selector)
       player_id <- get_playerID_by_fullName(all_player_stats, input$player_selector)
       throws <- get_filtered_throws(db_path, player_id)
-      throws <- if (input$thrower_year_selector == "Career") {
+      throws <- if (input$year_selector == "Career") {
         throws  
       } else {
-        throws %>% filter(year == input$thrower_year_selector)  
+        throws %>% filter(year == input$year_selector)  
       }
       throws <- na.omit(throws$adjusted_angle)
       radial_histogram_plot(throws)
     })
 
-    output$thrower_usage_plot <- renderPlotly({
+    output$thrower_usage_plot <- renderGirafe({
       req(input$player_selector)
-      percentiles_plot <- get_thrower_usage_plot(all_player_stats, input$player_selector, input$thrower_handler_switch_value, input$thrower_offense_switch_value)
+      percentiles_plot <- get_thrower_usage_plot(all_player_stats, input$player_selector, input$handler_switch_value, input$offense_switch_value)
     })
 
-    output$thrower_efficiency_plot <- renderPlotly({
+    output$thrower_efficiency_plot <- renderGirafe({
       req(input$player_selector)
-      percentiles_plot <- get_thrower_efficiency_plot(all_player_stats, input$player_selector, input$thrower_handler_switch_value, input$thrower_offense_switch_value)
+      percentiles_plot <- get_thrower_efficiency_plot(all_player_stats, input$player_selector, input$handler_switch_value, input$offense_switch_value)
     })
 
-    output$thrower_metrics_plot <- renderPlotly({
+    output$thrower_scores_plot <- renderGirafe({
       req(input$player_selector)
-      percentiles_plot <- get_thrower_metrics_plot(all_player_stats, input$player_selector, input$thrower_handler_switch_value, input$thrower_offense_switch_value)
+      percentiles_plot <- get_thrower_scores_plot(all_player_stats, input$player_selector, input$handler_switch_value, input$offense_switch_value)
+    })
+
+    output$thrower_contribution_plot <- renderGirafe({
+      req(input$player_selector)
+      percentiles_plot <- get_thrower_contribution_plot(all_player_stats, input$player_selector, input$handler_switch_value, input$offense_switch_value)
     })
 
     observe({
@@ -211,6 +214,60 @@ mod_player_display_server <- function(id) {
         selected = "Jordan Kerr"
       )
     })
+
+    thrower_percentiles <- reactive({
+      req(input$player_selector, input$year_selector)
+      get_thrower_grade(
+        df = all_player_stats, 
+        player_full_name = input$player_selector, 
+        handler_value = input$handler_switch_value, 
+        offense_value = input$offense_switch_value,
+        player_year = input$year_selector
+      )
+    })
+    
+    output$overall_percentile <- renderText({
+      req(thrower_percentiles)
+      percentiles <- thrower_percentiles()
+      overall_score <- median(
+        c(
+          percentiles$usage_percentile,
+          percentiles$efficiency_percentile,
+          percentiles$scoring_percentile,
+          percentiles$contribution_percentile
+        ),
+        na.rm = TRUE
+      )
+      paste("Percentile:", round(overall_score, 2))
+    })
+
+    output$overall_grade <- renderText({
+      req(thrower_percentiles)
+      percentiles <- thrower_percentiles()
+      overall_score <- median(
+        c(
+          percentiles$usage_percentile,
+          percentiles$efficiency_percentile,
+          percentiles$scoring_percentile,
+          percentiles$contribution_percentile
+        ),
+        na.rm = TRUE
+      )
+      get_letter_grade(overall_score)
+    })
+
+    lapply(c("Contribution", "Usage", "Efficiency", "Scoring"), function(category) {
+      category_lower <- tolower(category)
+      
+      output[[paste0(category_lower, "_grade")]] <- renderText({
+        get_letter_grade(thrower_percentiles()[[paste0(category_lower, "_percentile")]])
+      })
+      
+      output[[paste0(category_lower, "_percentile")]] <- renderText({
+        paste("Percentile:", thrower_percentiles()[[paste0(category_lower, "_percentile")]])
+      })
+    })
+    
   })
 }
 

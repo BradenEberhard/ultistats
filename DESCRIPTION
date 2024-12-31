@@ -20,7 +20,9 @@ Imports:
     shiny,
     xgboost,
     tidyr,
-    shinycssloaders
+    shinycssloaders,
+    ggiraph,
+    ggrepel
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.3.2
