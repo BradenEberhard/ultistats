@@ -40,38 +40,52 @@ mod_player_display_ui <- function(id) {
           title = "Thrower Grade:",
           id = ns("thrower_grade"),  # ID for this accordion item
           page_fluid(
-            card(
-              class = "mb-3 text-center",
-              card_header("Overall Grade:"),
-              card_body(
-                h2(textOutput(ns("overall_grade")))
-              ),
-              card_footer(
-                textOutput(ns("overall_percentile"))
-              )
-            ),
-            div(
-              class = "mb-4", 
-              column(
-                width = 4,  # Full width of the row
-                offset = 4,  # Offset 4 columns to center it
-                plotOutput(ns("radial_histogram_plot")) |> withSpinner() |> bslib::as_fill_carrier()
-              )
-            ),
             layout_column_wrap(
-              width = 1 / 4, # Adjust the column width for a 2x2 grid
-              !!!lapply(c("Contribution", "Efficiency", "Scoring", "Usage"), function(category) {
-                card(
-                  class = "mb-3 text-center",
-                  card_header(paste0(category, ":")),
-                  card_body(
-                    h2(textOutput(ns(paste0(tolower(category), "_grade"))))
-                  ),
-                  card_footer(
-                    textOutput(ns(paste0(tolower(category), "_percentile")))
+              fillable=FALSE,
+              div(
+                fluidRow(
+                  card(
+                    class = "mb-1 text-center",
+                    card_header("Overall Grade:"),
+                    div(
+                      style = "display: flex; justify-content: center; align-items: baseline; gap: 10px; padding: 0;",
+                      h2(
+                        textOutput(ns("overall_grade")),
+                        style = "margin: 0;"  # Remove extra space around the grade text
+                      ),
+                      div(
+                        textOutput(ns("overall_percentile")),
+                        style = "font-size: smaller; margin: 0;"  # Make the percentile smaller
+                      )
+                    )
+                  )
+                ),
+                fluidRow(
+                  layout_column_wrap(
+                    class="mx-0 px-0",
+                    width=1/2,
+                    !!!lapply(c("Contribution", "Efficiency", "Scoring", "Usage"), function(category) {
+                      card(
+                        class = "mx-0 px-0 ml-0 pl-0 text-center", 
+                        card_header(paste0(category, ":"), style = "padding: 5px; margin-bottom: 0 px;"),
+                        div(
+                          style = "display: flex; justify-content: center; align-items: baseline; gap: 10px; padding: 0;",
+                          h2(
+                            textOutput(ns(paste0(tolower(category), "_grade"))),
+                            style = "margin: 0;"  # Remove extra space around the grade text
+                          ),
+                          div(
+                            textOutput(ns(paste0(tolower(category), "_percentile"))),
+                            style = "font-size: smaller; margin: 0;"  # Make the percentile smaller
+                          )
+                        )
+                      )
+                    })
                   )
                 )
-              })
+              ),
+              plotOutput(ns("radial_histogram_plot")) |> withSpinner() |> bslib::as_fill_carrier(),
+              width=1/2
             ),
             layout_column_wrap(
               width=1/4,
@@ -125,13 +139,6 @@ mod_player_display_server <- function(id) {
       req(input$player_selector, input$year_selector)
       all_player_stats %>% 
         filter(fullName == input$player_selector & year == input$year_selector)
-    })
-
-    observe({
-      req(input$player_selector)
-    
-      freezeReactiveValue(input, "handler_switch_value")
-      freezeReactiveValue(input, "offense_switch_value")
     })
     
 
@@ -238,7 +245,7 @@ mod_player_display_server <- function(id) {
         ),
         na.rm = TRUE
       )
-      paste("Percentile:", round(overall_score, 2))
+      paste0("(", round(overall_score, 0), "th Percentile)")
     })
 
     output$overall_grade <- renderText({
@@ -264,7 +271,7 @@ mod_player_display_server <- function(id) {
       })
       
       output[[paste0(category_lower, "_percentile")]] <- renderText({
-        paste("Percentile:", thrower_percentiles()[[paste0(category_lower, "_percentile")]])
+        paste0("(", thrower_percentiles()[[paste0(category_lower, "_percentile")]], "th Percentile)")
       })
     })
     

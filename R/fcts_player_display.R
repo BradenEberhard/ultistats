@@ -399,19 +399,19 @@ get_thrower_grade <- function(df, player_full_name, handler_value, offense_value
   usage_percentile <- metric_df %>% 
     filter(metric %in% rename_metrics(data.frame(metric = usage_metrics), keep_category = TRUE)$metric) %>% 
     summarize(median_value = median(percentile, na.rm = TRUE)) %>% 
-    pull(median_value) %>% round(2)
+    pull(median_value) %>% round(0)
   efficiency_percentile <- metric_df %>% 
     filter(metric %in% rename_metrics(data.frame(metric = efficiency_metrics), keep_category = TRUE)$metric) %>% 
     summarize(median_value = median(percentile, na.rm = TRUE)) %>% 
-    pull(median_value) %>% round(2)
+    pull(median_value) %>% round(0)
   scoring_percentile <- metric_df %>% 
     filter(metric %in% rename_metrics(data.frame(metric = scoring_metrics), keep_category = TRUE)$metric) %>% 
     summarize(median_value = median(percentile, na.rm = TRUE)) %>% 
-    pull(median_value) %>% round(2)
+    pull(median_value) %>% round(0)
   contribution_percentile <- metric_df %>% 
     filter(metric %in% rename_metrics(data.frame(metric = contribution_metrics), keep_category = TRUE)$metric) %>% 
     summarize(median_value = median(percentile, na.rm = TRUE)) %>% 
-    pull(median_value) %>% round(2)
+    pull(median_value) %>% round(0)
   return(list(
     usage_percentile = usage_percentile,
     efficiency_percentile = efficiency_percentile,
