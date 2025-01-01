@@ -22,7 +22,9 @@ Imports:
     tidyr,
     shinycssloaders,
     ggiraph,
-    ggrepel
+    ggrepel,
+    dplyr,
+    tibble
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.3.2

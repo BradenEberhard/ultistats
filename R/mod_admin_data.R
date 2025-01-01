@@ -21,7 +21,8 @@ mod_admin_data_ui <- function(id) {
         actionButton(ns("update_blocks_button"), "Update Blocks Table", class = "btn btn-primary"),
         actionButton(ns("update_pulls_button"), "Update Pulls Table", class = "btn btn-primary"),
         actionButton(ns("update_throws_button"), "Update Throws Table", class = "btn btn-primary"),
-        actionButton(ns("update_penalties_button"), "Update Penalties Table", class = "btn btn-primary")
+        actionButton(ns("update_penalties_button"), "Update Penalties Table", class = "btn btn-primary"),
+        actionButton(ns("update_advanced_stats_button"), "Update Advanced Stats", class = "btn btn-primary")
       )
     ),
     card(
@@ -41,7 +42,7 @@ mod_admin_data_ui <- function(id) {
 mod_admin_data_server <- function(id){
   moduleServer(id, function(input, output, session){
     ns <- session$ns
-
+    # set base variables
     source("./proxies/api_proxy.R")
     source("./proxies/database_proxy.R")
     source("./classes/game_events.R")
@@ -49,98 +50,9 @@ mod_admin_data_server <- function(id){
     source("./classes/team_events.R")
     base_url <- get_golem_config("base_api_path")
     db_path <- get_golem_config("db_path")
+    conn_params <- list(db_path = db_path, base_url = base_url)
 
-    observeEvent(input$update_pulls_button, {
-      conn <- open_db_connection(db_path)
-      update_pulls(conn, base_url)
-      close_db_connection(conn)
-      timestamps(NULL)
-    })
-    
-    observeEvent(input$update_games_button, {
-      withProgress(message = 'Processing Games', value = 0, {
-        conn <- open_db_connection(db_path)
-        update_games(conn, base_url)
-        close_db_connection(conn)
-        timestamps(NULL)
-      })
-    })
-
-    observeEvent(input$update_player_stats_button, {
-      withProgress(message = 'Processing Player Stats', value = 0, {
-        conn <- open_db_connection(db_path)
-        update_player_stats(conn, base_url)
-        close_db_connection(conn)
-        timestamps(NULL)
-      })
-    })
-
-    observeEvent(input$update_players_button, {
-      withProgress(message = 'Processing Players', value = 0, {
-        conn <- open_db_connection(db_path)
-        update_players(conn, base_url)
-        close_db_connection(conn)
-        timestamps(NULL)
-      })
-    })
-
-    observeEvent(input$update_teams_button, {
-      withProgress(message = 'Processing Teams', value = 0, {
-        conn <- open_db_connection(db_path)
-        update_teams(conn, base_url)
-        close_db_connection(conn)
-        timestamps(NULL)
-      })
-    })
-
-    observeEvent(input$update_blocks_button, {
-      conn <- open_db_connection(db_path)
-      update_blocks(conn, base_url)
-      close_db_connection(conn)
-      timestamps(NULL)
-    })
-
-    observeEvent(input$update_penalties_button, {
-      conn <- open_db_connection(db_path)
-      update_penalties(conn, base_url)
-      close_db_connection(conn)
-      timestamps(NULL)
-    })
-
-    observeEvent(input$update_throws_button, {
-      conn <- open_db_connection(db_path)
-      update_throws(conn, base_url)
-      close_db_connection(conn)
-      timestamps(NULL)
-    })
-
-    observeEvent(input$update_all, {
-      withProgress(message = 'Processing All Tables', value = 0, {
-        incProgress(1/9, detail = "Processing Games")
-        conn <- open_db_connection(db_path)
-        update_games(conn, base_url)
-        incProgress(1/9, detail = "Finished Games, Processing Players")
-        update_players(conn, base_url)
-        incProgress(1/9, detail = "Finished Players, Processing Throws")
-        update_throws(conn, base_url)
-        incProgress(1/9, detail = "Finished Throws, Processing Player Stats")
-        update_player_stats(conn, base_url)
-        incProgress(1/9, detail = "Finished Player Stats, Processing Teams")
-        update_teams(conn, base_url)
-        incProgress(1/9, detail = "Finished Teams, Processing Blocks")
-        update_blocks(conn, base_url)
-        incProgress(1/9, detail = "Finished Blocks, Processing Pulls")
-        update_pulls(conn, base_url)
-        incProgress(1/9, detail = "Finished Pulls, Processing Penalties")
-        update_penalties(conn, base_url)
-        incProgress(1/9, detail = "Finished Penalties, Closing DB")
-        close_db_connection(conn)
-        timestamps(NULL)
-        incProgress(1/9, detail = "All Processing Complete")
-      })
-    })
-    
-
+    # set reactive variables
     timestamps <- reactiveVal(NULL)
     tables <- reactive({
       db_path <- get_golem_config("db_path")
@@ -152,6 +64,19 @@ mod_admin_data_server <- function(id){
       close_db_connection(conn)
       tables <- data.frame(table_name = table_names, recent_timestamp = timestamps())
     })
+
+    # create button observations
+    create_observe_event(input, "update_pulls_button", update_pulls, timestamps, conn_params = conn_params)
+    create_observe_event(input, "update_games_button", update_games, timestamps, "Processing Games", conn_params = conn_params)
+    create_observe_event(input, "update_player_stats_button", update_player_stats, timestamps, "Processing Player Stats", conn_params = conn_params)
+    create_observe_event(input, "update_players_button", update_players, timestamps, "Processing Players", conn_params = conn_params)
+    create_observe_event(input, "update_teams_button", update_teams, timestamps, "Processing Teams", conn_params = conn_params)
+    create_observe_event(input, "update_blocks_button", update_blocks, timestamps, conn_params = conn_params)
+    create_observe_event(input, "update_penalties_button", update_penalties, timestamps, conn_params = conn_params)
+    create_observe_event(input, "update_throws_button", update_throws, timestamps, conn_params = conn_params)
+    create_observe_event(input, "update_advanced_stats_button", update_advanced_stats, timestamps, "Processing Advanced Stats", conn_params = conn_params)
+    create_observe_event(input, "update_all", update_all_tables, timestamps, conn_params = conn_params)
+
 
     table_cards <- reactive({
       tables_and_timestamps <- tables()

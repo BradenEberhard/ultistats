@@ -27,23 +27,11 @@ app_ui <- function(request) {
       icon = shiny::icon("users"),
       mod_team_display_ui("team_display")
     ),
-    # Admin section using nav_menu
-    nav_menu(
-      title = "Admin",
-      value = "admin",
+    nav_panel(
+      title = "Admin", 
+      value = "admin", 
       icon = shiny::icon("cogs"),
-      nav_panel(
-        title = "Refresh Data", 
-        value = "refresh_data", 
-        icon = shiny::icon("refresh"),
-        mod_admin_data_ui("admin_data")
-      ),
-      nav_panel(
-        title = "Models", 
-        value = "models", 
-        icon = shiny::icon("project-diagram"),
-        mod_admin_models_ui("admin_model")
-      )
+      mod_admin_data_ui("admin_data")
     )
   )
 }
