@@ -59,6 +59,56 @@ compute_advanced_stats <- function(advanced_stats) {
   return(yearly_advanced_stats)
 }
 
+compute_career_data_from_player_stats <- function(player_stats_data) {
+  # Filter players with at least one year >= 2021
+  players_with_career_data <- player_stats_data %>%
+    filter(year >= 2021) %>%
+    select(playerID) %>%
+    distinct()
+
+  # Summing career stats for each player and recalculating percentages
+  career_data <- player_stats_data %>%
+    filter(playerID %in% players_with_career_data$playerID) %>%
+    group_by(playerID) %>%
+    summarise(
+      firstName = first(firstName),
+      lastName = first(lastName),
+      year = "Career",  
+      assists = sum(assists, na.rm = TRUE),
+      goals = sum(goals, na.rm = TRUE),
+      hockeyAssists = sum(hockeyAssists, na.rm = TRUE),
+      completions = sum(completions, na.rm = TRUE),
+      throwAttempts = sum(throwAttempts, na.rm = TRUE),
+      throwaways = sum(throwaways, na.rm = TRUE),
+      stalls = sum(stalls, na.rm = TRUE),
+      callahansThrown = sum(callahansThrown, na.rm = TRUE),
+      yardsReceived = sum(yardsReceived, na.rm = TRUE),
+      yardsThrown = sum(yardsThrown, na.rm = TRUE),
+      hucksAttempted = sum(hucksAttempted, na.rm = TRUE),
+      hucksCompleted = sum(hucksCompleted, na.rm = TRUE),
+      catches = sum(catches, na.rm = TRUE),
+      drops = sum(drops, na.rm = TRUE),
+      blocks = sum(blocks, na.rm = TRUE),
+      callahans = sum(callahans, na.rm = TRUE),
+      pulls = sum(pulls, na.rm = TRUE),
+      obPulls = sum(obPulls, na.rm = TRUE),
+      recordedPulls = sum(recordedPulls, na.rm = TRUE),
+      recordedPullsHangtime = sum(recordedPullsHangtime, na.rm = TRUE),
+      oPointsPlayed = sum(oPointsPlayed, na.rm = TRUE),
+      oPointsScored = sum(oPointsScored, na.rm = TRUE),
+      dPointsPlayed = sum(dPointsPlayed, na.rm = TRUE),
+      dPointsScored = sum(dPointsScored, na.rm = TRUE),
+      secondsPlayed = sum(secondsPlayed, na.rm = TRUE),
+      oOpportunities = sum(oOpportunities, na.rm = TRUE),
+      oOpportunityScores = sum(oOpportunityScores, na.rm = TRUE),
+      dOpportunities = sum(dOpportunities, na.rm = TRUE),
+      dOpportunityStops = sum(dOpportunityStops, na.rm = TRUE),
+      games = sum(games, na.rm = TRUE),
+
+    ) 
+  return(bind_rows(player_stats_data, career_data))
+}
+
 # Compute career stats for throwers and receivers
 compute_career_stats <- function(advanced_stats) {
   career_stats_thrower <- advanced_stats %>%
@@ -141,9 +191,6 @@ get_full_name <- function(players_data) {
   
   return(players_data)
 }
-
-
-
 
 
 ### Additional functions specific to events, updating game state, etc.
@@ -324,6 +371,7 @@ predict_advanced_stats <- function(throws_data, fv_df, cp_model_path, cp_preproc
   advanced_stats_df$is_home_team <- throws_data$is_home_team
   advanced_stats_df$turnover <- throws_data$turnover
   advanced_stats_df$receiver_y <- throws_data$receiver_y
+  advanced_stats_df$dropped_throw <- throws_data$dropped_throw
   return(advanced_stats_df)
 }
 

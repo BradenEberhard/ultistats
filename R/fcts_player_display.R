@@ -1,16 +1,39 @@
-#' Calculate Percentiles for Stats
-#'
-#' Calculates the percentile ranks for specified stats (e.g., goals, assists) of a player,
-#' and filters out rows where the sum of `dPointsPlayed` and `oPointsPlayed` is less than 50.
-#'
-#' @param stats Data frame of player stats.
-#' @param player_full_name Player fullName to filter.
-#' @param stats_to_include Vector of stat columns (e.g., `c("goals", "assists")`).
-#'
-#' @importFrom tidyr pivot_longer
-#' 
-#' @return Data frame with player ID, stat name, stat value, and percentile.
-#' @export
+# Define a function to generate the plots dynamically
+generate_plot_outputs <- function(role, stats, input, output, plot_functions) {
+  # Loop over each plot function and generate the output dynamically
+  lapply(names(plot_functions), function(label) {
+    output[[paste0(role, "_", label, "_plot")]] <- renderGirafe({
+      req(input$player_selector)
+      plot_func <- plot_functions[[label]]
+      plot_func(
+        stats,
+        input$player_selector,
+        input$handler_switch_value,
+        input$offense_switch_value
+      )
+    })
+  })
+}
+
+# function linking inputs, outputs and plotting functions
+generate_thrower_plots <- function(plot_list, all_player_stats, input, output, ns) {
+  plot_ui_list <- lapply(plot_list, function(plot_info) {
+    plot_output_id <- paste0("plot_", plot_info$label)
+    girafeOutput(ns(plot_output_id))
+  })
+  
+  lapply(plot_list, function(plot_info) {
+    plot_output_id <- paste0("plot_", plot_info$label)
+    output[[plot_output_id]] <- renderGirafe({
+      plot_func <- plot_info$plot_func
+      plot_func(all_player_stats, input$player_selector, input$handler_switch_value, input$offense_switch_value)
+    })
+  })
+  
+  return(plot_ui_list)
+}
+
+
 calculate_percentiles <- function(stats, player_full_name, per_possession) {
   # Filter out players with less than 10 total points, unless it's the selected player
   stats <- stats[(stats$oPointsPlayed + stats$dPointsPlayed) >= 10 | stats$fullName == player_full_name, ]
@@ -127,11 +150,6 @@ calculate_percentiles <- function(stats, player_full_name, per_possession) {
 #' @param throws A numeric vector of adjusted throw angles.
 #' @param bin_width Width of the bins for the histogram in degrees. Default is 24.
 #' @return A `ggplot` object representing the radial histogram.
-#' @examples
-#' \dontrun{
-#'   throws <- c(-45, 90, 180, -90, 0)
-#'   radial_histogram_plot(throws)
-#' }
 #' @export
 radial_histogram_plot <- function(throws, bin_width = 24) {
   bin_cutoffs <- seq(-180, 180, by = bin_width)
@@ -142,21 +160,21 @@ radial_histogram_plot <- function(throws, bin_width = 24) {
     coord_polar(start = pi, clip = "off") +
     scale_x_continuous(limits = c(-180, 180), breaks = seq(-180, 180, 45)) +
     theme_minimal() +
-    annotate("text", x = 0, y = max_y+5, label = "Forward", size = 5, fontface = "bold", hjust=0.5, vjust=0) +
-    annotate("text", x = -90, y = max_y+5, label = "Left", size = 5, fontface = "bold", hjust=1, vjust=0.5) +
-    annotate("text", x = 90, y = max_y+5, label = "Right", size = 5, fontface = "bold", hjust=0, vjust=0.5) +
-    annotate("text", x = 180, y = max_y+5, label = "Backward", size = 5, fontface = "bold", hjust=0.5, vjust=1) +
+    annotate("text", x = 0, y = max_y+5, label = "Forward", size = 5, hjust=0.5, vjust=0) +
+    annotate("text", x = -90, y = max_y+5, label = "Left", size = 5, hjust=1, vjust=0.5) +
+    annotate("text", x = 90, y = max_y+5, label = "Right", size = 5, hjust=0, vjust=0.5) +
+    annotate("text", x = 180, y = max_y+5, label = "Backward", size = 5, hjust=0.5, vjust=1) +
     theme(
-      axis.title.y = element_text(size = 14, margin = margin(r = 10)),  # Adjust y-axis label size
+      axis.title.y = element_text(size = 14, margin = margin(r = 10), face = "bold"),  # Adjust y-axis label size
       axis.text.y = element_text(size = 12, margin = margin(r = 20)),
-      axis.title.x = element_text(size = 14),  # Adjust y-axis label size
+      axis.title.x = element_text(size = 14, face = "bold"),  # Adjust y-axis label size
       axis.text.x = element_blank(),  # Hides angle labels
       axis.ticks = element_blank(),
-      plot.title = element_text(size = 18), 
+      plot.title = element_text(size = 18, face = "bold"), 
       plot.margin = margin(t = 10, r = 20, b = 10, l = 10)  
     ) +
     labs(
-      title = "Throwing Direction Distribution",
+      title = "Throwing Tendencies",
       x = "Angle",
       y = "Number of Throws"
     )

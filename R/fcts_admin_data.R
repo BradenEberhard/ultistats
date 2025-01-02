@@ -62,13 +62,11 @@ update_games <- function(conn, base_url) {
 #' update_player_stats(conn, base_url)
 update_player_stats <- function(conn, base_url) {
   # Fetch and process player stats data from external source
-  player_stats_data <- fetch_and_process_player_stats(conn, base_url)
-  
+  player_stats_data <- fetch_and_process_player_stats(conn, base_url) %>% compute_career_data_from_player_stats()
   # Compute advanced stats (ec, xcp, etc.) using the advanced_stats table
   advanced_stats <- get_table(conn, "advanced_stats")
   yearly_advanced_stats <- compute_advanced_stats(advanced_stats) # requires advanced_stats table
   career_stats <- compute_career_stats(advanced_stats) # aggregating career-level stats
-  
   # Combine yearly and career stats into a single data frame
   advanced_stats <- bind_rows(yearly_advanced_stats, career_stats)
   
@@ -191,7 +189,7 @@ update_advanced_stats <- function(conn, base_url) {
   fv_preprocessing_info_path <- "./inst/app/www/preprocessing_info_fv.rds"
   cp_model_path <- "./inst/app/www/cp_xgb.model"
   cp_preprocessing_info_path <- "./inst/app/www/preprocessing_info_cp.rds"
-
+  
   throws_data <- get_throws_data(conn)
   fv_df <- predict_fv_for_throws(throws_data, fv_model_path, fv_preprocessing_info_path)
   advanced_stats_df <- predict_advanced_stats(throws_data, fv_df, cp_model_path, cp_preprocessing_info_path)
@@ -449,4 +447,75 @@ add_time_left <- function(game_df) {
   game_df <- game_df %>% select(-group_id)
   game_df$time_left <- ifelse(game_df$time_left < 0, 10, game_df$time_left)
   return(game_df)
+}
+
+#' @importFrom xgboost xgb.load xgb.DMatrix
+#' @importFrom dplyr select
+predict_fv <- function(model_path, preprocessing_info_path, throws_data) {
+  # Load model and preprocessing info
+  xgb_model <- xgb.load(model_path)
+  preprocessing_info <- readRDS(preprocessing_info_path)
+  scaling_params <- preprocessing_info$scaling_params
+  thrower_features <- preprocessing_info$features
+  
+  # Prepare features
+  thrower_throws <- throws_data %>% select(all_of(thrower_features))
+  receiver_throws <- throws_data %>% select(all_of(unlist(lapply(thrower_features, function(x) gsub("thrower", "receiver", x)))))
+  
+  # Rename receiver features
+  names(receiver_throws) <- gsub("receiver", "thrower", names(receiver_throws))
+  opponent_throws <- receiver_throws %>%
+    mutate(
+      thrower_x = -thrower_x, # Multiply thrower_x by -1
+      thrower_y = pmin(pmax(120 - thrower_y, 20), 100) # Transform thrower_y and clip between 20 and 100
+    )
+  
+  # Scale data
+  thrower_throws_scaled <- xgb.DMatrix(data = as.matrix(predict(scaling_params, thrower_throws)))
+  receiver_throws_scaled <- xgb.DMatrix(data = as.matrix(predict(scaling_params, receiver_throws)))
+  opponent_throws_scaled <- xgb.DMatrix(data = as.matrix(predict(scaling_params, opponent_throws)))
+  
+  # Get predictions
+  thrower_pred_probs <- predict(xgb_model, thrower_throws_scaled)
+  receiver_pred_probs <- predict(xgb_model, receiver_throws_scaled)
+  opponent_pred_probs <- predict(xgb_model, opponent_throws_scaled)
+  
+  # Create ID column and return output
+  id_column <- paste(throws_data$gameID, throws_data$game_quarter, throws_data$quarter_point, throws_data$possession_num, throws_data$possession_throw, sep = "-")
+  output_dataframe <- data.frame(
+    throwID = id_column,
+    gameID = throws_data$gameID,
+    fv_thrower = thrower_pred_probs,
+    fv_receiver = receiver_pred_probs,
+    fv_opponent = opponent_pred_probs
+  )
+  
+  return(output_dataframe)
+}
+
+#' @importFrom xgboost xgb.load xgb.DMatrix
+#' @importFrom dplyr select
+predict_cp <- function(model_path, preprocessing_info_path, throws_data) {
+  xgb_model <- xgb.load(model_path)
+  preprocessing_info <- readRDS(preprocessing_info_path)
+  scaling_params <- preprocessing_info$scaling_params
+  thrower_features <- preprocessing_info$features
+  
+  # Prepare features
+  thrower_throws <- throws_data %>% select(all_of(thrower_features))
+  # Scale data
+  thrower_throws_scaled <- xgb.DMatrix(data = as.matrix(predict(scaling_params, thrower_throws)))
+  # Get predictions
+  thrower_pred_probs <- predict(xgb_model, thrower_throws_scaled)
+  
+  # Create ID column and return output
+  id_column <- paste(throws_data$gameID, throws_data$game_quarter, throws_data$quarter_point, throws_data$possession_num, throws_data$possession_throw, sep = "-")
+  output_dataframe <- data.frame(
+    throwID = id_column,
+    gameID = throws_data$gameID,
+    cp = thrower_pred_probs,
+    cpoe = ifelse(throws_data$turnover == 1, 0, 1) - thrower_pred_probs
+  )
+  
+  return(output_dataframe)
 }

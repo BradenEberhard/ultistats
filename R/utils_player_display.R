@@ -1,25 +1,4 @@
-#' Retrieve and Process Player Throws
-#'
-#' Fetches throw data for a player from the database and processes it to add adjusted angles and year.
-#'
-#' @param db_path Path to the database file.
-#' @param player_full_name Player's fullName
-#' @return A data frame with processed throw data, including `adjusted_angle` and `year`.
-#' @examples
-#' \dontrun{
-#'   get_filtered_throws("path/to/database.sqlite", 12345)
-#' }
-#' @export
-get_filtered_throws <- function(db_path, player_id) {
-  conn <- open_db_connection(db_path)
-  player_throws <- get_player_throws(conn, player_id)
-  close_db_connection(conn)
-  
-  player_throws$adjusted_angle <- (as.integer(player_throws$throw_angle) + 90) %% 360 - 180
-  player_throws$year <- substr(player_throws$gameID, 1, 4)
-  
-  return(player_throws)
-}
+# HTML code for player page
 
 get_HTML <- function() {
   output <- HTML("
@@ -42,6 +21,117 @@ get_HTML <- function() {
 ")
   return(output)
 }
+
+# card formatting for grade
+generate_grade_card <- function(ns, category) {
+  card(
+    class = "mx-0 px-0 ml-0 pl-0 text-center", 
+    card_header(paste0(category, ":"), style = "padding: 5px; margin-bottom: 0 px;"),
+    div(
+      style = "display: flex; justify-content: center; align-items: baseline; gap: 10px; padding: 0;",
+      h2(
+        textOutput(ns(paste0(tolower(category), "_grade"))),
+        style = "margin: 0;"  # Remove extra space around the grade text
+      ),
+      div(
+        textOutput(ns(paste0(tolower(category), "_percentile"))),
+        style = "font-size: smaller; margin: 0;"  # Make the percentile smaller
+      )
+    )
+  )
+}
+
+# UI for thrower grade
+generate_thrower_grade_panel <- function(ns) {
+  bslib::accordion_panel(
+    title = "Thrower Grade:",
+    id = ns("thrower_grade"),  # ID for this accordion item
+    page_fluid(
+      layout_column_wrap(
+        fillable = FALSE,
+        div(
+          fluidRow(
+            generate_grade_card(ns, "Overall")
+          ),
+          fluidRow(
+            layout_column_wrap(
+              class = "mx-0 px-0",
+              width = 1/2,
+              !!!lapply(c("Contribution", "Efficiency", "Scoring", "Usage"), function(category) generate_grade_card(ns, category))
+            )
+          )
+        ),
+        plotOutput(ns("thrower_radial_histogram_plot")) |> withSpinner() |> bslib::as_fill_carrier(),
+        width = 1/2
+      ),
+      layout_column_wrap(
+        width=1/4,
+        girafeOutput(ns("thrower_contribution_plot")) |> withSpinner() |> bslib::as_fill_carrier(),
+        girafeOutput(ns("thrower_efficiency_plot")) |> withSpinner() |> bslib::as_fill_carrier(),
+        girafeOutput(ns("thrower_scores_plot")) |> withSpinner() |> bslib::as_fill_carrier(),
+        girafeOutput(ns("thrower_usage_plot")) |> withSpinner() |> bslib::as_fill_carrier()
+      )
+    )
+  )
+}
+
+# Logic to update years with a new player
+update_year_selector <- function(player_selector, all_player_stats, session) {
+  req(player_selector)
+  stats <- all_player_stats %>% filter(fullName == player_selector)
+  updateSelectInput(session, "year_selector", 
+    choices = sort(stats$year), 
+    selected = max(stats$year))
+}
+
+# Logic to update overal skill percentiles plot with a new player
+generate_percentiles_plot <- function(all_player_stats, stat_category, player_selector, year_selector, handler_switch_value, offense_switch_value) {
+  req(player_selector, year_selector)
+  addition <- ifelse(stat_category == "Per Possession", "(Per Possession)", 
+                    ifelse(stat_category == "Per Game", "(Per Game)", ""))
+  plot_data <- convert_to_metric_df(all_player_stats, stat_category, player_selector, year_selector, handler_switch_value, offense_switch_value) %>%
+    rename_metrics()
+  create_percentiles_plot(plot_data, addition)
+}
+
+
+
+# Logic for switches
+create_switch <- function(input_name, condition, true_label, false_label, selected_player_stats, ns) {
+  req(selected_player_stats())  # Ensure selected_player_stats is available
+  label <- ifelse(condition, true_label, false_label)
+  input_switch(id = ns(input_name), label = label, value = FALSE)
+}
+
+# Fetch selected player stats
+get_selected_player_stats <- function(player_selector, year_selector, all_player_stats) {
+  req(player_selector, year_selector)
+  all_player_stats %>%
+    filter(fullName == player_selector & year == year_selector)
+}
+
+generate_radial_histogram_plot <- function(input, player_selector, year_selector, all_player_stats, db_path, role = "thrower") {
+  req(input$player_selector, input$year_selector)
+  player_id <- get_playerID_by_fullName(all_player_stats, player_selector)
+  conn <- open_db_connection(db_path)
+  on.exit(close_db_connection(conn))
+
+  player_passes <- get_player_passes_by_role(conn, player_id, role)
+  player_passes$adjusted_angle <- (as.integer(player_passes$throw_angle) + 90) %% 360 - 180
+  player_passes$year <- substr(player_passes$gameID, 1, 4)
+  passes <- if (year_selector == "Career") {
+    player_passes
+  } else {
+    player_passes %>% filter(year == year_selector)
+  }
+
+  passes <- na.omit(passes$adjusted_angle)
+  radial_histogram_plot(passes)
+}
+
+
+
+
 
 calc_percentile <- function(player_value, all_values) {
   return(mean(all_values <= player_value, na.rm = TRUE) * 100)

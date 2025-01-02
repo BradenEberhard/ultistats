@@ -17,9 +17,3 @@ A `ggplot` object representing the radial histogram.
 \description{
 Generates a radial histogram plot for throw angles.
 }
-\examples{
-\dontrun{
-  throws <- c(-45, 90, 180, -90, 0)
-  radial_histogram_plot(throws)
-}
-}
