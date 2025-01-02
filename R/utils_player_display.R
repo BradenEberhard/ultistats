@@ -264,12 +264,12 @@ create_skill_percentiles_plot <- function(session, plot_data) {
     ) %>%
       layout(
         xaxis = list(
-          title = list(text = "Percentile", font = list(size = 20, face="bold")), 
+          title = list(text = "Percentile", font = list(size = 20)), 
           range = c(0, 102), 
           tickfont = list(size = 14)
         ),
         yaxis = list(
-          title = list(text = "Metric", font = list(size = 20, face="bold")),
+          title = list(text = "Metric", font = list(size = 20)),
           ticksuffix = " ",
           tickfont = list(size = 14)
         ),
