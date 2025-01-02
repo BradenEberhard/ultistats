@@ -1,11 +1,3 @@
-#' Fetch Player Data from the API and Store in Database
-#'
-#' @description
-#' This function fetches player data from a specified API endpoint and stores it in a local SQLite database.
-#' It makes an HTTP request to the API, parses the data, and writes the relevant player data to the database table.
-#'
-#' @return A character string indicating whether the operation was successful or failed.
-#' @export
 fetch_players <- function(base_url, years=NULL) {
   if (is.null(years)) {
     years=seq(2012, as.numeric(format(Sys.Date(), "%Y")))
@@ -25,14 +17,6 @@ fetch_players <- function(base_url, years=NULL) {
 }
 
 
-#' Fetch Game Data from the API and Store in Database
-#'
-#' @description
-#' This function fetches game data from a specified API endpoint and stores it in a local SQLite database.
-#' It makes an HTTP request to the API, parses the data, and writes the relevant game data to the database table.
-#'
-#' @return A character string indicating whether the operation was successful or failed.
-#' @export
 fetch_games <- function(base_url, endpoint = "games?date=2021:") {
   api_url <- paste0(base_url, endpoint)
   
@@ -65,18 +49,6 @@ fetch_games <- function(base_url, endpoint = "games?date=2021:") {
   }
 }
 
-
-#' Fetch Game Data from the API and Store in Database
-#'
-#' @description
-#' This function fetches player data from a specified API endpoint
-#'
-#' @return A character string indicating whether the operation was successful or failed.
-#' 
-#' @importFrom tibble as_tibble
-#' @importFrom tidyr unnest
-#' @import dplyr
-#' @export
 fetch_teams <- function(base_url, years=NULL, teamID=NULL) {
   if (is.null(years)) {
     years=seq(2012, as.numeric(format(Sys.Date(), "%Y")))
@@ -109,15 +81,6 @@ fetch_game <- function(base_url, gameID) {
 }
 
 
-#' Fetch Player Stats Data from the API and Store in Database
-#'
-#' @description
-#' This function fetches player data from a specified API endpoint and stores it in a local SQLite database.
-#' It makes an HTTP request to the API, parses the data, and writes the relevant player data to the database table.
-#'
-#' @importFrom tidyr unnest
-#' @return A character string indicating whether the operation was successful or failed.
-#' @export
 fetch_player_stats <- function(base_url, players) {
   split_into_batches <- function(players, batch_size = 100) {
     split(players, ceiling(seq_along(players) / batch_size))
@@ -140,7 +103,7 @@ fetch_player_stats <- function(base_url, players) {
     if (httr::status_code(response) == 200) {
       response_data <- jsonlite::fromJSON(httr::content(response, "text", encoding = "UTF-8"))
       player_stats_table <- response_data$data
-      player_stats_table <- tidyr::unnest(player_stats_table, cols = c(player))
+      player_stats_table <- tidyr::unnest(player_stats_table, cols = c("player"))
       all_player_stats <- append(all_player_stats, list(player_stats_table))
     } else {
       warning("Failed to fetch data for batch: ", paste(batch, collapse = ","))

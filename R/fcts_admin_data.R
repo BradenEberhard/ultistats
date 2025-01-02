@@ -76,7 +76,7 @@ update_player_stats <- function(conn, base_url) {
 
 # Function to process and update players
 update_players <- function(conn, base_url) {
-  players_data <- fetch_players(base_url) %>% as_tibble() %>% unnest(teams) %>% 
+  players_data <- fetch_players(base_url) %>% as_tibble() %>% unnest(.data$teams) %>% 
     mutate(insertTimestamp = get_current_timestamp()) %>%
     get_full_name()
 
@@ -86,7 +86,7 @@ update_players <- function(conn, base_url) {
 
 # Function to process and update teams
 update_teams <- function(conn, base_url) {
-  teams_data <- fetch_teams(base_url) %>% as_tibble() %>% unnest(division, names_sep = "_") %>%
+  teams_data <- fetch_teams(base_url) %>% as_tibble() %>% unnest(.data$division, names_sep = "_") %>%
     mutate(insertTimestamp = get_current_timestamp())
 
   create_table(conn=conn, table_name='teams', data=teams_data, index_cols="teamID", override=TRUE)
@@ -308,7 +308,7 @@ get_blocks_from_id = function(game, gameID) {
 get_penalties_from_id = function(game, gameID) {
   rows <- list()
   current_state <- reset_state()
-  penalty_row <<- list()
+  penalty_row <- list()
   process_penalty_event <- function(event, is_home_team, gameID) {
     if (!current_state$last_event_is_penalty){
       penalty_row <<- list()
@@ -403,7 +403,7 @@ add_time_left <- function(game_df) {
   }
   game_df <- game_df %>%
     mutate(
-      point_start_time = mapply(modify_point_start_time, game_quarter, point_start_time)
+      point_start_time = mapply(modify_point_start_time, .data$game_quarter, .data$point_start_time)
     )
   
   game_df <- game_df %>%
@@ -432,13 +432,14 @@ add_time_left <- function(game_df) {
       game_df <- update_game_df(next_group, game_df)
     }
   }
-  game_df <- game_df %>% select(-group_id)
+  game_df <- game_df %>% select(-.data$group_id)
   game_df$time_left <- ifelse(game_df$time_left < 0, 10, game_df$time_left)
   return(game_df)
 }
 
 #' @importFrom xgboost xgb.load xgb.DMatrix
 #' @importFrom dplyr select
+#' @importFrom stats predict
 predict_fv <- function(model_path, preprocessing_info_path, throws_data) {
   # Load model and preprocessing info
   xgb_model <- xgb.load(model_path)
@@ -447,15 +448,15 @@ predict_fv <- function(model_path, preprocessing_info_path, throws_data) {
   thrower_features <- preprocessing_info$features
   
   # Prepare features
-  thrower_throws <- throws_data %>% select(all_of(thrower_features))
-  receiver_throws <- throws_data %>% select(all_of(unlist(lapply(thrower_features, function(x) gsub("thrower", "receiver", x)))))
+  thrower_throws <- select(throws_data, all_of(thrower_features))
+  receiver_throws <- select(throws_data, all_of(unlist(lapply(thrower_features, function(x) gsub("thrower", "receiver", x)))))
   
   # Rename receiver features
   names(receiver_throws) <- gsub("receiver", "thrower", names(receiver_throws))
   opponent_throws <- receiver_throws %>%
     mutate(
-      thrower_x = -thrower_x, # Multiply thrower_x by -1
-      thrower_y = pmin(pmax(120 - thrower_y, 20), 100) # Transform thrower_y and clip between 20 and 100
+      thrower_x = -.data$thrower_x, # Multiply thrower_x by -1
+      thrower_y = pmin(pmax(120 - .data$thrower_y, 20), 100) # Transform thrower_y and clip between 20 and 100
     )
   
   # Scale data
@@ -483,6 +484,7 @@ predict_fv <- function(model_path, preprocessing_info_path, throws_data) {
 
 #' @importFrom xgboost xgb.load xgb.DMatrix
 #' @importFrom dplyr select
+#' @importFrom stats predict
 predict_cp <- function(model_path, preprocessing_info_path, throws_data) {
   xgb_model <- xgb.load(model_path)
   preprocessing_info <- readRDS(preprocessing_info_path)

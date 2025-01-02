@@ -141,7 +141,7 @@ mod_player_display_server <- function(id) {
     
     output$player_name <- renderText({
       req(input$player_selector)
-      stats <- all_player_stats %>% filter(fullName == input$player_selector)
+      stats <- all_player_stats %>% filter(.data$fullName == input$player_selector)
       paste(stats$firstName[[1]], stats$lastName[[1]])
     })
 

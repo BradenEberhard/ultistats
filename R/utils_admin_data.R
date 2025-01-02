@@ -14,16 +14,16 @@ fetch_and_process_player_stats <- function(conn, base_url) {
   
   # Preprocess games per player
   games_per_player <- throws_data %>% 
-    mutate(year = as.numeric(substr(gameID, 1, 4))) %>% 
-    separate_rows(line, sep = ",") %>% 
-    distinct(line, year, gameID) %>% 
-    group_by(line, year) %>% 
-    summarise(games = n_distinct(gameID), .groups = "drop")
+    mutate(year = as.numeric(substr(.data$gameID, 1, 4))) %>% 
+    separate_rows(.data$line, sep = ",") %>% 
+    distinct(.data$line, .data$year, .data$gameID) %>% 
+    group_by(.data$line,.data$ year) %>% 
+    summarise(games = n_distinct(.data$gameID), .groups = "drop")
   
   # Join and return
   player_stats_data <- player_stats_data %>%
     left_join(games_per_player, by = c("playerID" = "line", "year" = "year")) %>%
-    mutate(games = replace_na(games, 0), year = as.character(year))
+    mutate(games = replace_na(.data$games, 0), year = as.character(.data$year))
   
   return(player_stats_data)
 }
@@ -33,22 +33,22 @@ compute_advanced_stats <- function(advanced_stats) {
   # Thrower stats
   yearly_advanced_stats_thrower <- advanced_stats %>%
     filter(.data$dropped_throw != 1) %>% 
-    mutate(year = as.integer(substr(gameID, 1, 4))) %>% 
-    group_by(thrower, year) %>%                        
+    mutate(year = as.integer(substr(.data$gameID, 1, 4))) %>% 
+    group_by(.data$thrower, .data$year) %>%                        
     summarise(
-      xcp = mean(cp, na.rm = TRUE),
-      thrower_ec = sum(ec, na.rm = TRUE),
-      thrower_aec = sum(aec, na.rm = TRUE),
+      xcp = mean(.data$cp, na.rm = TRUE),
+      thrower_ec = sum(.data$ec, na.rm = TRUE),
+      thrower_aec = sum(.data$aec, na.rm = TRUE),
       .groups = "drop"
     )
   
   # Receiver stats
   yearly_advanced_stats_receiver <- advanced_stats %>%
-    mutate(year = as.integer(substr(gameID, 1, 4))) %>% 
-    group_by(receiver, year) %>%                        
+    mutate(year = as.integer(substr(.data$gameID, 1, 4))) %>% 
+    group_by(.data$receiver, .data$year) %>%                        
     summarise(
-      receiver_ec = sum(ec, na.rm = TRUE),
-      receiver_aec = sum(aec, na.rm = TRUE),
+      receiver_ec = sum(.data$ec, na.rm = TRUE),
+      receiver_aec = sum(.data$aec, na.rm = TRUE),
       .groups = "drop"
     )
   
@@ -62,48 +62,48 @@ compute_advanced_stats <- function(advanced_stats) {
 compute_career_data_from_player_stats <- function(player_stats_data) {
   # Filter players with at least one year >= 2021
   players_with_career_data <- player_stats_data %>%
-    filter(year >= 2021) %>%
-    select(playerID) %>%
+    filter(.data$year >= 2021) %>%
+    select(.data$playerID) %>%
     distinct()
 
   # Summing career stats for each player and recalculating percentages
   career_data <- player_stats_data %>%
-    filter(playerID %in% players_with_career_data$playerID) %>%
-    group_by(playerID) %>%
+    filter(.data$playerID %in% players_with_career_data$playerID) %>%
+    group_by(.data$playerID) %>%
     summarise(
-      firstName = first(firstName),
-      lastName = first(lastName),
+      firstName = first(.data$firstName),
+      lastName = first(.data$lastName),
       year = "Career",  
-      assists = sum(assists, na.rm = TRUE),
-      goals = sum(goals, na.rm = TRUE),
-      hockeyAssists = sum(hockeyAssists, na.rm = TRUE),
-      completions = sum(completions, na.rm = TRUE),
-      throwAttempts = sum(throwAttempts, na.rm = TRUE),
-      throwaways = sum(throwaways, na.rm = TRUE),
-      stalls = sum(stalls, na.rm = TRUE),
-      callahansThrown = sum(callahansThrown, na.rm = TRUE),
-      yardsReceived = sum(yardsReceived, na.rm = TRUE),
-      yardsThrown = sum(yardsThrown, na.rm = TRUE),
-      hucksAttempted = sum(hucksAttempted, na.rm = TRUE),
-      hucksCompleted = sum(hucksCompleted, na.rm = TRUE),
-      catches = sum(catches, na.rm = TRUE),
-      drops = sum(drops, na.rm = TRUE),
-      blocks = sum(blocks, na.rm = TRUE),
-      callahans = sum(callahans, na.rm = TRUE),
-      pulls = sum(pulls, na.rm = TRUE),
-      obPulls = sum(obPulls, na.rm = TRUE),
-      recordedPulls = sum(recordedPulls, na.rm = TRUE),
-      recordedPullsHangtime = sum(recordedPullsHangtime, na.rm = TRUE),
-      oPointsPlayed = sum(oPointsPlayed, na.rm = TRUE),
-      oPointsScored = sum(oPointsScored, na.rm = TRUE),
-      dPointsPlayed = sum(dPointsPlayed, na.rm = TRUE),
-      dPointsScored = sum(dPointsScored, na.rm = TRUE),
-      secondsPlayed = sum(secondsPlayed, na.rm = TRUE),
-      oOpportunities = sum(oOpportunities, na.rm = TRUE),
-      oOpportunityScores = sum(oOpportunityScores, na.rm = TRUE),
-      dOpportunities = sum(dOpportunities, na.rm = TRUE),
-      dOpportunityStops = sum(dOpportunityStops, na.rm = TRUE),
-      games = sum(games, na.rm = TRUE),
+      assists = sum(.data$assists, na.rm = TRUE),
+      goals = sum(.data$goals, na.rm = TRUE),
+      hockeyAssists = sum(.data$hockeyAssists, na.rm = TRUE),
+      completions = sum(.data$completions, na.rm = TRUE),
+      throwAttempts = sum(.data$throwAttempts, na.rm = TRUE),
+      throwaways = sum(.data$throwaways, na.rm = TRUE),
+      stalls = sum(.data$stalls, na.rm = TRUE),
+      callahansThrown = sum(.data$callahansThrown, na.rm = TRUE),
+      yardsReceived = sum(.data$yardsReceived, na.rm = TRUE),
+      yardsThrown = sum(.data$yardsThrown, na.rm = TRUE),
+      hucksAttempted = sum(.data$hucksAttempted, na.rm = TRUE),
+      hucksCompleted = sum(.data$hucksCompleted, na.rm = TRUE),
+      catches = sum(.data$catches, na.rm = TRUE),
+      drops = sum(.data$drops, na.rm = TRUE),
+      blocks = sum(.data$blocks, na.rm = TRUE),
+      callahans = sum(.data$callahans, na.rm = TRUE),
+      pulls = sum(.data$pulls, na.rm = TRUE),
+      obPulls = sum(.data$obPulls, na.rm = TRUE),
+      recordedPulls = sum(.data$recordedPulls, na.rm = TRUE),
+      recordedPullsHangtime = sum(.data$recordedPullsHangtime, na.rm = TRUE),
+      oPointsPlayed = sum(.data$oPointsPlayed, na.rm = TRUE),
+      oPointsScored = sum(.data$oPointsScored, na.rm = TRUE),
+      dPointsPlayed = sum(.data$dPointsPlayed, na.rm = TRUE),
+      dPointsScored = sum(.data$dPointsScored, na.rm = TRUE),
+      secondsPlayed = sum(.data$secondsPlayed, na.rm = TRUE),
+      oOpportunities = sum(.data$oOpportunities, na.rm = TRUE),
+      oOpportunityScores = sum(.data$oOpportunityScores, na.rm = TRUE),
+      dOpportunities = sum(.data$dOpportunities, na.rm = TRUE),
+      dOpportunityStops = sum(.data$dOpportunityStops, na.rm = TRUE),
+      games = sum(.data$games, na.rm = TRUE),
     ) 
   return(bind_rows(player_stats_data, career_data))
 }
@@ -111,20 +111,20 @@ compute_career_data_from_player_stats <- function(player_stats_data) {
 # Compute career stats for throwers and receivers
 compute_career_stats <- function(advanced_stats) {
   career_stats_thrower <- advanced_stats %>%
-    filter(dropped_throw != 1) %>% 
-    group_by(thrower) %>%  
+    filter(.data$dropped_throw != 1) %>% 
+    group_by(.data$thrower) %>%  
     summarise(
-      xcp = mean(cp, na.rm = TRUE),
-      thrower_ec = sum(ec, na.rm = TRUE),
-      thrower_aec = sum(aec, na.rm = TRUE),
+      xcp = mean(.data$cp, na.rm = TRUE),
+      thrower_ec = sum(.data$ec, na.rm = TRUE),
+      thrower_aec = sum(.data$aec, na.rm = TRUE),
       .groups = "drop"
     )
   
   career_stats_receiver <- advanced_stats %>%
-    group_by(receiver) %>%  
+    group_by(.data$receiver) %>%  
     summarise(
-      receiver_ec = sum(ec, na.rm = TRUE),
-      receiver_aec = sum(aec, na.rm = TRUE),
+      receiver_ec = sum(.data$ec, na.rm = TRUE),
+      receiver_aec = sum(.data$aec, na.rm = TRUE),
       .groups = "drop"
     ) 
   
@@ -143,8 +143,8 @@ add_timestamp_and_calculate <- function(player_stats_data, advanced_stats) {
   
   player_stats_data <- player_stats_data %>%
     mutate(
-      handler = ifelse(yardsThrown > yardsReceived, TRUE, FALSE),
-      offense = ifelse(oPointsPlayed > dPointsPlayed, TRUE, FALSE)
+      handler = ifelse(.data$yardsThrown > .data$yardsReceived, TRUE, FALSE),
+      offense = ifelse(.data$oPointsPlayed > .data$dPointsPlayed, TRUE, FALSE)
     )
   
   player_stats_data <- player_stats_data %>%
@@ -154,17 +154,18 @@ add_timestamp_and_calculate <- function(player_stats_data, advanced_stats) {
 }
 
 # Function to process player stats data
+#' @importFrom stats line
 process_player_stats <- function(player_stats_data) {
   # Filter and join additional info
   player_stats_data <- player_stats_data %>%
     mutate(
-      total_points = oPointsPlayed + dPointsPlayed,
-      offensive_efficiency = if_else(oOpportunities == 0, NA_real_, oOpportunityScores / oOpportunities),
-      defensive_efficiency = if_else(dOpportunities == 0, NA_real_, dOpportunityStops / dOpportunities),
-      completion_percentage = if_else(throwAttempts == 0, NA_real_, completions / throwAttempts),
-      cpoe = completion_percentage - xcp
+      total_points = .data$oPointsPlayed + .data$dPointsPlayed,
+      offensive_efficiency = if_else(.data$oOpportunities == 0, NA_real_, .data$oOpportunityScores / .data$oOpportunities),
+      defensive_efficiency = if_else(.data$dOpportunities == 0, NA_real_, .data$dOpportunityStops / .data$dOpportunities),
+      completion_percentage = if_else(.data$throwAttempts == 0, NA_real_, .data$completions / .data$throwAttempts),
+      cpoe = .data$completion_percentage - .data$xcp
     ) %>%
-    filter((oPointsPlayed + dPointsPlayed) > 0)
+    filter((.data$oPointsPlayed + .data$dPointsPlayed) > 0)
   
   player_stats_data <- get_full_name(player_stats_data)
   return(player_stats_data)
@@ -173,20 +174,20 @@ process_player_stats <- function(player_stats_data) {
 # Function to get full name for players
 get_full_name <- function(players_data) {
   df_first_rows <- players_data %>%
-    group_by(playerID) %>%
+    group_by(.data$playerID) %>%
     slice_head(n = 1) %>%
     ungroup()
 
   df_first_rows <- df_first_rows %>%
-    mutate(fullName = paste(firstName, lastName)) %>%
+    mutate(fullName = paste(.data$firstName, .data$lastName)) %>%
     mutate(
-      fullName = ifelse(duplicated(fullName) | duplicated(fullName, fromLast = TRUE),
-                        paste(fullName, "(", playerID, ")"), 
-                        fullName)
+      fullName = ifelse(duplicated(.data$fullName) | duplicated(.data$fullName, fromLast = TRUE),
+                        paste(.data$fullName, "(", .data$playerID, ")"), 
+                        .data$fullName)
     )
 
   players_data <- players_data %>%
-    left_join(df_first_rows %>% select(playerID, fullName), by = "playerID")
+    left_join(df_first_rows %>% select(.data$playerID, .data$fullName), by = "playerID")
   
   return(players_data)
 }
@@ -373,9 +374,9 @@ predict_advanced_stats <- function(throws_data, fv_df, cp_model_path, cp_preproc
 mutate_advanced_stats <- function(advanced_stats_df) {
   advanced_stats_df <- advanced_stats_df %>%
     mutate(
-      fv_receiver = ifelse(receiver_y >= 100, 1, fv_receiver),
+      fv_receiver = ifelse(.data$receiver_y >= 100, 1, .data$fv_receiver),
       insertTimestamp = get_current_timestamp(),
-      ec = ifelse(turnover == 1, -fv_opponent, fv_receiver - fv_thrower)
+      ec = ifelse(.data$turnover == 1, -.data$fv_opponent, .data$fv_receiver - .data$fv_thrower)
     )
   return(advanced_stats_df)
 }
@@ -389,10 +390,10 @@ calculate_aec <- function(advanced_stats_df) {
       min_fv = min(pmin(c(ifelse(.data$turnover == 1, NA, .data$fv_receiver), first(.data$fv_thrower))), na.rm = TRUE),
       aec = ifelse(
         .data$turnover == 1, 
-        -prev_fv_receiver, 
+        -.data$prev_fv_receiver, 
         ifelse(
           .data$receiver_y >= 100 & .data$turnover == 0, 
-          (1 - .data$prev_fv_receiver) / (1 - min_fv), 
+          (1 - .data$prev_fv_receiver) / (1 - .data$min_fv), 
           (.data$fv_receiver - .data$prev_fv_receiver) / (1 - .data$min_fv)
         )
       ),

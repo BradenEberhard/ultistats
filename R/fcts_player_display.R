@@ -29,6 +29,7 @@ generate_thrower_plots <- function(plot_list, all_player_stats, input, output, n
 }
 
 # Logic for displaying radial histograms
+#' @importFrom stats na.omit
 generate_radial_histogram_plot <- function(input, player_selector, year_selector, all_player_stats, db_path, role = "thrower") {
   req(input$player_selector, input$year_selector)
   player_id <- get_playerID_by_fullName(input, all_player_stats)
@@ -41,7 +42,7 @@ generate_radial_histogram_plot <- function(input, player_selector, year_selector
   passes <- if (year_selector == "Career") {
     player_passes
   } else {
-    player_passes %>% filter(year == year_selector)
+    player_passes %>% filter(.data$year == year_selector)
   }
 
   passes <- na.omit(passes$adjusted_angle)
@@ -62,6 +63,7 @@ get_passer_plot <- function(input, df, metrics, title) {
   return(plot)
 }
 
+#' @importFrom stats median
 get_thrower_grade <- function(input, df) {
   usage_metrics <- c("completions", "completions_per_possession", "games", "offensive_points_per_game")
   efficiency_metrics <- c("cpoe", "xcp", "offensive_efficiency", "completion_percentage")
@@ -85,6 +87,7 @@ get_thrower_grade <- function(input, df) {
   ))
 }
 
+#' @importFrom stats median
 get_receiver_grade <- function(input, df) {
   usage_metrics <- c("receptions", "receptions_per_possession", "games", "offensive_points_per_game")
   efficiency_metrics <- c("offensive_efficiency", "receiver_aec_per_possession")
@@ -106,6 +109,7 @@ get_receiver_grade <- function(input, df) {
   ))
 }
 
+#' @importFrom stats median
 get_defense_grade <- function(input, df) {
   usage_metrics <- c("games", "defensive_points_per_game")
   efficiency_metrics <- c("defensive_efficiency", "blocks", "blocks_per_possession")

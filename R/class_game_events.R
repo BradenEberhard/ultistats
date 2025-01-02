@@ -1,15 +1,5 @@
 #' GameEvents Class
 #'
-#' @description The `GameEvents` class manages game-related events, handling details such as teams,
-#' scores, and events for both home and away teams. It interacts with an external API through a proxy
-#' instance to retrieve and process event data. The class includes methods for processing events and
-#' combining them into a data frame for analysis.
-#'
-#' @details This class provides the following functionalities:
-#' - Stores game-related details, including teams, scores, and event data.
-#' - Interfaces with an external API using a provided proxy instance.
-#' - Processes and organizes game events for both home and away teams.
-#' - Returns a combined data frame with game events for further analysis.
 #'
 #' @noRd
 GameEvents <- R6::R6Class(
@@ -28,22 +18,13 @@ GameEvents <- R6::R6Class(
     home_events = NULL,
     away_events = NULL,
 
-    #' @description Initializes the GameEvents class.
-    #' 
-    #' @param gameID A string representing the game ID.
-    #' @param proxy An instance of the GameEventsProxy class to handle API requests.
-    #' @export
+
     initialize = function(gameID) {
       self$gameID <- gameID
       self$event_handlers <- EventHandlers$new()
     },
 
-    #' @description Processes the game events for both home and away teams.
-    #' 
-    #' This function processes the game events for both the home and away teams by calling
-    #' the respective handler functions for each event. It ensures that all events are handled
-    #' according to the event type.
-    #' @export
+
     process_game_events = function() {
       self$home_team <- TeamEvents$new(self$home_events, TRUE)  # Assuming TeamEvents is an R6 class
       stopifnot(length(self$home_team$game_events) > 0)  # Ensure there are game events
@@ -95,19 +76,7 @@ GameEvents <- R6::R6Class(
       self$away_team$processed_events <- as.data.frame(processed_data)
     },
 
-    #' @description Combines the processed events from both teams into a single data frame.
-    #' 
-    #' This function combines the processed events for both home and away teams into a single
-    #' data frame, allowing for further analysis and filtering. The resulting data frame can be
-    #' customized by choosing which columns to include or exclude.
-    #' 
-    #' @param gameID A logical indicating whether to include the gameID column in the final data frame.
-    #' @param home_team A logical indicating whether to include the home_teamID column in the final data frame.
-    #' @param away_team A logical indicating whether to include the away_teamID column in the final data frame.
-    #' @param start_time A logical indicating whether to include the start_time column in the final data frame.
-    #' @param drop_cols A character vector of column names to exclude from the final data frame.
-    #' @return A data frame with the processed game events.
-    #' @export
+
     get_events_df = function(gameID = TRUE, home_team = FALSE, away_team = FALSE, start_time = FALSE, drop_cols = list()) {
       if (is.null(self$home_team)) {
         print('Events not processed yet. Please run process_game_events() first')

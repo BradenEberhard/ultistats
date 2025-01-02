@@ -79,7 +79,7 @@ generate_grade_panel <- function(ns, role, grade_categories) {
 # Logic to update years with a new player
 update_year_selector <- function(player_selector, all_player_stats, session) {
   req(player_selector)
-  stats <- all_player_stats %>% filter(fullName == player_selector)
+  stats <- all_player_stats %>% filter(.data$fullName == player_selector)
   updateSelectInput(session, "year_selector", 
     choices = sort(stats$year), 
     selected = max(stats$year))
@@ -138,7 +138,7 @@ convert_to_metric_df <- function(input, df, all_metrics, all_years=FALSE) {
 get_selected_player_stats <- function(player_selector, year_selector, all_player_stats) {
   req(player_selector, year_selector)
   all_player_stats %>%
-    filter(fullName == player_selector & year == year_selector)
+    filter(.data$fullName == player_selector & .data$year == year_selector)
 }
 
 ### Plots 
@@ -149,27 +149,27 @@ get_selected_player_stats <- function(player_selector, year_selector, all_player
 generate_yearly_percentile_plot <- function(metric_df, title) {
   metric_df$year <- as.numeric(metric_df$year)
   last_points <- metric_df %>%
-    group_by(metric) %>%
-    filter(year == max(year))
+    group_by(.data$metric) %>%
+    filter(.data$year == max(.data$year))
   text_repel_offset <- ifelse(length(unique(metric_df$year)) > 1, 0.1, 0)
   # Create the ggplot
   plot <- ggplot(
     metric_df, 
     aes(
-      x = year, 
-      y = percentile, 
-      color = metric, 
-      group=metric,
-      data_id = metric
+      x = .data$year, 
+      y = .data$percentile, 
+      color = .data$metric, 
+      group=.data$metric,
+      data_id = .data$metric
     )
   ) +
-    geom_line_interactive(aes(tooltip = metric_full_name), size = 1.2) +
-    geom_point_interactive(aes(tooltip = paste(metric_abbreviation, ": ", round(value,2), "\nPercentile: ", percentile)), size = 3) +
+    geom_line_interactive(aes(tooltip = .data$metric_full_name), size = 1.2) +
+    geom_point_interactive(aes(tooltip = paste(.data$metric_abbreviation, ": ", round(.data$value,2), "\nPercentile: ", .data$percentile)), size = 3) +
     geom_text_repel(
       data=last_points,
-      aes(color = metric, label = ifelse(metric_abbreviation %in% c("C/100P", "R/100P", "B/100P"), 
-        metric_abbreviation, 
-        gsub("/100P", "",  gsub("/GP", "", metric_abbreviation)))),  
+      aes(color = .data$metric, label = ifelse(.data$metric_abbreviation %in% c("C/100P", "R/100P", "B/100P"), 
+      .data$metric_abbreviation, 
+        gsub("/100P", "",  gsub("/GP", "", .data$metric_abbreviation)))),  
       family = "Lato",  # Adjust the font family
       size = 8,
       direction = "y",  # Direction of text (either 'x', 'y', or 'both')
@@ -336,11 +336,11 @@ adjust_for_role <- function(input, df) {
   handler_value <- ifelse(is.null(input$handler_switch_value), FALSE, input$handler_switch_value)
   offense_value <- ifelse(is.null(input$offense_switch_value), FALSE, input$offense_switch_value)
   if (handler_value) {
-    player_handler <- df %>% filter(.data$fullName == input$player_selector  & .data$year == input$year_selector) %>% pull(handler)
+    player_handler <- df %>% filter(.data$fullName == input$player_selector  & .data$year == input$year_selector) %>% pull(.data$handler)
     df <- df %>% filter(.data$handler == player_handler | .data$fullName == input$player_selector)
   }
   if (offense_value) {
-    player_offense <- df %>% filter(.data$fullName == input$player_selector  & .data$year == input$year_selector) %>% pull(offense)
+    player_offense <- df %>% filter(.data$fullName == input$player_selector  & .data$year == input$year_selector) %>% pull(.data$offense)
     df <- df %>% filter(.data$offense == player_offense | .data$fullName == input$player_selector)
   }
   return(df)
@@ -371,14 +371,14 @@ process_metric <- function(metric, df, player_full_name) {
 
 # make sure players have some stats to be used during percentile calculations
 filter_for_eligible_players <- function(df) {
-  return(df %>% filter(games >= 3))
+  return(df %>% filter(.data$games >= 3))
 }
 
 #  adds fullName column to player_stats df
 get_playerID_by_fullName <- function(input, data) {
   # Filter the dataframe by fullName
   filtered_data <- data %>%
-    filter(fullName == input$player_selector) %>%
+    filter(.data$fullName == input$player_selector) %>%
     slice_head(n = 1)  # Get the first row
   
   # Return the playerID from the first row, or NA if no match found

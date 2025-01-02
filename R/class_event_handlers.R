@@ -1,16 +1,5 @@
 #' Event Handlers
-#'
-#' @description This class manages the event handlers for different game events. 
-#' Each event is associated with a specific function that processes the event 
-#' and updates the game state accordingly.
-#' 
-#' The event handlers map events, such as points scored, timeouts, penalties, 
-#' and turnovers, to corresponding functions that update the game state for the 
-#' teams involved. The event handler dictionary is initialized with a set of events, 
-#' and each event is linked to a function that will process it.
-#'
 #' @import dplyr
-#' @export
 #' @noRd
 EventHandlers <- R6::R6Class("EventHandlers",
   public = list(

@@ -8,3 +8,7 @@ $run_dev.*
 \.sqlite$
 ^classes
 ^proxies
+^LICENSE\.md$
+^app\.R$
+^rsconnect$
+^\.rscignore$
