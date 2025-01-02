@@ -104,7 +104,6 @@ compute_career_data_from_player_stats <- function(player_stats_data) {
       dOpportunities = sum(dOpportunities, na.rm = TRUE),
       dOpportunityStops = sum(dOpportunityStops, na.rm = TRUE),
       games = sum(games, na.rm = TRUE),
-
     ) 
   return(bind_rows(player_stats_data, career_data))
 }
