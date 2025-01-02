@@ -1,5 +1,6 @@
-# HTML code for player page
+### UI functions
 
+# HTML code for player page
 get_HTML <- function() {
   output <- HTML("
   .selectize-input {
@@ -65,7 +66,7 @@ generate_thrower_grade_panel <- function(ns) {
         width = 1/2
       ),
       layout_column_wrap(
-        width=1/4,
+        width = 1/4,
         girafeOutput(ns("thrower_contribution_plot")) |> withSpinner() |> bslib::as_fill_carrier(),
         girafeOutput(ns("thrower_efficiency_plot")) |> withSpinner() |> bslib::as_fill_carrier(),
         girafeOutput(ns("thrower_scores_plot")) |> withSpinner() |> bslib::as_fill_carrier(),
@@ -82,19 +83,8 @@ update_year_selector <- function(player_selector, all_player_stats, session) {
   updateSelectInput(session, "year_selector", 
     choices = sort(stats$year), 
     selected = max(stats$year))
+  
 }
-
-# Logic to update overal skill percentiles plot with a new player
-generate_percentiles_plot <- function(all_player_stats, stat_category, player_selector, year_selector, handler_switch_value, offense_switch_value) {
-  req(player_selector, year_selector)
-  addition <- ifelse(stat_category == "Per Possession", "(Per Possession)", 
-                    ifelse(stat_category == "Per Game", "(Per Game)", ""))
-  plot_data <- convert_to_metric_df(all_player_stats, stat_category, player_selector, year_selector, handler_switch_value, offense_switch_value) %>%
-    rename_metrics()
-  create_percentiles_plot(plot_data, addition)
-}
-
-
 
 # Logic for switches
 create_switch <- function(input_name, condition, true_label, false_label, selected_player_stats, ns) {
@@ -103,6 +93,47 @@ create_switch <- function(input_name, condition, true_label, false_label, select
   input_switch(id = ns(input_name), label = label, value = FALSE)
 }
 
+
+### Server functions
+
+# filters a player stats df, reformats and renames it
+convert_to_metric_df <- function(input, df, all_metrics, all_years=FALSE) {
+  handler_value <- ifelse(is.null(input$handler_switch_value), FALSE, input$handler_switch_value)
+  offense_value <- ifelse(is.null(input$offense_switch_value), FALSE, input$offense_switch_value)
+  if (!all_years) {
+    df <- adjust_for_year(df, input$year_selector)
+  }
+  df <- adjust_for_role(input, df)
+
+  metric_data <- list()
+  if (all_years) {
+
+    unique_years <- setdiff(unique(df$year), "Career")
+    metric_data <- lapply(unique_years, function(year) {
+      year_df <- adjust_for_year(df, year) # Adjust the data for the specific year
+      lapply(all_metrics, function(metric) {
+        result <- process_metric(metric, year_df, input$player_selector)
+        if (!is.null(result)) {
+          result$year <- year
+          return(result)
+        }
+      })
+    })
+    # Flatten the nested list structure
+    metric_data <- do.call(c, metric_data)
+  } else {
+    metric_data <- lapply(all_metrics, function(metric) {
+      result <- process_metric(metric, df, input$player_selector)
+      if (!is.null(result)) {
+        return(result)
+      }
+    })
+  }
+
+  return(do.call(rbind, lapply(metric_data, function(x) data.frame(x, stringsAsFactors = FALSE))))
+}
+
+
 # Fetch selected player stats
 get_selected_player_stats <- function(player_selector, year_selector, all_player_stats) {
   req(player_selector, year_selector)
@@ -110,250 +141,17 @@ get_selected_player_stats <- function(player_selector, year_selector, all_player
     filter(fullName == player_selector & year == year_selector)
 }
 
-generate_radial_histogram_plot <- function(input, player_selector, year_selector, all_player_stats, db_path, role = "thrower") {
-  req(input$player_selector, input$year_selector)
-  player_id <- get_playerID_by_fullName(all_player_stats, player_selector)
-  conn <- open_db_connection(db_path)
-  on.exit(close_db_connection(conn))
+### Plots 
 
-  player_passes <- get_player_passes_by_role(conn, player_id, role)
-  player_passes$adjusted_angle <- (as.integer(player_passes$throw_angle) + 90) %% 360 - 180
-  player_passes$year <- substr(player_passes$gameID, 1, 4)
-  passes <- if (year_selector == "Career") {
-    player_passes
-  } else {
-    player_passes %>% filter(year == year_selector)
-  }
-
-  passes <- na.omit(passes$adjusted_angle)
-  radial_histogram_plot(passes)
-}
-
-
-
-
-
-calc_percentile <- function(player_value, all_values) {
-  return(mean(all_values <= player_value, na.rm = TRUE) * 100)
-}
-
-get_metrics <- function(category) {
-  addition <- ifelse(category == "Per Possession", "_per_possession", 
-                     ifelse(category == "Per Game", "_per_game", ""))
-  counting_metrics <- c("goals", "assists", "blocks", "completions", "hockeyAssists", 
-                        "yardsThrown", "yardsReceived")
-  counting_metrics <- paste0(counting_metrics, addition)
-  percentage_metrics <- c("offensive_efficiency", "defensive_efficiency", "completion_percentage", "cpoe", "xcp")
-  return(c(counting_metrics, percentage_metrics))
-}
-
-filter_year <- function(df, year) {
-  return(df[df$year == year, ])
-}
-
-rename_metrics <- function(data, keep_category=FALSE, column = "metric") {
-  if (keep_category){
-    rename_map <- c(
-      games = "G",
-      yardsThrown = "TY",
-      yardsThrown_per_game = "TY PG",
-      yardsThrown_per_possession = "TY PP",
-      yardsReceived = "RY",
-      yardsReceived_per_game = "RY PG",
-      yardsReceived_per_possession = "RY PP",
-      completions = "C",
-      completions_per_game = "C PG",
-      completions_per_possession = "C PP",
-      oOpportunities = "P",
-      completion_percentage = "CP",
-      cpoe = "CPOE",
-      xcp = "xCP",
-      assists = "A",
-      assists_per_possession = "A PP",
-      hockeyAssists = "HA",
-      hockeyAssists_per_possession = "HA PP",
-      turnovers = "Turns",
-      turnovers_per_possession = "Turns PP",
-      thrower_ec_per_possession = "T-EC PP",
-      thrower_aec_per_possession = "T-aEC PP",
-      thrower_ec = "T-EC",
-      thrower_aec = "T-aEC",
-      offensive_efficiency = "OE"
-    )
-  
-    # Mapping for full names
-    full_metric_map <- c(
-      games = "Games Played",
-      yardsThrown = "Total Yards Thrown",
-      yardsThrown_per_game = "Yards Thrown Per Game",
-      yardsThrown_per_possession = "Yards Thrown Per Possession",
-      yardsReceived = "Total Yards Received",
-      yardsReceived_per_game = "Yards Received Per Game",
-      yardsReceived_per_possession = "Yards Received Per Possession",
-      completions = "Total Completions",
-      completions_per_game = "Completions Per Game",
-      completions_per_possession = "Completions Per Possession",
-      oOpportunities = "Possessions",
-      completion_percentage = "Completion Percentage",
-      cpoe = "Completion Percentage Over Expected",
-      xcp = "Expected Completion Percentage",
-      assists = "Total Assists",
-      assists_per_possession = "Assists Per Possession",
-      hockeyAssists = "Hockey Assists",
-      hockeyAssists_per_possession = "Hockey Assists Per Possession",
-      turnovers = "Total Turnovers",
-      turnovers_per_possession = "Turnovers Per Possession",
-      thrower_ec = "Thrower Expected Contribution",
-      thrower_aec = "Thrower Adjusted Expected Contribution",
-      thrower_ec_per_possession = "Thrower Expected Contribution Per Possession",
-      thrower_aec_per_possession = "Thrower Adjusted Expected Contribution Per Possession",
-      offensive_efficiency = "Offensive Efficiency"
-    )
-    
-    # Mutate the dataframe to include the full_metric column
-    data <- data %>%
-      mutate(
-        full_metric = recode(!!sym(column), !!!full_metric_map),
-        !!column := recode(!!sym(column), !!!rename_map)
-      )
-    
-    return(data)
-  }
-  rename_map <- c(
-    goals = "Goals ",
-    hockeyAssists = "Hockey Assists ",
-    assists = "Assists ",
-    yardsThrown = "Throwing Yards ",
-    yardsReceived = "Receiving Yards ",
-    cpoe = "CPOE ",
-    completion_percentage = "Completion Percentage ",
-    blocks = "Blocks ",
-    completions = "Completions ",
-    xcp = "xCP ",
-    defensive_efficiency = "Defensive Efficiency",
-    offensive_efficiency = "Offensive Efficiency",
-    turnovers = "Turnovers"
-  )
-  data <- data %>%
-    mutate(
-      !!column := sub("_per_possession$", "", !!sym(column)),  
-      !!column := sub("_per_game$", "", !!sym(column)),        
-      !!column := recode(!!sym(column), !!!rename_map)
-    )
-  return(data)
-}
-
-adjust_for_role <- function(df, handler_value, offense_value, player_year, player_full_name) {
-  if (handler_value) {
-    player_handler <- df %>% filter(fullName == player_full_name, year == player_year) %>% pull(handler)
-    df <- df %>% filter(handler == player_handler | fullName == player_full_name)
-  }
-  if (offense_value) {
-    player_offense <- df %>% filter(fullName == player_full_name, year == player_year) %>% pull(offense)
-    df <- df %>% filter(offense == player_offense | fullName == player_full_name)
-  }
-  
-  return(df)
-}
-
-adjust_for_category <- function(df, category) {
-  if (category == "Per Game") {
-    df$goals_per_game <- df$goals / df$games
-    df$assists_per_game <- df$assists / df$games
-    df$blocks_per_game <- df$blocks / df$games
-    df$completions_per_game <- df$completions / df$games
-    df$hockeyAssists_per_game <- df$hockeyAssists / df$games
-    df$yardsThrown_per_game <- df$yardsThrown / df$games
-    df$yardsReceived_per_game <- df$yardsReceived / df$games
-    
-    # Add turnovers per game if the turnovers column exists
-    if ("turnovers" %in% colnames(df)) {
-      df$turnovers_per_game <- df$turnovers / df$games
-    }
-  } else if (category == "Per Possession") {
-    df$goals_per_possession <- df$goals / df$oOpportunities
-    df$assists_per_possession <- df$assists / df$oOpportunities
-    df$blocks_per_possession <- df$blocks / df$dOpportunities
-    df$completions_per_possession <- df$completions / df$oOpportunities
-    df$hockeyAssists_per_possession <- df$hockeyAssists / df$oOpportunities
-    df$yardsThrown_per_possession <- df$yardsThrown / df$oOpportunities
-    df$yardsReceived_per_possession <- df$yardsReceived / df$oOpportunities
-    
-    # Add turnovers per possession if the turnovers column exists
-    if ("turnovers" %in% colnames(df)) {
-      df$turnovers_per_possession <- df$turnovers / df$oOpportunities
-    }
-  }
-  return(df)
-}
-
-
-get_playerID_by_fullName <- function(data, fullName_filter) {
-  # Filter the dataframe by fullName
-  filtered_data <- data %>%
-    filter(fullName == fullName_filter) %>%
-    slice_head(n = 1)  # Get the first row
-  
-  # Return the playerID from the first row, or NA if no match found
-  if (nrow(filtered_data) > 0) {
-    return(filtered_data$playerID)
-  } else {
-    return(NA)  # Return NA if fullName does not exist
-  }
-}
-
-prepare_metric_data <- function(df, player_full_name, thrower_handler_value, thrower_offense_value, all_metrics) {
-  metric_data <- list()
-  
-  player_df <- df %>% filter(fullName == player_full_name, year != "Career") %>% arrange(year)
-  
-  for (i in 1:nrow(player_df)) {
-    year <- player_df[i, "year"]
-    df_year <- adjust_for_role(df, thrower_handler_value, thrower_offense_value, year, player_full_name)
-    filtered_df <- df_year %>% filter(fullName == player_full_name, year != "Career") %>% arrange(year)
-    player_value <- filtered_df[i, all_metrics]
-    
-    df_final_players <- df_year %>% filter(games >= 3)
-    for (metric in all_metrics) {
-      if (!is.na(player_value[[metric]])) {
-        metric_values <- df_final_players[df_final_players$year == year, metric]
-        percentile_value <- calc_percentile(player_value[[metric]], metric_values) %>% round(2)
-        if (grepl("turnover", metric)) {
-          percentile_value <- 100 - percentile_value
-        }
-        metric_data[[length(metric_data) + 1]] <- list(
-          year = year,
-          metric = metric,
-          percentile = percentile_value,
-          value = player_value[[metric]]
-        )
-      }
-    }
-  }
-  
-  return(metric_data)
-}
-
-format_metric_data <- function(metric_data) {
-  metric_df <- bind_rows(lapply(metric_data, function(x) {
-    data.frame(
-      year = x$year,
-      metric = x$metric,
-      percentile = x$percentile,
-      value = x$value
-    )
-  })) %>% arrange(year) %>% rename_metrics(keep_category = TRUE)
-  
-  return(metric_df)
-}
-
+# ggiraph plots for percentiles over years
 #' @importFrom ggiraph geom_line_interactive geom_point_interactive girafe girafe_options opts_hover opts_hover_inv opts_toolbar opts_sizing opts_selection
 #' @importFrom ggrepel geom_text_repel
-generate_percentile_plot <- function(metric_df, title) {
+generate_yearly_percentile_plot <- function(metric_df, title) {
   metric_df$year <- as.numeric(metric_df$year)
   last_points <- metric_df %>%
     group_by(metric) %>%
     filter(year == max(year))
+  text_repel_offset <- ifelse(length(unique(metric_df$year)) > 1, 0.1, 0)
   # Create the ggplot
   plot <- ggplot(
     metric_df, 
@@ -365,15 +163,15 @@ generate_percentile_plot <- function(metric_df, title) {
       data_id = metric
     )
   ) +
-    geom_line_interactive(aes(tooltip = full_metric), size = 1.2) +
-    geom_point_interactive(aes(tooltip = paste(metric, ": ", round(value,2), "\nPercentile: ", percentile)), size = 3) +
+    geom_line_interactive(aes(tooltip = metric_full_name), size = 1.2) +
+    geom_point_interactive(aes(tooltip = paste(metric_abbreviation, ": ", round(value,2), "\nPercentile: ", percentile)), size = 3) +
     geom_text_repel(
       data=last_points,
-      aes(color = metric, label = metric),  
+      aes(color = metric, label = gsub("/100P", "", metric_abbreviation)),  
       family = "Lato",  # Adjust the font family
       size = 8,
       direction = "y",  # Direction of text (either 'x', 'y', or 'both')
-      xlim = c(max(metric_df$year) + 0.1, NA),  # Limit for x-axis labels
+      xlim = c(max(metric_df$year) + text_repel_offset, NA),  # Limit for x-axis labels
       hjust = 0,
       vjust = 0,
       segment.size = 0.7,
@@ -386,13 +184,21 @@ generate_percentile_plot <- function(metric_df, title) {
     ) +
     labs(title = title, x = "Year", y = "Percentile") +
     scale_y_continuous(limits = c(0, 102), breaks = seq(0, 100, 20)) +
-    scale_x_continuous(limits = c(min(metric_df$year), max(metric_df$year) + 1), breaks = seq(min(metric_df$year), max(metric_df$year), 1)) +
+    scale_x_continuous(
+      limits = if (length(unique(metric_df$year)) > 1) {
+        c(min(metric_df$year), max(metric_df$year) + 1)
+      } else {
+        c(min(metric_df$year), max(metric_df$year))
+      },
+      breaks = seq(min(metric_df$year), max(metric_df$year), 1)
+    ) +
     theme_minimal() +
     theme(
-  legend.position = "none",
+      legend.position = "none",
       plot.title = element_text(size = 20, face = "bold"),
       axis.title = element_text(size = 18),
       axis.text = element_text(size = 16),
+      plot.margin = margin(10, 50, 10, 10)
     ) + coord_cartesian(clip = "off")
   
   # Convert to interactive plot using ggiraph
@@ -410,7 +216,420 @@ generate_percentile_plot <- function(metric_df, title) {
   return(interactive_plot)
 }
 
+# Plot for main skill percentiles
+#' @importFrom tidyr drop_na
+create_skill_percentiles_plot <- function(session, plot_data) {
+  plot_data <- plot_data %>% drop_na()
+  container_width <- session$clientData[["output_player_display-skill_percentiles_plot_width"]]
+  y_variable <- if (container_width < 500) "metric_abbreviation" else "metric_full_name"
 
+  plot_ly() %>%
+    add_segments(
+      data = plot_data,
+      x = 0, 
+      xend = ~percentile, 
+      y = ~reorder(.data[[y_variable]], percentile), 
+      yend = ~reorder(.data[[y_variable]], percentile),
+      line = list(color = "black", width = 2),
+      text = ~paste(
+        if (container_width < 500) metric_full_name else metric_abbreviation, 
+        ":", 
+        sub("\\.0+$", "", scales::comma(value, accuracy = 0.01)), 
+        "<br>Percentile:", 
+        percentile
+      ),
+      hoverinfo = "text", # Display custom hover text
+      hoveron = "points+fills",  # Enable hover effects on both points and lines
+      showlegend = FALSE
+    ) %>%
+    add_trace(
+      data = plot_data,
+      x = ~percentile, 
+      y = ~reorder(.data[[y_variable]], percentile), 
+      type = "scatter", 
+      mode = "markers", 
+      marker = list(size = 8, color = "black"),
+      text = ~paste(
+        if (container_width < 500) metric_full_name else metric_abbreviation, 
+        ":", 
+        sub("\\.0+$", "", scales::comma(value, accuracy = 0.01)), 
+        "<br>Percentile:", 
+        percentile
+      ),
+      hoverinfo = "text", # Display custom hover text
+      hoveron = "points+fills",  # Enable hover effects on both points and lines
+      showlegend = FALSE
+    ) %>%
+    layout(
+      xaxis = list(title = "Percentile", range = c(0, 102)), 
+      yaxis = list(title = list(text = "Metric"),ticksuffix = " "),
+      showlegend = FALSE 
+    ) %>%
+    config(displayModeBar = FALSE)
+}
+
+# radial histogram plot
+radial_histogram_plot <- function(passes, bin_width = 24, role = "thrower") {
+  bin_cutoffs <- seq(-180, 180, by = bin_width)
+  max_y <- max(table(cut(passes, breaks = bin_cutoffs)))
+
+  ggplot(data.frame(passes), aes(x = passes)) +
+    geom_histogram(breaks = bin_cutoffs, fill = "blue", color = "white", boundary = 0) +
+    coord_polar(start = pi, clip = "off") +
+    scale_x_continuous(limits = c(-180, 180), breaks = seq(-180, 180, 45)) +
+    theme_minimal() +
+    annotate("text", x = 0, y = max_y+5, label = "Forward", size = 5, hjust=0.5, vjust=0) +
+    annotate("text", x = -90, y = max_y+5, label = "Left", size = 5, hjust=1, vjust=0.5) +
+    annotate("text", x = 90, y = max_y+5, label = "Right", size = 5, hjust=0, vjust=0.5) +
+    annotate("text", x = 180, y = max_y+5, label = "Backward", size = 5, hjust=0.5, vjust=1) +
+    theme(
+      axis.title.y = element_text(size = 14, margin = margin(r = 10), face = "bold"),  # Adjust y-axis label size
+      axis.text.y = element_text(size = 12, margin = margin(r = 20)),
+      axis.title.x = element_text(size = 14, face = "bold"),  # Adjust y-axis label size
+      axis.text.x = element_blank(),  # Hides angle labels
+      axis.ticks = element_blank(),
+      plot.title = element_text(size = 18, face = "bold"), 
+      plot.margin = margin(t = 10, r = 20, b = 10, l = 10)  
+    ) +
+    labs(
+      title = paste0(tools::toTitleCase(role), " Tendencies"),
+      x = "Angle",
+      y = "Number of Passes"
+    )
+}
+
+### Helper Functions
+
+# calculates percentils
+calc_percentile <- function(player_value, all_values) {
+  return(mean(all_values <= player_value, na.rm = TRUE) * 100)
+}
+
+# gets per possession or game metric names based on input
+get_metrics <- function(category) {
+  addition <- ifelse(category == "Per Possession", "_per_possession", 
+                     ifelse(category == "Per Game", "_per_game", ""))
+  counting_metrics <- c("goals", "assists", "blocks", "completions", "hockeyAssists", 
+                        "yardsThrown", "yardsReceived", "thrower_ec", "thrower_aec")
+  counting_metrics <- paste0(counting_metrics, addition)
+  percentage_metrics <- c("offensive_efficiency", "defensive_efficiency", "completion_percentage", "cpoe", "xcp")
+  return(c(counting_metrics, percentage_metrics))
+}
+
+# filters df by selected year
+adjust_for_year <- function(df, year) {
+  return(df[df$year == year, ])
+}
+
+# filters df by selected role (handler, cutter, defense, offense) if selected
+adjust_for_role <- function(input, df) {
+  handler_value <- ifelse(is.null(input$handler_switch_value), FALSE, input$handler_switch_value)
+  offense_value <- ifelse(is.null(input$offense_switch_value), FALSE, input$offense_switch_value)
+  if (handler_value) {
+    player_handler <- df %>% filter(fullName == input$player_selector) %>% pull(handler)
+    df <- df %>% filter(handler == player_handler | fullName == input$player_selector)
+  }
+  if (offense_value) {
+    player_offense <- df %>% filter(fullName == input$player_selector) %>% pull(offense)
+    df <- df %>% filter(offense == player_offense | fullName == input$player_selector)
+  }
+  return(df)
+}
+
+# function to rename metrics and reformat metric dataframe
+process_metric <- function(metric, df, player_full_name) {
+  percentage_metrics <- c("offensive_efficiency", "defensive_efficiency", "completion_percentage", "cpoe", "xcp")
+  metric_info <- map_metrics_to_formula(df, list(metric))[[metric]]
+  player_value <- map_metrics_to_formula(df[df$fullName == player_full_name,], list(metric))[[metric]]$value
+  df_final_players <- filter_for_eligible_players(df)
+  if (length(player_value) > 0) {
+    percentile_value <- calc_percentile(player_value, metric_info$value) %>% round(2)
+    if ("turnover" %in% metric) {
+      percentile_value <- 100 - percentile_value
+    }
+    # Return the metric data along with its full name and abbreviation
+    return(list(
+      metric = metric,
+      percentile = percentile_value,
+      value = player_value,
+      metric_full_name = metric_info$display_name,
+      metric_abbreviation = metric_info$abbreviation
+    ))
+  }
+  return(NULL)
+}
+
+# make sure players have some stats to be used during percentile calculations
+filter_for_eligible_players <- function(df) {
+  return(df %>% filter(games >= 3))
+}
+
+#  adds fullName column to player_stats df
+get_playerID_by_fullName <- function(input, data) {
+  # Filter the dataframe by fullName
+  filtered_data <- data %>%
+    filter(fullName == input$player_selector) %>%
+    slice_head(n = 1)  # Get the first row
+  
+  # Return the playerID from the first row, or NA if no match found
+  if (nrow(filtered_data) > 0) {
+    return(filtered_data$playerID)
+  } else {
+    return(NA)  # Return NA if fullName does not exist
+  }
+}
+
+### Config
+
+# large config for metrics with how to calculate, what to name and their abbreviation
+map_metrics_to_formula <- function(df, metric_names) {
+  metric_map <- list(
+    "turnovers" = list(
+      formula = function(df) df$throwAttempts - df$completions,
+      display_name = "Turnovers",
+      abbreviation = "Turns"
+    ),
+    "assists" = list(
+      formula = function(df) df$assists,
+      display_name = "Assists",
+      abbreviation = "A"
+    ),
+    "hockeyAssists" = list(
+      formula = function(df) df$hockeyAssists,
+      display_name = "Hockey Assists",
+      abbreviation = "HA"
+    ),
+    "goals" = list(
+      formula = function(df) df$goals,
+      display_name = "Goals",
+      abbreviation = "G"
+    ),
+    "blocks" = list(
+      formula = function(df) df$blocks,
+      display_name = "Blocks",
+      abbreviation = "B"
+    ),
+    "thrower_ec" = list(
+      formula = function(df) df$thrower_ec,
+      display_name = "Thrower Expected Contribution",
+      abbreviation = "T-EC"
+    ),"thrower_aec" = list(
+      formula = function(df) df$thrower_aec,
+      display_name = "Thrower Adjusted Expected Contribution",
+      abbreviation = "T-aEC"
+    ),"yardsThrown" = list(
+      formula = function(df) df$yardsThrown,
+      display_name = "Throwing Yards",
+      abbreviation = "TY"
+    ),
+    "xcp" = list(
+      formula = function(df) df$xcp * 100,  
+      display_name = "Expected Completion Percentage",
+      abbreviation = "xCP"
+    ),
+    "cpoe" = list(
+      formula = function(df) df$cpoe * 100,  
+      display_name = "Completion Percentage Over Expected",
+      abbreviation = "CPOE"
+    ),
+    "completion_percentage" = list(
+      formula = function(df) (df$completions / df$throwAttempts) * 100,
+      display_name = "Completion Percentage",
+      abbreviation = "CP"
+    ),
+    "games" = list(
+      formula = function(df) df$games,  
+      display_name = "Games Played",
+      abbreviation = "GP"
+    ),
+    "completions" = list(
+      formula = function(df) df$completions,  
+      display_name = "Completions",
+      abbreviation = "C"
+    ),
+    "possessions" = list(
+      formula = function(df) df$oOpportunities,  
+      display_name = "Possessions",
+      abbreviation = "P"
+    ),
+    "offensive_efficiency" = list(
+      formula = function(df) (df$oOpportunityScores / df$oOpportunities) * 100,  
+      display_name = "Offensive Efficiency",
+      abbreviation = "OE"
+    ),
+    "defensive_efficiency" = list(
+      formula = function(df) (df$dOpportunityStops / df$dOpportunities) * 100,  
+      display_name = "Defensive Efficiency",
+      abbreviation = "DE"
+    ),
+    "yardsReceived" = list(
+      formula = function(df) df$yardsReceived,  
+      display_name = "Receiving Yards",
+      abbreviation = "RY"
+    ),
+    "turnovers_per_game" = list(
+      formula = function(df) (df$throwAttempts - df$completions) / df$games,
+      display_name = "Turnovers Per Game",
+      abbreviation = "Turns/GP"
+    ),
+    "assists_per_game" = list(
+      formula = function(df) df$assists / df$games,
+      display_name = "Assists Per Game",
+      abbreviation = "A/GP"
+    ),
+    "hockeyAssists_per_game" = list(
+      formula = function(df) df$hockeyAssists / df$games,
+      display_name = "Hockey Assists Per Game",
+      abbreviation = "HA/GP"
+    ),
+    "goals_per_game" = list(
+      formula = function(df) df$goals / df$games,
+      display_name = "Goals Per Game",
+      abbreviation = "G/GP"
+    ),
+    "blocks_per_game" = list(
+      formula = function(df) df$blocks / df$games,
+      display_name = "Blocks Per Game",
+      abbreviation = "B/GP"
+    ),
+    "thrower_ec_per_game" = list(
+      formula = function(df) df$thrower_ec / df$games,
+      display_name = "Thrower Expected Contribution Per Game",
+      abbreviation = "T-EC/GP"
+    ),
+    "thrower_aec_per_game" = list(
+      formula = function(df) df$thrower_aec / df$games,
+      display_name = "Thrower Adjusted Expected Contribution Per Game",
+      abbreviation = "T-aEC/GP"
+    ),
+    "yardsThrown_per_game" = list(
+      formula = function(df) df$yardsThrown / df$games,
+      display_name = "Throwing Yards Per Game",
+      abbreviation = "TY/GP"
+    ),
+    "completions_per_game" = list(
+      formula = function(df) df$completions / df$games,  
+      display_name = "Completions Per Game",
+      abbreviation = "C/GP"
+    ),
+    "possessions_per_game" = list(
+      formula = function(df) df$oOpportunities / df$games,  
+      display_name = "Possessions Per Game",
+      abbreviation = "P/GP"
+    ),
+    "yardsReceived_per_game" = list(
+      formula = function(df) df$yardsReceived / df$games,  
+      display_name = "Receiving Yards Per Game",
+      abbreviation = "RY/GP"
+    ),"thrower_ec_per_game" = list(
+    formula = function(df) df$thrower_ec / df$games,
+    display_name = "Thrower Expected Contribution Per Game",
+    abbreviation = "T-EC/GP"
+    ),
+    "thrower_aec_per_game" = list(
+      formula = function(df) df$thrower_aec / df$games,
+      display_name = "Thrower Adjusted Expected Contribution Per Game",
+      abbreviation = "T-aEC/GP"
+    ),
+    "yardsThrown_per_game" = list(
+      formula = function(df) df$yardsThrown / df$games,
+      display_name = "Throwing Yards Per Game",
+      abbreviation = "TY/GP"
+    ),
+    "completions_per_game" = list(
+      formula = function(df) df$completions / df$games,  
+      display_name = "Completions Per Game",
+      abbreviation = "C/GP"
+    ),
+    "possessions_per_game" = list(
+      formula = function(df) df$oOpportunities / df$games,  
+      display_name = "Possessions Per Game",
+      abbreviation = "P/GP"
+    ),
+    "yardsReceived_per_game" = list(
+      formula = function(df) df$yardsReceived / df$games,  
+      display_name = "Receiving Yards Per Game",
+      abbreviation = "RY/GP"
+    ),
+    "thrower_ec_per_possession" = list(
+    formula = function(df) (df$thrower_ec / df$oOpportunities) * 100,
+    display_name = "Thrower Expected Contribution Per 100 Possessions",
+    abbreviation = "T-EC/100P"
+    ),
+    "thrower_aec_per_possession" = list(
+      formula = function(df) (df$thrower_aec / df$oOpportunities) * 100,
+      display_name = "Thrower Adjusted Expected Contribution Per 100 Possessions",
+      abbreviation = "T-aEC/100P"
+    ),
+    "yardsThrown_per_possession" = list(
+      formula = function(df) (df$yardsThrown / df$oOpportunities) * 100,
+      display_name = "Throwing Yards Per 100 Possessions",
+      abbreviation = "TY/100P"
+    ),
+    "completions_per_possession" = list(
+      formula = function(df) (df$completions / df$oOpportunities) * 100,  
+      display_name = "Completions Per 100 Possessions",
+      abbreviation = "C/100P"
+    ),
+    "yardsReceived_per_possession" = list(
+      formula = function(df) (df$yardsReceived / df$oOpportunities) * 100,  
+      display_name = "Receiving Yards Per 100 Possessions",
+      abbreviation = "RY/100P"
+    ),
+    "assists_per_possession" = list(
+      formula = function(df) (df$assists / df$oOpportunities) * 100,
+      display_name = "Assists Per 100 Possessions",
+      abbreviation = "A/100P"
+    ),
+    "hockeyAssists_per_possession" = list(
+      formula = function(df) (df$hockeyAssists / df$oOpportunities) * 100,
+      display_name = "Hockey Assists Per 100 Possessions",
+      abbreviation = "HA/100P"
+    ),
+    "goals_per_possession" = list(
+      formula = function(df) (df$goals / df$oOpportunities) * 100,
+      display_name = "Goals Per 100 Possessions",
+      abbreviation = "G/100P"
+    ),
+    "blocks_per_possession" = list(
+      formula = function(df) (df$blocks / df$dOpportunities) * 100,
+      display_name = "Blocks Per 100 Possessions",
+      abbreviation = "B/100P"
+    ),
+    "turnovers_per_possession" = list(
+      formula = function(df) ((df$throwAttempts - df$completions) / df$oOpportunities) * 100,
+      display_name = "Turnovers Per 100 Possessions",
+      abbreviation = "Turns/100P"
+    )
+  )
+  
+  result <- list()
+  
+  # Loop through each metric name in the input list
+  for (metric_name in metric_names) {
+    if (metric_name %in% names(metric_map)) {
+      # Retrieve the formula, display name, and abbreviation for the metric
+      metric_info <- metric_map[[metric_name]]
+      
+      # Calculate the value of the metric using the formula
+      metric_value <- metric_info$formula(df)
+      
+      # Add the result to the list
+      result[[metric_name]] <- list(
+        value = metric_value,
+        display_name = metric_info$display_name,
+        abbreviation = metric_info$abbreviation
+      )
+    } else {
+      # If the metric name doesn't exist in the map, return an error
+      result[[metric_name]] <- list(error = "Metric not found")
+    }
+  }
+  
+  return(result)
+}
+
+# transforms numeric percentile to letter grades
 get_letter_grade <- function(percentile) {
   if (percentile >= 90) {
     return("A+")

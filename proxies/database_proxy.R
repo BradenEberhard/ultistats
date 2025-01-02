@@ -242,21 +242,6 @@ get_player_passes_by_role <- function(conn, player_id, role = "thrower") {
   return(player_passes)
 }
 
-get_player_receptions <- function(conn, player_id) {
-  # SQL query to fetch player stats by playerID with a join on advanced_stats
-  query <- glue::glue("
-    SELECT t.*, a.* 
-    FROM throws t
-    LEFT JOIN advanced_stats a ON t.throwID = a.throwID
-    WHERE t.receiver = '{player_id}'
-  ")
-  
-  # Execute the query and return the result
-  player_receptions <- DBI::dbGetQuery(conn, query)
-  player_receptions <- player_receptions[, !duplicated(names(player_receptions))]
-  return(player_receptions)
-}
-
 get_all_player_stats <- function(conn) {
   # SQL query to fetch player stats by playerID
   query <- glue::glue("SELECT * FROM player_stats WHERE year >= 2021")

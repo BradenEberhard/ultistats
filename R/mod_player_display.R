@@ -30,11 +30,11 @@ mod_player_display_ui <- function(id) {
       fluidRow(
         card(
           h2("Skill Percentiles"),
-          withSpinner(plotlyOutput(ns("percentiles_plot")))
+          withSpinner(plotlyOutput(ns("skill_percentiles_plot")))
         )
       ),
       bslib::accordion(
-        id = ns("accordion"),
+        id = ns("player_accordion"),
         open = FALSE,
         generate_thrower_grade_panel(ns),
         bslib::accordion_panel(
@@ -60,12 +60,29 @@ mod_player_display_server <- function(id) {
     ### Variables
     ns <- session$ns
     db_path <- get_golem_config("db_path")
-    thrower_plot_functions <- list(
-      usage = get_thrower_usage_plot,
-      efficiency = get_thrower_efficiency_plot,
-      scores = get_thrower_scores_plot,
-      contribution = get_thrower_contribution_plot
+    thrower_plot_config <- list(
+      usage = list(
+        metrics = c("completions", "completions_per_possession", "games", "oOpportunities"),
+        label = "usage",
+        title = "Usage"
+      ),
+      efficiency = list(
+        metrics = c("completion_percentage", "xcp", "cpoe", "offensive_efficiency"),
+        label = "efficiency",
+        title = "Efficiency"
+      ),
+      scores = list(
+        metrics = c("assists_per_possession", "hockeyAssists_per_possession", "turnovers_per_possession"),
+        label = "scores",
+        title = "Scoring Per 100 Possessions"
+      ),
+      contribution = list(
+        metrics = c("yardsThrown_per_possession", "thrower_ec_per_possession", "thrower_aec_per_possession"),
+        label = "contribution",
+        title = "Contribution Per 100 Possessions"
+      )
     )
+    
     conn <- open_db_connection(db_path)
     session$onSessionEnded(function() {close_db_connection(conn)})
 
@@ -93,11 +110,8 @@ mod_player_display_server <- function(id) {
     thrower_percentiles <- reactive({
       req(input$player_selector, input$year_selector)
       get_thrower_grade(
-        df = all_player_stats, 
-        player_full_name = input$player_selector, 
-        handler_value = input$handler_switch_value, 
-        offense_value = input$offense_switch_value,
-        player_year = input$year_selector
+        input = input,
+        df = all_player_stats
       )
     })
 
@@ -113,7 +127,7 @@ mod_player_display_server <- function(id) {
     })
 
     ### Plots
-    output$percentiles_plot <- renderPlotly({generate_percentiles_plot(all_player_stats, input$stat_category, input$player_selector, input$year_selector, input$handler_switch_value, input$offense_switch_value)})
+    output$skill_percentiles_plot <- renderPlotly(generate_skill_percentiles_plot(input, session, all_player_stats))
   
     output$thrower_radial_histogram_plot <- renderPlot({
       generate_radial_histogram_plot(
@@ -126,8 +140,7 @@ mod_player_display_server <- function(id) {
       )
     })
 
-    generate_plot_outputs("thrower", all_player_stats, input, output, thrower_plot_functions)
-
+    generate_plot_outputs("thrower", all_player_stats, input, output, thrower_plot_config)
 
     ### Grades
     output$overall_percentile <- renderText(paste0("(", round(overall_score(), 0), "th Percentile)"))
@@ -144,7 +157,6 @@ mod_player_display_server <- function(id) {
         paste0("(", thrower_percentiles()[[paste0(category_lower, "_percentile")]], "th Percentile)")
       })
     })
-    
   })
 }
 
