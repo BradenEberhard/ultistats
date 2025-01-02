@@ -43,11 +43,6 @@ mod_admin_data_server <- function(id){
   moduleServer(id, function(input, output, session){
     ns <- session$ns
     # set base variables
-    source("./proxies/api_proxy.R")
-    source("./proxies/database_proxy.R")
-    source("./classes/game_events.R")
-    source("./classes/event_handlers.R")
-    source("./classes/team_events.R")
     base_url <- get_golem_config("base_api_path")
     db_path <- get_golem_config("db_path")
     conn_params <- list(db_path = db_path, base_url = base_url)

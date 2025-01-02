@@ -10,10 +10,6 @@
 #' @param conn_params A list of parameters for database connection, including `db_path` and `base_url`.
 #' 
 #' @return NULL This function does not return any value. It only triggers an update action when the event occurs.
-#' 
-#' @examples
-#' # Example usage in a Shiny app:
-#' create_observe_event(input, "updateButton", update_games, function(x) {}, progress_message = "Updating games...")
 create_observe_event <- function(input, input_id, update_function, timestamps, progress_message = NULL, conn_params = list()) {
   observeEvent(input[[input_id]], {
     if (!is.null(progress_message)) {
@@ -44,7 +40,7 @@ update_table_progress <- function(conn, table_update_func, table_name, progress_
 # Function to process and update games
 update_games <- function(conn, base_url) {
   games_data <- fetch_games(base_url) %>% mutate(insertTimestamp = get_current_timestamp())
-  create_table(conn=conn, table_name='games', data=games_data, index_col="gameID", override=TRUE)
+  create_table(conn=conn, table_name='games', data=games_data, index_cols="gameID", override=TRUE)
   update_table(conn=conn, table_name='games', data=games_data, index_col="gameID", whole_table = TRUE)
 }
 
@@ -56,10 +52,6 @@ update_games <- function(conn, base_url) {
 #' @param base_url The base URL to fetch player data from an external API or service.
 #' 
 #' @return NULL This function does not return any value. It updates the `player_stats` table in the database.
-#' 
-#' @examples
-#' # Example usage in the context of a Shiny app or scheduled task:
-#' update_player_stats(conn, base_url)
 update_player_stats <- function(conn, base_url) {
   # Fetch and process player stats data from external source
   player_stats_data <- fetch_and_process_player_stats(conn, base_url) %>% compute_career_data_from_player_stats()
@@ -77,7 +69,7 @@ update_player_stats <- function(conn, base_url) {
   player_stats_data <- process_player_stats(player_stats_data)
   
   # Insert or update player stats in the player_stats table
-  create_table(conn=conn, table_name='player_stats', data=player_stats_data, index_col="playerID", override=TRUE)
+  create_table(conn=conn, table_name='player_stats', data=player_stats_data, index_cols="playerID", override=TRUE)
   update_table(conn=conn, table_name='player_stats', data=player_stats_data, index_col="playerID", whole_table = TRUE)
 }
 
@@ -88,7 +80,7 @@ update_players <- function(conn, base_url) {
     mutate(insertTimestamp = get_current_timestamp()) %>%
     get_full_name()
 
-  create_table(conn=conn, table_name='players', data=players_data, index_col="playerID", override=TRUE)
+  create_table(conn=conn, table_name='players', data=players_data, index_cols="playerID", override=TRUE)
   update_table(conn=conn, table_name='players', data=players_data, index_col="playerID", whole_table = TRUE)
 }
 
@@ -97,7 +89,7 @@ update_teams <- function(conn, base_url) {
   teams_data <- fetch_teams(base_url) %>% as_tibble() %>% unnest(division, names_sep = "_") %>%
     mutate(insertTimestamp = get_current_timestamp())
 
-  create_table(conn=conn, table_name='teams', data=teams_data, index_col="teamID", override=TRUE)
+  create_table(conn=conn, table_name='teams', data=teams_data, index_cols="teamID", override=TRUE)
   update_table(conn=conn, table_name='teams', data=teams_data, index_col="teamID", whole_table = TRUE)
 }
 
@@ -110,7 +102,7 @@ update_pulls <- function(conn, base_url) {
       game_data <- fetch_game(base_url, current_game_id)
       pull_data <- get_pulls_from_id(game_data, current_game_id) %>% 
         mutate(insertTimestamp = get_current_timestamp())
-      create_table(conn=conn, table_name='pulls', data=pull_data, index_col="gameID", override=FALSE)
+      create_table(conn=conn, table_name='pulls', data=pull_data, index_cols="gameID", override=FALSE)
       update_table(conn=conn, table_name='pulls', data=pull_data, index_col="gameID", whole_table = FALSE)
       incProgress(1 / length(game_ids), detail = paste("Processing game ID", current_game_id))
     }
@@ -133,7 +125,7 @@ update_throws <- function(conn, base_url) {
       throws_data$x_diff <- throws_data$receiver_x - throws_data$thrower_x
       throws_data$y_diff <- throws_data$receiver_y - throws_data$thrower_y
       throws_data$throw_angle <- atan2(throws_data$y_diff, throws_data$x_diff) * (180 / pi)
-      create_table(conn=conn, table_name='throws', data=throws_data, index_col=list("gameID","thrower", "throwID"), override=FALSE)
+      create_table(conn=conn, table_name='throws', data=throws_data, index_cols=list("gameID","thrower", "throwID"), override=FALSE)
       update_table(conn=conn, table_name='throws', data=throws_data, index_col="gameID", whole_table = FALSE)
       incProgress(1 / length(game_ids), detail = paste("Processing game ID", current_game_id))
     }
@@ -149,7 +141,7 @@ update_blocks <- function(conn, base_url) {
       game_data <- fetch_game(base_url, current_game_id)
       blocks_data <- get_blocks_from_id(game_data, current_game_id) %>%
         mutate(insertTimestamp = get_current_timestamp())
-      create_table(conn=conn, table_name='blocks', data=blocks_data, index_col="gameID", override=FALSE)
+      create_table(conn=conn, table_name='blocks', data=blocks_data, index_cols="gameID", override=FALSE)
       update_table(conn=conn, table_name='blocks', data=blocks_data, index_col="gameID", whole_table = FALSE)
       incProgress(1 / length(game_ids), detail = paste("Processing game ID", current_game_id))
     }
@@ -165,7 +157,7 @@ update_penalties <- function(conn, base_url) {
       game_data <- fetch_game(base_url, current_game_id)
       penalties_data <- get_penalties_from_id(game_data, current_game_id) %>%
         mutate(insertTimestamp = get_current_timestamp())
-      create_table(conn=conn, table_name='penalties', data=penalties_data, index_col="gameID", override=FALSE)
+      create_table(conn=conn, table_name='penalties', data=penalties_data, index_cols="gameID", override=FALSE)
       update_table(conn=conn, table_name='penalties', data=penalties_data, index_col="gameID", whole_table = FALSE)
       incProgress(1 / length(game_ids), detail = paste("Processing game ID", current_game_id))
     }
@@ -180,10 +172,6 @@ update_penalties <- function(conn, base_url) {
 #' @param base_url The base URL for fetching external data (currently unused in the function).
 #' 
 #' @return NULL This function does not return any value. It updates the `advanced_stats` table in the database.
-#' 
-#' @examples
-#' # Example usage in the context of a Shiny app or scheduled task:
-#' update_advanced_stats(conn, base_url)
 update_advanced_stats <- function(conn, base_url) {
   fv_model_path <- "./inst/app/www/fv_xgb.model"
   fv_preprocessing_info_path <- "./inst/app/www/preprocessing_info_fv.rds"
@@ -197,7 +185,7 @@ update_advanced_stats <- function(conn, base_url) {
   advanced_stats_df <- calculate_aec(advanced_stats_df)
   advanced_stats_df <- clean_advanced_stats(advanced_stats_df)
 
-  create_table(conn=conn, table_name="advanced_stats", data=advanced_stats_df, index_col="gameID", override=TRUE)
+  create_table(conn=conn, table_name="advanced_stats", data=advanced_stats_df, index_cols="gameID", override=TRUE)
   update_table(conn=conn, table_name='advanced_stats', data=advanced_stats_df, index_col="gameID", whole_table=TRUE)
 }
 
@@ -394,9 +382,9 @@ get_throws_from_id = function(game, gameID) {
 
 
 add_time_left <- function(game_df) {
-  game_df <- game_df %>% arrange(game_quarter, quarter_point, possession_num, possession_throw)
+  game_df <- game_df %>% arrange(.data$game_quarter, .data$quarter_point, .data$possession_num, .data$possession_throw)
   game_df <- game_df %>%
-    group_by(game_quarter, point_start_time, possession_num) %>%
+    group_by(.data$game_quarter, .data$point_start_time, .data$possession_num) %>%
     mutate(group_id = cur_group_id()) %>%
     ungroup()
   unique_groups <- unique(game_df$group_id)
@@ -419,7 +407,7 @@ add_time_left <- function(game_df) {
     )
   
   game_df <- game_df %>%
-    group_by(game_quarter, point_start_time) %>%
+    group_by(.data$game_quarter, .data$point_start_time) %>%
     mutate(group_id = cur_group_id()) %>%
     ungroup()
   game_df$time_left <- NA

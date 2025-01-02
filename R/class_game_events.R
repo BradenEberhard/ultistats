@@ -1,13 +1,15 @@
 #' GameEvents Class
 #'
-#' @description The `GameEvents` class provides a structured way to manage game-related events,
-#' including teams, scores, and events for both home and away teams. It interacts with an external
-#' API using a proxy instance.
+#' @description The `GameEvents` class manages game-related events, handling details such as teams,
+#' scores, and events for both home and away teams. It interacts with an external API through a proxy
+#' instance to retrieve and process event data. The class includes methods for processing events and
+#' combining them into a data frame for analysis.
 #'
-#' @details This class encapsulates the following functionalities:
-#' - Stores details about a specific game (e.g., teams, scores, events).
-#' - Handles communication with an API through a provided proxy instance.
-#' - Provides fields and methods to retrieve and process game events.
+#' @details This class provides the following functionalities:
+#' - Stores game-related details, including teams, scores, and event data.
+#' - Interfaces with an external API using a provided proxy instance.
+#' - Processes and organizes game events for both home and away teams.
+#' - Returns a combined data frame with game events for further analysis.
 #'
 #' @noRd
 GameEvents <- R6::R6Class(
@@ -43,7 +45,6 @@ GameEvents <- R6::R6Class(
     #' according to the event type.
     #' @export
     process_game_events = function() {
-      source('./classes/team_events.R')
       self$home_team <- TeamEvents$new(self$home_events, TRUE)  # Assuming TeamEvents is an R6 class
       stopifnot(length(self$home_team$game_events) > 0)  # Ensure there are game events
       for (i in 1:nrow(self$home_team$game_events)) {

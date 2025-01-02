@@ -17,7 +17,3 @@ NULL This function does not return any value. It updates the `player_stats` tabl
 \description{
 This function fetches, processes, and updates the player statistics in a database. It computes advanced statistics, combines them with yearly and career data, adds timestamps, calculates additional stats, and processes data for final insertion or update in the `player_stats` table.
 }
-\examples{
-# Example usage in the context of a Shiny app or scheduled task:
-update_player_stats(conn, base_url)
-}

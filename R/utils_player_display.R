@@ -45,7 +45,7 @@ generate_grade_card <- function(ns, category, role) {
 # UI for grade panel
 generate_grade_panel <- function(ns, role, grade_categories) {
   bslib::accordion_panel(
-    title = paste0(tools::toTitleCase(role), "Grade:"),
+    title = paste0(tools::toTitleCase(role), " Grade:"),
     id = ns(paste(role, "_grade")),  # ID for this accordion item
     page_fluid(
       layout_column_wrap(
@@ -67,9 +67,7 @@ generate_grade_panel <- function(ns, role, grade_categories) {
       ),
       layout_columns(
         !!!lapply(grade_categories, function(category) {
-          girafeOutput(ns(paste0(role, "_", tolower(category), "_plot"))) |> 
-            withSpinner() |> 
-            bslib::as_fill_carrier()
+          girafeOutput(ns(paste0(role, "_", tolower(category), "_plot"))) |> withSpinner() |> bslib::as_fill_carrier()
         })
       )      
     )
@@ -169,7 +167,7 @@ generate_yearly_percentile_plot <- function(metric_df, title) {
     geom_point_interactive(aes(tooltip = paste(metric_abbreviation, ": ", round(value,2), "\nPercentile: ", percentile)), size = 3) +
     geom_text_repel(
       data=last_points,
-      aes(color = metric, label = ifelse(metric_abbreviation %in% c("C/100P", "R/100P"), 
+      aes(color = metric, label = ifelse(metric_abbreviation %in% c("C/100P", "R/100P", "B/100P"), 
         metric_abbreviation, 
         gsub("/100P", "",  gsub("/GP", "", metric_abbreviation)))),  
       family = "Lato",  # Adjust the font family
@@ -264,11 +262,19 @@ create_skill_percentiles_plot <- function(session, plot_data) {
       hoveron = "points+fills",  # Enable hover effects on both points and lines
       showlegend = FALSE
     ) %>%
-    layout(
-      xaxis = list(title = "Percentile", range = c(0, 102)), 
-      yaxis = list(title = list(text = "Metric"),ticksuffix = " "),
-      showlegend = FALSE 
-    ) %>%
+      layout(
+        xaxis = list(
+          title = list(text = "Percentile", font = list(size = 20, face="bold")), 
+          range = c(0, 102), 
+          tickfont = list(size = 14)
+        ),
+        yaxis = list(
+          title = list(text = "Metric", font = list(size = 20, face="bold")),
+          ticksuffix = " ",
+          tickfont = list(size = 14)
+        ),
+        showlegend = FALSE 
+      ) %>%
     config(displayModeBar = FALSE)
 }
 
@@ -330,12 +336,12 @@ adjust_for_role <- function(input, df) {
   handler_value <- ifelse(is.null(input$handler_switch_value), FALSE, input$handler_switch_value)
   offense_value <- ifelse(is.null(input$offense_switch_value), FALSE, input$offense_switch_value)
   if (handler_value) {
-    player_handler <- df %>% filter(fullName == input$player_selector  & year == input$year_selector) %>% pull(handler)
-    df <- df %>% filter(handler == player_handler | fullName == input$player_selector)
+    player_handler <- df %>% filter(.data$fullName == input$player_selector  & .data$year == input$year_selector) %>% pull(handler)
+    df <- df %>% filter(.data$handler == player_handler | .data$fullName == input$player_selector)
   }
   if (offense_value) {
-    player_offense <- df %>% filter(fullName == input$player_selector  & year == input$year_selector) %>% pull(offense)
-    df <- df %>% filter(offense == player_offense | fullName == input$player_selector)
+    player_offense <- df %>% filter(.data$fullName == input$player_selector  & .data$year == input$year_selector) %>% pull(offense)
+    df <- df %>% filter(.data$offense == player_offense | .data$fullName == input$player_selector)
   }
   return(df)
 }

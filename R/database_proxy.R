@@ -158,7 +158,7 @@ create_table <- function(conn, table_name, data, index_cols = NULL, override = F
 }
 
 
-
+#' @importFrom glue glue
 update_table <- function(conn, table_name, data, index_col, whole_table) {
   # Check if the index_col exists in the data
   if (!(index_col %in% colnames(data))) {
@@ -175,11 +175,11 @@ update_table <- function(conn, table_name, data, index_col, whole_table) {
 
   # Delete existing rows with the same gameID if not updating the whole table
   if (!whole_table) {
-    delete_sql <- glue::glue("DELETE FROM {table_name} WHERE {index_col} = '{game_id}'")
+    delete_sql <- glue("DELETE FROM {table_name} WHERE {index_col} = '{game_id}'")
     DBI::dbExecute(conn, delete_sql)
   } else {
     # Delete all data in the table if updating the whole table
-    delete_sql <- glue::glue("DELETE FROM {table_name}")
+    delete_sql <- glue("DELETE FROM {table_name}")
     DBI::dbExecute(conn, delete_sql)
   }
 
@@ -210,7 +210,7 @@ get_throws_data <- function(conn, table_name = "throws") {
   }
   
   # Query the throws table to retrieve all data
-  query <- glue::glue("SELECT * FROM {table_name};")
+  query <- glue("SELECT * FROM {table_name};")
   result <- DBI::dbGetQuery(conn, query)
   
   # Return the result as a data frame
@@ -219,7 +219,7 @@ get_throws_data <- function(conn, table_name = "throws") {
 
 get_player_stats <- function(conn, player_id) {
   # SQL query to fetch player stats by playerID
-  query <- glue::glue("SELECT * FROM player_stats WHERE playerID = '{player_id}'")
+  query <- glue("SELECT * FROM player_stats WHERE playerID = '{player_id}'")
   
   # Execute the query and return the result
   player_stats <- DBI::dbGetQuery(conn, query)
@@ -229,7 +229,7 @@ get_player_stats <- function(conn, player_id) {
 
 get_player_passes_by_role <- function(conn, player_id, role = "thrower") {
   # SQL query to fetch player stats by playerID with a join on advanced_stats
-  query <- glue::glue("
+  query <- glue("
     SELECT t.*, a.* 
     FROM throws t
     LEFT JOIN advanced_stats a ON t.throwID = a.throwID
@@ -244,7 +244,7 @@ get_player_passes_by_role <- function(conn, player_id, role = "thrower") {
 
 get_all_player_stats <- function(conn) {
   # SQL query to fetch player stats by playerID
-  query <- glue::glue("SELECT * FROM player_stats WHERE year >= 2021")
+  query <- glue("SELECT * FROM player_stats WHERE year >= 2021")
   
   # Execute the query and return the result
   all_player_stats <- DBI::dbGetQuery(conn, query)
@@ -268,7 +268,7 @@ get_table <- function(conn, table_name) {
   }
   
   # Query the throws table to retrieve all data
-  query <- glue::glue("SELECT * FROM {table_name};")
+  query <- glue("SELECT * FROM {table_name};")
   result <- DBI::dbGetQuery(conn, query)
   
   # Return the result as a data frame
@@ -282,7 +282,7 @@ get_team_id <- function(conn, player_id, year) {
   }
   
   # Query the database
-  query <- glue::glue(
+  query <- glue(
     "SELECT teamID 
      FROM players 
      WHERE playerID = {DBI::dbQuoteLiteral(conn, player_id)} 

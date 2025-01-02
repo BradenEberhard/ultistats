@@ -32,7 +32,3 @@ NULL This function does not return any value. It only triggers an update action 
 \description{
 This function creates an observeEvent handler that listens for an event triggered by a UI input element. When the event is triggered, the function opens a database connection, calls the provided `update_function` to update data, and optionally shows a progress message.
 }
-\examples{
-# Example usage in a Shiny app:
-create_observe_event(input, "updateButton", update_games, function(x) {}, progress_message = "Updating games...")
-}

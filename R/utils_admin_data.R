@@ -32,7 +32,7 @@ fetch_and_process_player_stats <- function(conn, base_url) {
 compute_advanced_stats <- function(advanced_stats) {
   # Thrower stats
   yearly_advanced_stats_thrower <- advanced_stats %>%
-    filter(dropped_throw != 1) %>% 
+    filter(.data$dropped_throw != 1) %>% 
     mutate(year = as.integer(substr(gameID, 1, 4))) %>% 
     group_by(thrower, year) %>%                        
     summarise(
@@ -311,11 +311,7 @@ modify_point_start_time <- function(game_quarter, point_start_time) {
 }
 
 
-#' Interpolate Time Left
-#'
-#' Interpolate time left based on the number of rows in a group. 
-#' creates linear interpolation based on time left to start the point, time left 
-#' starting the next point, and the number of throws in the point
+# interpolate time left
 interpolate_time_left <- function(data, next_start_time) {
   n <- nrow(data) # Number of rows in the group
   interpolated_times <- seq(data$point_start_time[1], next_start_time, length.out = n + 1)
@@ -386,21 +382,21 @@ mutate_advanced_stats <- function(advanced_stats_df) {
 
 calculate_aec <- function(advanced_stats_df) {
   advanced_stats_df <- advanced_stats_df %>%
-    group_by(gameID, game_quarter, quarter_point, possession_num, is_home_team) %>%
-    arrange(possession_throw, .by_group = TRUE) %>%
+    group_by(.data$gameID, .data$game_quarter, .data$quarter_point, .data$possession_num, .data$is_home_team) %>%
+    arrange(.data$possession_throw, .by_group = TRUE) %>%
     mutate(
-      prev_fv_receiver = lag(fv_receiver), # Add the previous row's fv_receiver as its own column
-      min_fv = min(pmin(c(ifelse(turnover == 1, NA, fv_receiver), first(fv_thrower))), na.rm = TRUE),
+      prev_fv_receiver = lag(.data$fv_receiver), # Add the previous row's fv_receiver as its own column
+      min_fv = min(pmin(c(ifelse(.data$turnover == 1, NA, .data$fv_receiver), first(.data$fv_thrower))), na.rm = TRUE),
       aec = ifelse(
-        turnover == 1, 
+        .data$turnover == 1, 
         -prev_fv_receiver, 
         ifelse(
-          receiver_y >= 100 & turnover == 0, 
-          (1 - prev_fv_receiver) / (1 - min_fv), 
-          (fv_receiver - prev_fv_receiver) / (1 - min_fv)
+          .data$receiver_y >= 100 & .data$turnover == 0, 
+          (1 - .data$prev_fv_receiver) / (1 - min_fv), 
+          (.data$fv_receiver - .data$prev_fv_receiver) / (1 - .data$min_fv)
         )
       ),
-      aec = ifelse(is.na(aec), ec / (1 - min_fv), aec)
+      aec = ifelse(is.na(.data$aec), .data$ec / (1 - .data$min_fv), .data$aec)
     ) %>%
     ungroup()
   return(advanced_stats_df)
@@ -408,7 +404,7 @@ calculate_aec <- function(advanced_stats_df) {
 
 clean_advanced_stats <- function(advanced_stats_df) {
   advanced_stats_df <- advanced_stats_df %>%
-    select(-min_fv, -receiver_y, -game_quarter, -quarter_point, -possession_throw, -possession_num, -is_home_team, -turnover, -prev_fv_receiver)
+    select(-.data$min_fv, -.data$receiver_y, -.data$game_quarter, -.data$quarter_point, -.data$possession_throw, -.data$possession_num, -.data$is_home_team, -.data$turnover, -.data$prev_fv_receiver)
   return(advanced_stats_df)
 }
 

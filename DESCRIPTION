@@ -10,13 +10,11 @@ Description: What the package does (one paragraph).
 License: What license is it under?
 Imports: 
     bslib,
-    caret,
     config,
     ggplot2,
     glue,
     golem,
     plotly,
-    pROC,
     shiny,
     xgboost,
     tidyr,
@@ -24,7 +22,13 @@ Imports:
     ggiraph,
     ggrepel,
     dplyr,
-    tibble
+    tibble,
+    lubridate,
+    scales,
+    DBI,
+    RSQLite,
+    httr,
+    jsonlite
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.3.2

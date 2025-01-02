@@ -17,7 +17,3 @@ NULL This function does not return any value. It updates the `advanced_stats` ta
 \description{
 This function fetches throws data, processes it through prediction models for both feature value (fv) and control points (cp), then applies additional transformations and calculations to derive advanced statistics. Finally, it updates or creates the `advanced_stats` table in the database with the processed data.
 }
-\examples{
-# Example usage in the context of a Shiny app or scheduled task:
-update_advanced_stats(conn, base_url)
-}
