@@ -65,8 +65,7 @@ generate_thrower_grade_panel <- function(ns) {
         plotOutput(ns("thrower_radial_histogram_plot")) |> withSpinner() |> bslib::as_fill_carrier(),
         width = 1/2
       ),
-      layout_column_wrap(
-        width = 1/4,
+      layout_columns(
         girafeOutput(ns("thrower_contribution_plot")) |> withSpinner() |> bslib::as_fill_carrier(),
         girafeOutput(ns("thrower_efficiency_plot")) |> withSpinner() |> bslib::as_fill_carrier(),
         girafeOutput(ns("thrower_scores_plot")) |> withSpinner() |> bslib::as_fill_carrier(),

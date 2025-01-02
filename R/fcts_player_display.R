@@ -57,7 +57,6 @@ generate_skill_percentiles_plot <- function(input, session, all_player_stats) {
 }
 
 get_thrower_plot <- function(input, df, metrics, title) {
-  browser()
   metric_data <- convert_to_metric_df(input, df, metrics, all_years = TRUE)
   plot <- generate_yearly_percentile_plot(metric_data, title)
   return(plot)
