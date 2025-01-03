@@ -56,6 +56,14 @@ update_player_stats <- function(conn, base_url) {
   # Fetch and process player stats data from external source
   player_stats_data <- fetch_and_process_player_stats(conn, base_url) %>% compute_career_data_from_player_stats()
   # Compute advanced stats (ec, xcp, etc.) using the advanced_stats table
+
+
+  # Insert or update player stats in the player_stats table
+  create_table(conn=conn, table_name='player_stats', data=player_stats_data, index_cols="playerID", override=TRUE)
+  update_table(conn=conn, table_name='player_stats', data=player_stats_data, index_col="playerID", whole_table = TRUE)
+
+  
+  update_advanced_stats(conn, base_url)
   advanced_stats <- get_table(conn, "advanced_stats")
   yearly_advanced_stats <- compute_advanced_stats(advanced_stats) # requires advanced_stats table
   career_stats <- compute_career_stats(advanced_stats) # aggregating career-level stats
