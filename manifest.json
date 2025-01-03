@@ -2996,7 +2996,7 @@
       "checksum": "c553ddf47c9e80e13d98831a8447d3c5"
     },
     "app.R": {
-      "checksum": "5bbae0c97e6f3874a9cd3fda32254f2e"
+      "checksum": "d456ef129e120c48c8211450db4becfc"
     },
     "DESCRIPTION": {
       "checksum": "0730119ef120c209de51ca9b399c56cc"
@@ -3028,9 +3028,6 @@
     "R/_disable_autoload.R": {
       "checksum": "1178c335d6c11555fd1c4ec6098dfee6"
     },
-    "R/api_proxy.R": {
-      "checksum": "d74ac23cbc6631835804350fb44fa09d"
-    },
     "R/app_config.R": {
       "checksum": "c1911e82cf1d6a3a7e93885c90a97b91"
     },
@@ -3038,7 +3035,7 @@
       "checksum": "2acdbf6b63c22aac11e51d1366c60cb0"
     },
     "R/app_ui.R": {
-      "checksum": "7b4bbe1a1e5818879160d7f3e7f8be22"
+      "checksum": "9b767bb5eaa8141e2516de1096777729"
     },
     "R/class_event_handlers.R": {
       "checksum": "2cabed04f75106fd4c7534b128527c04"
@@ -3048,9 +3045,6 @@
     },
     "R/class_team_events.R": {
       "checksum": "c252c48e8fbf96ad7ba9559d9941f8aa"
-    },
-    "R/database_proxy.R": {
-      "checksum": "8aa1e453d0570095c33bf50f897ac879"
     },
     "R/fcts_admin_data.R": {
       "checksum": "873cff63c58d256eed5cc0b8865d5471"
@@ -3066,6 +3060,12 @@
     },
     "R/mod_team_display.R": {
       "checksum": "63159f7d3ac836c481e979a79e1542f9"
+    },
+    "R/proxy_api.R": {
+      "checksum": "d74ac23cbc6631835804350fb44fa09d"
+    },
+    "R/proxy_database.R": {
+      "checksum": "8aa1e453d0570095c33bf50f897ac879"
     },
     "R/run_app.R": {
       "checksum": "070f9a924121c6b8744f8fe567d65801"

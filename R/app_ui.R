@@ -13,6 +13,12 @@ app_ui <- function(request) {
       preset = "darkly",   # Choose the theme (e.g., "lux", "cosmo", "flatly", etc.)
       version = 5       # Ensure you're using Bootstrap 5
     ),
+    nav_panel(
+      title = "Admin", 
+      value = "admin", 
+      icon = shiny::icon("cogs"),
+      mod_admin_data_ui("admin_data")
+    ),
     # First nav_panel: Player
     nav_panel(
       title = "Player", 
@@ -26,12 +32,6 @@ app_ui <- function(request) {
       value = "team", 
       icon = shiny::icon("users"),
       mod_team_display_ui("team_display")
-    ),
-    nav_panel(
-      title = "Admin", 
-      value = "admin", 
-      icon = shiny::icon("cogs"),
-      mod_admin_data_ui("admin_data")
     )
   )
 }
