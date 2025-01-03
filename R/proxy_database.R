@@ -184,12 +184,19 @@ get_player_passes_by_role <- function(conn, player_id, role = "thrower") {
 }
 
 get_all_player_stats <- function(conn) {
+  # Check if the table exists in the database
+  tables <- DBI::dbListTables(conn)
+  if (!"player_stats" %in% tables) {
+    warning("The table 'player_stats' does not exist in the database.")
+    return(NULL)  # Return NULL or handle the absence of the table as needed
+  }
+
   # SQL query to fetch player stats by playerID
   query <- glue("SELECT * FROM player_stats WHERE year >= 2021")
-  
+
   # Execute the query and return the result
   all_player_stats <- DBI::dbGetQuery(conn, query)
-  
+
   return(all_player_stats)
 }
 
