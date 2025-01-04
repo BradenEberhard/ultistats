@@ -43,7 +43,9 @@ mod_admin_data_ui <- function(id) {
 mod_admin_data_server <- function(id){
   moduleServer(id, function(input, output, session){
     ns <- session$ns
-    dotenv::load_dot_env(file = ".env")
+    if (file.exists(".env")) {
+      dotenv::load_dot_env(file = ".env")
+    }
 
     token <- readRDS(Sys.getenv("GOOGLE_TOKEN_PATH"))
     gcs_auth(token=token)
