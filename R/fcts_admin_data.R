@@ -1,15 +1,3 @@
-#' Generalized observeEvent Handler for Admin Panel
-#' 
-#' This function creates an observeEvent handler that listens for an event triggered by a UI input element. When the event is triggered, the function opens a database connection, calls the provided `update_function` to update data, and optionally shows a progress message.
-#' 
-#' @param input A list of input elements, typically from a Shiny UI, to listen for events.
-#' @param input_id The ID of the input element to observe.
-#' @param update_function The function to call when the input event is triggered. This function should take the database connection and base URL as parameters.
-#' @param timestamps A function to reset timestamps or update progress. It is called after the update function is executed.
-#' @param progress_message An optional message to display during progress. If provided, a progress bar is shown during execution.
-#' @param conn_params A list of parameters for database connection, including `db_path` and `base_url`.
-#' 
-#' @return NULL This function does not return any value. It only triggers an update action when the event occurs.
 create_observe_event <- function(input, input_id, update_function, timestamps, base_url, progress_message = NULL) {
   observeEvent(input[[input_id]], {
     if (!is.null(progress_message)) {
@@ -177,6 +165,7 @@ update_penalties <- function(conn, base_url) {
 #' 
 #' @param conn A database connection object to interact with the database.
 #' @param base_url The base URL for fetching external data (currently unused in the function).
+#' @param google_bucket google bucket for fetching external data
 #' 
 #' @return NULL This function does not return any value. It updates the `advanced_stats` table in the database.
 update_advanced_stats <- function(conn, base_url, google_bucket) {
