@@ -79,7 +79,6 @@ mod_player_display_server <- function(id) {
   moduleServer(id, function(input, output, session) {
     ### Variables
     ns <- session$ns
-    db_path <- get_golem_config("db_path")
     thrower_plot_config <- list(
       usage = list(
         metrics = c("completions", "completions_per_possession", "games", "offensive_points_per_game"),
@@ -192,7 +191,6 @@ mod_player_display_server <- function(id) {
         player_selector = input$player_selector,
         year_selector = input$year_selector,
         all_player_stats = all_player_stats,
-        db_path = db_path,
         role = "thrower"
       )
     })
@@ -203,7 +201,6 @@ mod_player_display_server <- function(id) {
         player_selector = input$player_selector,
         year_selector = input$year_selector,
         all_player_stats = all_player_stats,
-        db_path = db_path,
         role = "receiver"
       )
     })
