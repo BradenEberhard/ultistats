@@ -1,0 +1,10 @@
+name: ultistatsRecovered
+title: ultistatsRecovered
+username: breaksideanalytics
+account: breaksideanalytics
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 13662270
+bundleId: 9604995
+url: https://breaksideanalytics.shinyapps.io/ultistatsRecovered/
+version: 1
