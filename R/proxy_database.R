@@ -240,7 +240,7 @@ get_player_passes_by_role <- function(conn, player_id, role = "thrower") {
   query <- glue("
     SELECT t.*, a.* 
     FROM throws t
-    LEFT JOIN advanced_stats a ON \"t.throwID\" = \"a.throwID\"
+    LEFT JOIN advanced_stats a ON t.\"throwID\" = a.\"throwID\"
     WHERE t.{role} = '{player_id}'
   ")
   
