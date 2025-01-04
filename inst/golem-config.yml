@@ -2,8 +2,7 @@ default:
   golem_name: ultistats
   golem_version: 0.0.0.9000
   app_prod: no
-  db_path: "inst/app/www/app_database.sqlite"
-  base_api_path: "https://www.backend.ufastats.com/api/v1/"
+
 production:
   app_prod: yes
 dev:

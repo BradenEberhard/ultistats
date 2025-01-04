@@ -344,15 +344,15 @@ update_game_df <- function(group_data, game_df) {
   return(game_df)
 }
 
-predict_fv_for_throws <- function(throws_data, fv_model_path, fv_preprocessing_info_path) {
-  fv_df <- predict_fv(fv_model_path, fv_preprocessing_info_path, throws_data)
+predict_fv_for_throws <- function(throws_data, fv_model_path, google_bucket, fv_preprocessing_info_path) {
+  fv_df <- predict_fv(fv_model_path, google_bucket, fv_preprocessing_info_path, throws_data)
   fv_df$thrower <- throws_data$thrower
   fv_df$receiver <- throws_data$receiver
   return(fv_df)
 }
 
-predict_advanced_stats <- function(throws_data, fv_df, cp_model_path, cp_preprocessing_info_path) {
-  advanced_stats_df <- predict_cp(cp_model_path, cp_preprocessing_info_path, throws_data)
+predict_advanced_stats <- function(throws_data, google_bucket, fv_df, cp_model_path, cp_preprocessing_info_path) {
+  advanced_stats_df <- predict_cp(cp_model_path, google_bucket, cp_preprocessing_info_path, throws_data)
   advanced_stats_df$thrower <- fv_df$thrower
   advanced_stats_df$fv_thrower <- fv_df$fv_thrower
   advanced_stats_df$receiver <- fv_df$receiver
@@ -407,5 +407,35 @@ clean_advanced_stats <- function(advanced_stats_df) {
   advanced_stats_df <- advanced_stats_df %>%
     select(-.data$min_fv, -.data$receiver_y, -.data$game_quarter, -.data$quarter_point, -.data$possession_throw, -.data$possession_num, -.data$is_home_team, -.data$turnover, -.data$prev_fv_receiver)
   return(advanced_stats_df)
+}
+
+
+scale_and_convert_to_dmatrix <- function(scaling_params, new_data) {
+  # Extract the mean and std for scaling
+  means <- scaling_params$mean
+  stds <- scaling_params$std
+  
+  # Ensure that the features in new_data align with the scaling_params
+  feature_names <- names(means)  # Assuming `means` and `stds` have the same names
+  new_data <- new_data[, feature_names, drop = FALSE]
+  
+  # Manually scale and center the data
+  scaled_data <- as.data.frame(mapply(
+    function(column, mean_val, std_val) {
+      if (!is.na(mean_val) && !is.na(std_val) && std_val != 0) {
+        (column - mean_val) / std_val
+      } else {
+        column  # Leave unchanged if mean or std is invalid
+      }
+    },
+    column = as.data.frame(new_data),
+    mean_val = means,
+    std_val = stds
+  ))
+  
+  # Convert scaled data to xgb.DMatrix
+  dmatrix <- xgb.DMatrix(data = as.matrix(scaled_data))
+  
+  return(dmatrix)
 }
 

@@ -9,8 +9,8 @@ create_observe_event(
   input_id,
   update_function,
   timestamps,
-  progress_message = NULL,
-  conn_params = list()
+  base_url,
+  progress_message = NULL
 )
 }
 \arguments{

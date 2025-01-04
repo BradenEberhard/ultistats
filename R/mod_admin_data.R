@@ -37,40 +37,44 @@ mod_admin_data_ui <- function(id) {
 #'
 #' @importFrom tibble as_tibble
 #' @importFrom tidyr unnest
+#' @importFrom googleCloudStorageR gcs_auth
 #' @import dplyr
 #' @noRd 
 mod_admin_data_server <- function(id){
   moduleServer(id, function(input, output, session){
     ns <- session$ns
-    # set base variables
-    base_url <- get_golem_config("base_api_path")
-    db_path <- get_golem_config("db_path")
-    conn_params <- list(db_path = db_path, base_url = base_url)
+    dotenv::load_dot_env(file = ".env")
+
+    token <- readRDS(Sys.getenv("GOOGLE_TOKEN_PATH"))
+    gcs_auth(token=token)
+
+    base_url <- Sys.getenv("BASE_API_PATH")
 
     # set reactive variables
     timestamps <- reactiveVal(NULL)
     tables <- reactive({
-      db_path <- get_golem_config("db_path")
-      conn <- open_db_connection(db_path)
+      conn <- open_db_connection()
+      on.exit(close_db_connection(conn))
       table_names <- get_table_names(conn)
+      if (is.null(table_names)) {
+        return(NULL)
+      }
       timestamps({sapply(table_names, function(table) {
         get_recent_timestamp(conn, table)
       })})
-      close_db_connection(conn)
       tables <- data.frame(table_name = table_names, recent_timestamp = timestamps())
     })
 
     # create button observations
-    create_observe_event(input, "update_pulls_button", update_pulls, timestamps, conn_params = conn_params)
-    create_observe_event(input, "update_games_button", update_games, timestamps, "Processing Games", conn_params = conn_params)
-    create_observe_event(input, "update_player_stats_button", update_player_stats, timestamps, "Processing Player Stats", conn_params = conn_params)
-    create_observe_event(input, "update_players_button", update_players, timestamps, "Processing Players", conn_params = conn_params)
-    create_observe_event(input, "update_teams_button", update_teams, timestamps, "Processing Teams", conn_params = conn_params)
-    create_observe_event(input, "update_blocks_button", update_blocks, timestamps, conn_params = conn_params)
-    create_observe_event(input, "update_penalties_button", update_penalties, timestamps, conn_params = conn_params)
-    create_observe_event(input, "update_throws_button", update_throws, timestamps, conn_params = conn_params)
-    create_observe_event(input, "update_advanced_stats_button", update_advanced_stats, timestamps, "Processing Advanced Stats", conn_params = conn_params)
-    create_observe_event(input, "update_all", update_all_tables, timestamps, conn_params = conn_params)
+    create_observe_event(input, "update_pulls_button", update_pulls, timestamps, base_url)
+    create_observe_event(input, "update_games_button", update_games, timestamps, base_url, "Processing Games")
+    create_observe_event(input, "update_player_stats_button", update_player_stats, timestamps, base_url, "Processing Player Stats")
+    create_observe_event(input, "update_players_button", update_players, timestamps, base_url, "Processing Players")
+    create_observe_event(input, "update_teams_button", update_teams, timestamps, base_url, "Processing Teams")
+    create_observe_event(input, "update_blocks_button", update_blocks, timestamps, base_url)
+    create_observe_event(input, "update_penalties_button", update_penalties, timestamps, base_url)
+    create_observe_event(input, "update_throws_button", update_throws, timestamps, base_url)
+    create_observe_event(input, "update_all", update_all_tables, timestamps, base_url)
 
 
     table_cards <- reactive({

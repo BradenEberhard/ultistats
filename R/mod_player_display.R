@@ -134,13 +134,13 @@ mod_player_display_server <- function(id) {
       )
     )
     
-    conn <- open_db_connection(db_path)
+    conn <- open_db_connection()
     session$onSessionEnded(function() {close_db_connection(conn)})
 
     all_player_stats <- get_all_player_stats(conn)  
     
     output$player_name <- renderText({
-      req(input$player_selector, all_player_stats)
+      req(input$player_selector, all_player_stats, all_player_stats)
       stats <- all_player_stats %>% filter(.data$fullName == input$player_selector)
       paste(stats$firstName[[1]], stats$lastName[[1]])
     })
@@ -151,6 +151,7 @@ mod_player_display_server <- function(id) {
 
     observeEvent(input$player_selector, update_year_selector(input$player_selector, all_player_stats, session))
     observe({
+      req(all_player_stats)
       freezeReactiveValue(input, "player_selector")
       updateSelectizeInput(session, "player_selector", server = TRUE, choices = unique(all_player_stats$fullName), selected = "Jordan Kerr")
     })

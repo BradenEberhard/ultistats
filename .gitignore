@@ -3,3 +3,4 @@
 *.model
 *.rds
 *.sqlite
+*.env

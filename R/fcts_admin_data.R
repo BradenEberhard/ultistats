@@ -10,20 +10,20 @@
 #' @param conn_params A list of parameters for database connection, including `db_path` and `base_url`.
 #' 
 #' @return NULL This function does not return any value. It only triggers an update action when the event occurs.
-create_observe_event <- function(input, input_id, update_function, timestamps, progress_message = NULL, conn_params = list()) {
+create_observe_event <- function(input, input_id, update_function, timestamps, base_url, progress_message = NULL) {
   observeEvent(input[[input_id]], {
     if (!is.null(progress_message)) {
       withProgress(message = progress_message, value = 0, {
-        conn <- open_db_connection(conn_params$db_path)
+        conn <- open_db_connection()
         on.exit(close_db_connection(conn))
-        update_function(conn, conn_params$base_url)
+        update_function(conn, base_url)
         
         timestamps(NULL)
       })
     } else {
-      conn <- open_db_connection(conn_params$db_path)
+      conn <- open_db_connection()
       on.exit(close_db_connection(conn))
-      update_function(conn, conn_params$base_url)
+      update_function(conn, base_url)
       timestamps(NULL)
     }
   })
@@ -57,13 +57,12 @@ update_player_stats <- function(conn, base_url) {
   player_stats_data <- fetch_and_process_player_stats(conn, base_url) %>% compute_career_data_from_player_stats()
   # Compute advanced stats (ec, xcp, etc.) using the advanced_stats table
 
-
   # Insert or update player stats in the player_stats table
   create_table(conn=conn, table_name='player_stats', data=player_stats_data, index_cols="playerID", override=TRUE)
   update_table(conn=conn, table_name='player_stats', data=player_stats_data, index_col="playerID", whole_table = TRUE)
 
-  
-  update_advanced_stats(conn, base_url)
+
+  update_advanced_stats(conn, base_url, Sys.getenv("GOOGLE_BUCKET_NAME"))
   advanced_stats <- get_table(conn, "advanced_stats")
   yearly_advanced_stats <- compute_advanced_stats(advanced_stats) # requires advanced_stats table
   career_stats <- compute_career_stats(advanced_stats) # aggregating career-level stats
@@ -180,15 +179,15 @@ update_penalties <- function(conn, base_url) {
 #' @param base_url The base URL for fetching external data (currently unused in the function).
 #' 
 #' @return NULL This function does not return any value. It updates the `advanced_stats` table in the database.
-update_advanced_stats <- function(conn, base_url) {
-  fv_model_path <- "./inst/app/www/fv_xgb.model"
-  fv_preprocessing_info_path <- "./inst/app/www/preprocessing_info_fv.rds"
-  cp_model_path <- "./inst/app/www/cp_xgb.model"
-  cp_preprocessing_info_path <- "./inst/app/www/preprocessing_info_cp.rds"
+update_advanced_stats <- function(conn, base_url, google_bucket) {
+  fv_model_path <- "fv_xgb.model"
+  fv_preprocessing_info_path <- "preprocessing_info_fv.rds"
+  cp_model_path <- "cp_xgb.model"
+  cp_preprocessing_info_path <- "preprocessing_info_cp.rds"
   
   throws_data <- get_throws_data(conn)
-  fv_df <- predict_fv_for_throws(throws_data, fv_model_path, fv_preprocessing_info_path)
-  advanced_stats_df <- predict_advanced_stats(throws_data, fv_df, cp_model_path, cp_preprocessing_info_path)
+  fv_df <- predict_fv_for_throws(throws_data, fv_model_path, google_bucket, fv_preprocessing_info_path)
+  advanced_stats_df <- predict_advanced_stats(throws_data, google_bucket, fv_df, cp_model_path, cp_preprocessing_info_path)
   advanced_stats_df <- mutate_advanced_stats(advanced_stats_df)
   advanced_stats_df <- calculate_aec(advanced_stats_df)
   advanced_stats_df <- clean_advanced_stats(advanced_stats_df)
@@ -445,16 +444,19 @@ add_time_left <- function(game_df) {
   return(game_df)
 }
 
-#' @importFrom xgboost xgb.load xgb.DMatrix
+#' @importFrom xgboost xgb.load.raw xgb.DMatrix
 #' @importFrom dplyr select
+#' @importFrom googleCloudStorageR gcs_get_object
 #' @importFrom stats predict
-predict_fv <- function(model_path, preprocessing_info_path, throws_data) {
+predict_fv <- function(model_path, google_bucket, preprocessing_info_path, throws_data) {
   # Load model and preprocessing info
-  xgb_model <- xgb.load(model_path)
-  preprocessing_info <- readRDS(preprocessing_info_path)
+  xgb_model <- xgb.load.raw(gcs_get_object(model_path, google_bucket))
+  temp_file <- tempfile(fileext = ".rds")
+  gcs_get_object(preprocessing_info_path, google_bucket, saveToDisk = temp_file)
+  preprocessing_info <- readRDS(temp_file)
+  unlink(temp_file)
   scaling_params <- preprocessing_info$scaling_params
   thrower_features <- preprocessing_info$features
-  
   # Prepare features
   thrower_throws <- select(throws_data, all_of(thrower_features))
   receiver_throws <- select(throws_data, all_of(unlist(lapply(thrower_features, function(x) gsub("thrower", "receiver", x)))))
@@ -468,9 +470,9 @@ predict_fv <- function(model_path, preprocessing_info_path, throws_data) {
     )
   
   # Scale data
-  thrower_throws_scaled <- xgb.DMatrix(data = as.matrix(predict(scaling_params, thrower_throws)))
-  receiver_throws_scaled <- xgb.DMatrix(data = as.matrix(predict(scaling_params, receiver_throws)))
-  opponent_throws_scaled <- xgb.DMatrix(data = as.matrix(predict(scaling_params, opponent_throws)))
+  thrower_throws_scaled <- scale_and_convert_to_dmatrix(scaling_params, thrower_throws)
+  receiver_throws_scaled <- scale_and_convert_to_dmatrix(scaling_params, receiver_throws)
+  opponent_throws_scaled <- scale_and_convert_to_dmatrix(scaling_params, opponent_throws)
   
   # Get predictions
   thrower_pred_probs <- predict(xgb_model, thrower_throws_scaled)
@@ -490,19 +492,20 @@ predict_fv <- function(model_path, preprocessing_info_path, throws_data) {
   return(output_dataframe)
 }
 
-#' @importFrom xgboost xgb.load xgb.DMatrix
+#' @importFrom xgboost xgb.load.raw xgb.DMatrix
 #' @importFrom dplyr select
 #' @importFrom stats predict
-predict_cp <- function(model_path, preprocessing_info_path, throws_data) {
-  xgb_model <- xgb.load(model_path)
-  preprocessing_info <- readRDS(preprocessing_info_path)
+predict_cp <- function(model_path, google_bucket, preprocessing_info_path, throws_data) {
+  xgb_model <- xgb.load.raw(gcs_get_object(model_path, google_bucket))
+  temp_file <- tempfile(fileext = ".rds")
+  gcs_get_object(preprocessing_info_path, google_bucket, saveToDisk = temp_file)
+  preprocessing_info <- readRDS(temp_file)
   scaling_params <- preprocessing_info$scaling_params
   thrower_features <- preprocessing_info$features
-  
   # Prepare features
   thrower_throws <- throws_data %>% select(all_of(thrower_features))
   # Scale data
-  thrower_throws_scaled <- xgb.DMatrix(data = as.matrix(predict(scaling_params, thrower_throws)))
+  thrower_throws_scaled <- scale_and_convert_to_dmatrix(scaling_params, thrower_throws)
   # Get predictions
   thrower_pred_probs <- predict(xgb_model, thrower_throws_scaled)
   

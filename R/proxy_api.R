@@ -17,7 +17,10 @@ fetch_players <- function(base_url, years=NULL) {
 }
 
 
-fetch_games <- function(base_url, endpoint = "games?date=2021:") {
+fetch_games <- function(base_url=NULL, endpoint = "games?date=2021:") {
+  if (is.null(base_url)) {
+    base_url <- Sys.getenv("BASE_API_PATH")
+  }
   api_url <- paste0(base_url, endpoint)
   
   # Use httr to fetch data from the API
