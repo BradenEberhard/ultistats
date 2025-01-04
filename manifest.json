@@ -3055,7 +3055,7 @@
   },
   "files": {
     ".env": {
-      "checksum": "49370c2812fcfaa789a532853ff3e483"
+      "checksum": "7da15454d860e443ce0af08bbccb6a4f"
     },
     ".Rbuildignore": {
       "checksum": "c553ddf47c9e80e13d98831a8447d3c5"
@@ -3064,7 +3064,7 @@
       "checksum": "d456ef129e120c48c8211450db4becfc"
     },
     "DESCRIPTION": {
-      "checksum": "8dffb67d31c76eb9c9497f2b12105a05"
+      "checksum": "e3c6ada019dd93837e6b7e59a84c37c1"
     },
     "inst/app/www/favicon.ico": {
       "checksum": "81560d1b906a530c87fa0acbb2f5cca4"
@@ -3115,7 +3115,7 @@
       "checksum": "72ec272a05e201a6b1de4ec2b79fbcec"
     },
     "R/proxy_database.R": {
-      "checksum": "a843bde5d731d6875f9fd3644b9f3cdb"
+      "checksum": "0d391b17dec1bbeabba63a767d8bdcb3"
     },
     "R/run_app.R": {
       "checksum": "070f9a924121c6b8744f8fe567d65801"
