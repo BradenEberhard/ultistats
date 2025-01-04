@@ -187,41 +187,6 @@
         "Archs": "RPostgres.so.dSYM"
       }
     },
-    "RSQLite": {
-      "Source": "CRAN",
-      "Repository": "https://cran.rstudio.com",
-      "description": {
-        "Package": "RSQLite",
-        "Title": "SQLite Interface for R",
-        "Version": "2.3.9",
-        "Date": "2024-12-02",
-        "Authors@R": "c(\n    person(\"Kirill\", \"Müller\", , \"kirill@cynkra.com\", role = c(\"aut\", \"cre\"),\n           comment = c(ORCID = \"0000-0002-1416-3412\")),\n    person(\"Hadley\", \"Wickham\", role = \"aut\"),\n    person(c(\"David\", \"A.\"), \"James\", role = \"aut\"),\n    person(\"Seth\", \"Falcon\", role = \"aut\"),\n    person(\"D. Richard\", \"Hipp\", role = \"ctb\",\n           comment = \"for the included SQLite sources\"),\n    person(\"Dan\", \"Kennedy\", role = \"ctb\",\n           comment = \"for the included SQLite sources\"),\n    person(\"Joe\", \"Mistachkin\", role = \"ctb\",\n           comment = \"for the included SQLite sources\"),\n    person(, \"SQLite Authors\", role = \"ctb\",\n           comment = \"for the included SQLite sources\"),\n    person(\"Liam\", \"Healy\", role = \"ctb\",\n           comment = \"for the included SQLite sources\"),\n    person(\"R Consortium\", role = \"fnd\"),\n    person(, \"RStudio\", role = \"cph\")\n  )",
-        "Description": "Embeds the SQLite database engine in R and provides an\n    interface compliant with the DBI package. The source for the SQLite\n    engine and for various extensions in a recent version is included.\n    System libraries will never be consulted because this package relies\n    on static linking for the plugins it includes; this also ensures a\n    consistent experience across all installations.",
-        "License": "LGPL (>= 2.1)",
-        "URL": "https://rsqlite.r-dbi.org, https://github.com/r-dbi/RSQLite",
-        "BugReports": "https://github.com/r-dbi/RSQLite/issues",
-        "Depends": "R (>= 3.1.0)",
-        "Imports": "bit64, blob (>= 1.2.0), DBI (>= 1.2.0), memoise, methods,\npkgconfig, rlang",
-        "Suggests": "callr, cli, DBItest (>= 1.8.0), decor, gert, gh, hms, knitr,\nmagrittr, rmarkdown, rvest, testthat (>= 3.0.0), withr, xml2",
-        "LinkingTo": "plogr (>= 0.2.0), cpp11 (>= 0.4.0)",
-        "VignetteBuilder": "knitr",
-        "Config/Needs/website": "r-dbi/dbitemplate",
-        "Config/autostyle/scope": "line_breaks",
-        "Config/autostyle/strict": "false",
-        "Config/testthat/edition": "3",
-        "Encoding": "UTF-8",
-        "RoxygenNote": "7.3.2.9000",
-        "Collate": "'SQLiteConnection.R' 'SQLKeywords_SQLiteConnection.R'\n'SQLiteDriver.R' 'SQLite.R' 'SQLiteResult.R' 'coerce.R'\n'compatRowNames.R' 'copy.R' 'cpp11.R' 'datasetsDb.R'\n'dbAppendTable_SQLiteConnection.R' 'dbBeginTransaction.R'\n'dbBegin_SQLiteConnection.R' 'dbBind_SQLiteResult.R'\n'dbClearResult_SQLiteResult.R' 'dbColumnInfo_SQLiteResult.R'\n'dbCommit_SQLiteConnection.R' 'dbConnect_SQLiteConnection.R'\n'dbConnect_SQLiteDriver.R' 'dbDataType_SQLiteConnection.R'\n'dbDataType_SQLiteDriver.R' 'dbDisconnect_SQLiteConnection.R'\n'dbExistsTable_SQLiteConnection_Id.R'\n'dbExistsTable_SQLiteConnection_character.R'\n'dbFetch_SQLiteResult.R' 'dbGetException_SQLiteConnection.R'\n'dbGetInfo_SQLiteConnection.R' 'dbGetInfo_SQLiteDriver.R'\n'dbGetPreparedQuery.R'\n'dbGetPreparedQuery_SQLiteConnection_character_data.frame.R'\n'dbGetRowCount_SQLiteResult.R'\n'dbGetRowsAffected_SQLiteResult.R'\n'dbGetStatement_SQLiteResult.R' 'dbHasCompleted_SQLiteResult.R'\n'dbIsValid_SQLiteConnection.R' 'dbIsValid_SQLiteDriver.R'\n'dbIsValid_SQLiteResult.R' 'dbListResults_SQLiteConnection.R'\n'dbListTables_SQLiteConnection.R'\n'dbQuoteIdentifier_SQLiteConnection_SQL.R'\n'dbQuoteIdentifier_SQLiteConnection_character.R'\n'dbReadTable_SQLiteConnection_character.R'\n'dbRemoveTable_SQLiteConnection_character.R'\n'dbRollback_SQLiteConnection.R' 'dbSendPreparedQuery.R'\n'dbSendPreparedQuery_SQLiteConnection_character_data.frame.R'\n'dbSendQuery_SQLiteConnection_character.R'\n'dbUnloadDriver_SQLiteDriver.R'\n'dbUnquoteIdentifier_SQLiteConnection_SQL.R'\n'dbWriteTable_SQLiteConnection_character_character.R'\n'dbWriteTable_SQLiteConnection_character_data.frame.R'\n'db_bind.R' 'deprecated.R' 'export.R' 'fetch_SQLiteResult.R'\n'import-standalone-check_suggested.R'\n'import-standalone-purrr.R' 'initExtension.R' 'initRegExp.R'\n'isSQLKeyword_SQLiteConnection_character.R'\n'make.db.names_SQLiteConnection_character.R' 'pkgconfig.R'\n'show_SQLiteConnection.R' 'sqlData_SQLiteConnection.R'\n'table.R' 'transactions.R' 'utils.R' 'version.R' 'zzz.R'",
-        "NeedsCompilation": "yes",
-        "Packaged": "2024-12-03 17:33:18 UTC; kirill",
-        "Author": "Kirill Müller [aut, cre] (<https://orcid.org/0000-0002-1416-3412>),\n  Hadley Wickham [aut],\n  David A. James [aut],\n  Seth Falcon [aut],\n  D. Richard Hipp [ctb] (for the included SQLite sources),\n  Dan Kennedy [ctb] (for the included SQLite sources),\n  Joe Mistachkin [ctb] (for the included SQLite sources),\n  SQLite Authors [ctb] (for the included SQLite sources),\n  Liam Healy [ctb] (for the included SQLite sources),\n  R Consortium [fnd],\n  RStudio [cph]",
-        "Maintainer": "Kirill Müller <kirill@cynkra.com>",
-        "Repository": "CRAN",
-        "Date/Publication": "2024-12-03 19:30:05 UTC",
-        "Built": "R 4.4.1; aarch64-apple-darwin20; 2024-12-03 20:54:54 UTC; unix",
-        "Archs": "RSQLite.so.dSYM"
-      }
-    },
     "Rcpp": {
       "Source": "CRAN",
       "Repository": "https://cran.rstudio.com",
@@ -276,35 +241,6 @@
         "Date/Publication": "2024-10-04 07:20:03 UTC",
         "Built": "R 4.4.1; aarch64-apple-darwin20; 2024-10-04 08:14:07 UTC; unix",
         "Archs": "askpass.so.dSYM"
-      }
-    },
-    "assertthat": {
-      "Source": "CRAN",
-      "Repository": "https://cran.rstudio.com",
-      "description": {
-        "Package": "assertthat",
-        "Title": "Easy Pre and Post Assertions",
-        "Version": "0.2.1",
-        "Authors@R": "\n  person(\"Hadley\", \"Wickham\", , \"hadley@rstudio.com\", c(\"aut\", \"cre\"))",
-        "Description": "An extension to stopifnot() that makes it easy to declare \n    the pre and post conditions that you code should satisfy, while also \n    producing friendly error messages so that your users know what's gone\n    wrong.",
-        "License": "GPL-3",
-        "Imports": "tools",
-        "Suggests": "testthat, covr",
-        "RoxygenNote": "6.0.1",
-        "Collate": "'assert-that.r' 'on-failure.r' 'assertions-file.r'\n'assertions-scalar.R' 'assertions.r' 'base.r'\n'base-comparison.r' 'base-is.r' 'base-logical.r' 'base-misc.r'\n'utils.r' 'validate-that.R'",
-        "NeedsCompilation": "no",
-        "Packaged": "2019-03-21 13:11:01 UTC; hadley",
-        "Author": "Hadley Wickham [aut, cre]",
-        "Maintainer": "Hadley Wickham <hadley@rstudio.com>",
-        "Repository": "CRAN",
-        "Date/Publication": "2019-03-21 14:53:46 UTC",
-        "Built": "R 4.4.0; ; 2024-04-05 15:28:09 UTC; unix",
-        "RemoteType": "standard",
-        "RemotePkgRef": "assertthat",
-        "RemoteRef": "assertthat",
-        "RemoteRepos": "https://cran.rstudio.com/",
-        "RemotePkgPlatform": "aarch64-apple-darwin20",
-        "RemoteSha": "0.2.1"
       }
     },
     "attempt": {
@@ -1097,42 +1033,6 @@
         "Archs": "fs.so.dSYM"
       }
     },
-    "gargle": {
-      "Source": "CRAN",
-      "Repository": "https://cran.rstudio.com",
-      "description": {
-        "Package": "gargle",
-        "Title": "Utilities for Working with Google APIs",
-        "Version": "1.5.2",
-        "Authors@R": "c(\n    person(\"Jennifer\", \"Bryan\", , \"jenny@posit.co\", role = c(\"aut\", \"cre\"),\n           comment = c(ORCID = \"0000-0002-6983-2759\")),\n    person(\"Craig\", \"Citro\", , \"craigcitro@google.com\", role = \"aut\"),\n    person(\"Hadley\", \"Wickham\", , \"hadley@posit.co\", role = \"aut\",\n           comment = c(ORCID = \"0000-0003-4757-117X\")),\n    person(\"Google Inc\", role = \"cph\"),\n    person(\"Posit Software, PBC\", role = c(\"cph\", \"fnd\"))\n  )",
-        "Description": "Provides utilities for working with Google APIs\n    <https://developers.google.com/apis-explorer>.  This includes\n    functions and classes for handling common credential types and for\n    preparing, executing, and processing HTTP requests.",
-        "License": "MIT + file LICENSE",
-        "URL": "https://gargle.r-lib.org, https://github.com/r-lib/gargle",
-        "BugReports": "https://github.com/r-lib/gargle/issues",
-        "Depends": "R (>= 3.6)",
-        "Imports": "cli (>= 3.0.1), fs (>= 1.3.1), glue (>= 1.3.0), httr (>=\n1.4.5), jsonlite, lifecycle, openssl, rappdirs, rlang (>=\n1.1.0), stats, utils, withr",
-        "Suggests": "aws.ec2metadata, aws.signature, covr, httpuv, knitr,\nrmarkdown, sodium, spelling, testthat (>= 3.1.7)",
-        "VignetteBuilder": "knitr",
-        "Config/Needs/website": "tidyverse/tidytemplate",
-        "Config/testthat/edition": "3",
-        "Encoding": "UTF-8",
-        "Language": "en-US",
-        "RoxygenNote": "7.2.3",
-        "NeedsCompilation": "no",
-        "Packaged": "2023-07-20 18:17:52 UTC; jenny",
-        "Author": "Jennifer Bryan [aut, cre] (<https://orcid.org/0000-0002-6983-2759>),\n  Craig Citro [aut],\n  Hadley Wickham [aut] (<https://orcid.org/0000-0003-4757-117X>),\n  Google Inc [cph],\n  Posit Software, PBC [cph, fnd]",
-        "Maintainer": "Jennifer Bryan <jenny@posit.co>",
-        "Repository": "CRAN",
-        "Date/Publication": "2023-07-20 18:50:08 UTC",
-        "Built": "R 4.4.0; ; 2024-04-06 09:14:32 UTC; unix",
-        "RemoteType": "standard",
-        "RemotePkgRef": "gargle",
-        "RemoteRef": "gargle",
-        "RemoteRepos": "https://cran.rstudio.com/",
-        "RemotePkgPlatform": "aarch64-apple-darwin20",
-        "RemoteSha": "1.5.2"
-      }
-    },
     "generics": {
       "Source": "CRAN",
       "Repository": "https://cran.rstudio.com",
@@ -1331,69 +1231,6 @@
         "Repository": "CRAN",
         "Date/Publication": "2024-08-27 10:50:32 UTC",
         "Built": "R 4.4.1; ; 2024-08-27 13:29:39 UTC; unix"
-      }
-    },
-    "googleAuthR": {
-      "Source": "CRAN",
-      "Repository": "https://cran.rstudio.com",
-      "description": {
-        "Package": "googleAuthR",
-        "Type": "Package",
-        "Version": "2.0.2",
-        "Title": "Authenticate and Create Google APIs",
-        "Description": "Create R functions that interact with OAuth2 Google APIs \n    <https://developers.google.com/apis-explorer/> easily,\n    with auto-refresh and Shiny compatibility.",
-        "Authors@R": "c(person(\"Mark\", \"Edmondson\",email = \"m@sunholo.com\",\n                  role = \"aut\",\n                  comment = c(ORCID = \"0000-0002-8434-3881\")),\n           person(\"Erik\", \"Grönroos\", email = \"erik.gronroos@8-bit-sheep.com\",\n                  role = \"cre\"),\n           person(\"Jennifer\", \"Bryan\", email=\"jenny@stat.ubc.ca\", role = \"ctb\"),\n           person(\"Johann\", \"deBoer\", email=\"johanndeboer@gmail.com\", role = \"ctb\"),\n           person(\"Neal\", \"Richardson\", email=\"neal.p.richardson@gmail.com\", role = \"ctb\"),\n           person(\"David\",\"Kulp\", email=\"dkulp@cs.umass.edu\", role = \"ctb\"),\n           person(\"Joe\",\"Cheng\", email = \"joe@rstudio.com\", role = \"ctb\"))",
-        "URL": "https://code.markedmondson.me/googleAuthR/",
-        "BugReports": "https://github.com/MarkEdmondson1234/googleAuthR/issues",
-        "Depends": "R (>= 3.3.0)",
-        "Imports": "assertthat (>= 0.2.0), cli (>= 2.0.2), digest, gargle (>=\n1.2.0), httr (>= 1.4.0), jsonlite (>= 1.6), memoise (>= 1.1.0),\nrlang, utils",
-        "Suggests": "covr, devtools (>= 1.12.0), formatR (>= 1.4),\ngoogleAnalyticsR, knitr, miniUI (>= 0.1.1), rmarkdown, roxygen2\n(>= 5.0.0), rstudioapi, shiny (>= 0.13.2), testthat, usethis\n(>= 1.6.0)",
-        "License": "MIT + file LICENSE",
-        "VignetteBuilder": "knitr",
-        "Encoding": "UTF-8",
-        "RoxygenNote": "7.3.1",
-        "NeedsCompilation": "no",
-        "Packaged": "2024-05-22 15:28:45 UTC; groner",
-        "Author": "Mark Edmondson [aut] (<https://orcid.org/0000-0002-8434-3881>),\n  Erik Grönroos [cre],\n  Jennifer Bryan [ctb],\n  Johann deBoer [ctb],\n  Neal Richardson [ctb],\n  David Kulp [ctb],\n  Joe Cheng [ctb]",
-        "Maintainer": "Erik Grönroos <erik.gronroos@8-bit-sheep.com>",
-        "Repository": "CRAN",
-        "Date/Publication": "2024-05-22 21:20:17 UTC",
-        "Built": "R 4.4.0; ; 2024-05-22 22:32:54 UTC; unix",
-        "RemoteType": "standard",
-        "RemotePkgRef": "googleAuthR",
-        "RemoteRef": "googleAuthR",
-        "RemoteRepos": "https://cran.rstudio.com/",
-        "RemotePkgPlatform": "aarch64-apple-darwin20",
-        "RemoteSha": "2.0.2"
-      }
-    },
-    "googleCloudStorageR": {
-      "Source": "CRAN",
-      "Repository": "https://cran.rstudio.com",
-      "description": {
-        "Package": "googleCloudStorageR",
-        "Type": "Package",
-        "Version": "0.7.0",
-        "Title": "Interface with Google Cloud Storage API",
-        "Description": "Interact with Google Cloud Storage <https://cloud.google.com/storage/> \n  API in R. Part of the 'cloudyr' <https://cloudyr.github.io/> project.",
-        "Authors@R": "c(person(\"Mark\", \"Edmondson\",email = \"r@sunholo.com\",\n                  role = c(\"aut\", \"cre\"),\n                  comment = c(ORCID = \"0000-0002-8434-3881\")))",
-        "URL": "https://code.markedmondson.me/googleCloudStorageR/",
-        "BugReports": "https://github.com/cloudyr/googleCloudStorageR/issues",
-        "Depends": "R (>= 3.2.0)",
-        "Imports": "assertthat (>= 0.2.0), cli, curl, googleAuthR (>= 1.4.0), httr\n(>= 1.2.1), jsonlite (>= 1.0), openssl, utils, yaml, zip (>=\n2.0.3)",
-        "Suggests": "fs, googleComputeEngineR, knitr, readr, rmarkdown, sodium,\ntestthat, usethis",
-        "License": "MIT + file LICENSE",
-        "VignetteBuilder": "knitr",
-        "RoxygenNote": "7.1.2",
-        "Config/testthat/edition": "3",
-        "Config/testthat/parallel": "false",
-        "NeedsCompilation": "no",
-        "Packaged": "2021-12-15 09:46:05 UTC; mark",
-        "Author": "Mark Edmondson [aut, cre] (<https://orcid.org/0000-0002-8434-3881>)",
-        "Maintainer": "Mark Edmondson <r@sunholo.com>",
-        "Repository": "CRAN",
-        "Date/Publication": "2021-12-16 09:50:02 UTC",
-        "Built": "R 4.4.0; ; 2024-04-06 09:46:35 UTC; unix"
       }
     },
     "gtable": {
@@ -3214,37 +3051,11 @@
         "Built": "R 4.4.0; aarch64-apple-darwin20; 2024-07-26 16:57:52 UTC; unix",
         "Archs": "yaml.so.dSYM"
       }
-    },
-    "zip": {
-      "Source": "CRAN",
-      "Repository": "https://cran.rstudio.com",
-      "description": {
-        "Package": "zip",
-        "Title": "Cross-Platform 'zip' Compression",
-        "Version": "2.3.1",
-        "Authors@R": "c(\n    person(\"Gábor\", \"Csárdi\", , \"csardi.gabor@gmail.com\", role = c(\"aut\", \"cre\")),\n    person(\"Kuba\", \"Podgórski\", role = \"ctb\"),\n    person(\"Rich\", \"Geldreich\", role = \"ctb\"),\n    person(\"Posit Software, PBC\", role = c(\"cph\", \"fnd\"))\n  )",
-        "Description": "Cross-Platform 'zip' Compression Library. A replacement for\n    the 'zip' function, that does not require any additional external\n    tools on any platform.",
-        "License": "MIT + file LICENSE",
-        "URL": "https://github.com/r-lib/zip, https://r-lib.github.io/zip/",
-        "BugReports": "https://github.com/r-lib/zip/issues",
-        "Suggests": "covr, processx, R6, testthat, withr",
-        "Config/Needs/website": "tidyverse/tidytemplate",
-        "Config/testthat/edition": "3",
-        "Encoding": "UTF-8",
-        "RoxygenNote": "7.2.3",
-        "NeedsCompilation": "yes",
-        "Packaged": "2024-01-27 09:28:29 UTC; gaborcsardi",
-        "Author": "Gábor Csárdi [aut, cre],\n  Kuba Podgórski [ctb],\n  Rich Geldreich [ctb],\n  Posit Software, PBC [cph, fnd]",
-        "Maintainer": "Gábor Csárdi <csardi.gabor@gmail.com>",
-        "Repository": "CRAN",
-        "Date/Publication": "2024-01-27 10:00:02 UTC",
-        "Built": "R 4.4.0; aarch64-apple-darwin20; 2024-04-05 15:11:36 UTC; unix"
-      }
     }
   },
   "files": {
     ".env": {
-      "checksum": "d6c91a230ef008765acec68c80571661"
+      "checksum": "49370c2812fcfaa789a532853ff3e483"
     },
     ".Rbuildignore": {
       "checksum": "c553ddf47c9e80e13d98831a8447d3c5"
@@ -3253,7 +3064,7 @@
       "checksum": "d456ef129e120c48c8211450db4becfc"
     },
     "DESCRIPTION": {
-      "checksum": "d711696313b7f45734463d3d382c23b8"
+      "checksum": "8dffb67d31c76eb9c9497f2b12105a05"
     },
     "inst/app/www/favicon.ico": {
       "checksum": "81560d1b906a530c87fa0acbb2f5cca4"
@@ -3262,10 +3073,7 @@
       "checksum": "5aa70534cf8668dc51852033f454cd70"
     },
     "NAMESPACE": {
-      "checksum": "e0368f218cd94703d9af1797eec365b6"
-    },
-    "oauth.json": {
-      "checksum": "694dd8beed02e79600faf7a314d395f2"
+      "checksum": "7330f00e7600513a2f847e8943a5a3a4"
     },
     "R/_disable_autoload.R": {
       "checksum": "1178c335d6c11555fd1c4ec6098dfee6"
@@ -3289,13 +3097,13 @@
       "checksum": "c252c48e8fbf96ad7ba9559d9941f8aa"
     },
     "R/fcts_admin_data.R": {
-      "checksum": "6e404d2f9e35be3f579ae5860e988270"
+      "checksum": "62a17503a4e467a3f7bb90db99b89e12"
     },
     "R/fcts_player_display.R": {
       "checksum": "92db9dfd0192b5db3e6e3960d9a77ec9"
     },
     "R/mod_admin_data.R": {
-      "checksum": "996969654b74f11610d25ea64a65e808"
+      "checksum": "a8f961125e0294785f630a6dc23b5813"
     },
     "R/mod_player_display.R": {
       "checksum": "b6fb5e4cf83e33ff38511a28f868ad85"
@@ -3307,19 +3115,16 @@
       "checksum": "72ec272a05e201a6b1de4ec2b79fbcec"
     },
     "R/proxy_database.R": {
-      "checksum": "63c1ff5b96d4377b2d9a1244516d8c87"
+      "checksum": "a843bde5d731d6875f9fd3644b9f3cdb"
     },
     "R/run_app.R": {
       "checksum": "070f9a924121c6b8744f8fe567d65801"
     },
     "R/utils_admin_data.R": {
-      "checksum": "5ace2fa6abfd410d3ddef9d11603ef0e"
+      "checksum": "078429977df3ed3d23c37eead3ff015c"
     },
     "R/utils_player_display.R": {
       "checksum": "6a46abd5498abfeffc0ae988102a65e2"
-    },
-    "test_token.rds": {
-      "checksum": "fcdf06c08037ca8c3f50a6267913936e"
     }
   },
   "users": null

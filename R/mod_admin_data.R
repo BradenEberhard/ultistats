@@ -37,7 +37,6 @@ mod_admin_data_ui <- function(id) {
 #'
 #' @importFrom tibble as_tibble
 #' @importFrom tidyr unnest
-#' @importFrom googleCloudStorageR gcs_auth
 #' @import dplyr
 #' @noRd 
 mod_admin_data_server <- function(id){
@@ -46,10 +45,6 @@ mod_admin_data_server <- function(id){
     if (file.exists(".env")) {
       dotenv::load_dot_env(file = ".env")
     }
-
-    token <- readRDS(Sys.getenv("GOOGLE_TOKEN_PATH"))
-    gcs_auth(token=token)
-
     base_url <- Sys.getenv("BASE_API_PATH")
 
     # set reactive variables

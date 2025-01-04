@@ -4,7 +4,7 @@
 \alias{update_advanced_stats}
 \title{Function to Process and Update Advanced Stats}
 \usage{
-update_advanced_stats(conn, base_url, google_bucket)
+update_advanced_stats(conn, base_url)
 }
 \arguments{
 \item{conn}{A database connection object to interact with the database.}

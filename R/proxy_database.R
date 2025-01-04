@@ -1,4 +1,5 @@
 # Function to open the database connection
+#' @importFrom RPostgres Postgres
 open_db_connection <- function() {
   # Get credentials from environment variables
   db_host <- Sys.getenv("DB_HOST")
@@ -8,7 +9,7 @@ open_db_connection <- function() {
   db_password <- Sys.getenv("DB_PASSWORD")
   
   # Create the connection string
-  conn <- DBI::dbConnect(RPostgres::Postgres(),
+  conn <- DBI::dbConnect(Postgres(),
                          host = db_host,
                          port = db_port,
                          dbname = db_name,
@@ -302,5 +303,36 @@ get_team_id <- function(conn, player_id, year) {
   } else {
     warning("No matching teamID found for the given player_id and year.")
     return(NULL)
+  }
+}
+
+get_model_data_from_db <- function(filename) {
+  conn <- open_db_connection()
+  on.exit(close_db_connection(conn))
+  # Query to get the file data from the database
+  query <- "SELECT file_data FROM model_files WHERE filename = $1"
+  
+  # Fetch the file data as raw bytes
+  result <- DBI::dbGetQuery(conn, query, params = list(filename))
+  
+  if (nrow(result) == 0) {
+    stop("File not found in the database.")
+  }
+  
+  # Extract the file data (assuming it's the first column, modify if necessary)
+  file_data <- result$file_data[[1]]
+  
+  # Check file extension and handle accordingly
+  if (grepl("\\.model$", filename)) {
+    # If the file ends with .model, deserialize as an XGBoost model
+    model <- unserialize(file_data)
+    model <- xgboost::xgb.Booster.complete(model)  # Complete the model if needed
+    return(model)
+  } else if (grepl("\\.rds$", filename)) {
+    # If the file ends with .rds, unserialize as an RDS object
+    rds_file <- unserialize(file_data)
+    return(rds_file)
+  } else {
+    stop("Unsupported file extension.")
   }
 }

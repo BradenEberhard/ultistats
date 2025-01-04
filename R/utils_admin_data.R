@@ -344,15 +344,15 @@ update_game_df <- function(group_data, game_df) {
   return(game_df)
 }
 
-predict_fv_for_throws <- function(throws_data, fv_model_path, google_bucket, fv_preprocessing_info_path) {
-  fv_df <- predict_fv(fv_model_path, google_bucket, fv_preprocessing_info_path, throws_data)
+predict_fv_for_throws <- function(throws_data, fv_model_filename, fv_preprocessing_info_filename) {
+  fv_df <- predict_fv(fv_model_filename, fv_preprocessing_info_filename, throws_data)
   fv_df$thrower <- throws_data$thrower
   fv_df$receiver <- throws_data$receiver
   return(fv_df)
 }
 
-predict_advanced_stats <- function(throws_data, google_bucket, fv_df, cp_model_path, cp_preprocessing_info_path) {
-  advanced_stats_df <- predict_cp(cp_model_path, google_bucket, cp_preprocessing_info_path, throws_data)
+predict_advanced_stats <- function(throws_data, fv_df, cp_model_filename, cp_preprocessing_info_filename) {
+  advanced_stats_df <- predict_cp(cp_model_filename, cp_preprocessing_info_filename, throws_data)
   advanced_stats_df$thrower <- fv_df$thrower
   advanced_stats_df$fv_thrower <- fv_df$fv_thrower
   advanced_stats_df$receiver <- fv_df$receiver
@@ -434,7 +434,7 @@ scale_and_convert_to_dmatrix <- function(scaling_params, new_data) {
   ))
   
   # Convert scaled data to xgb.DMatrix
-  dmatrix <- xgb.DMatrix(data = as.matrix(scaled_data))
+  dmatrix <- xgboost::xgb.DMatrix(data = as.matrix(scaled_data))
   
   return(dmatrix)
 }

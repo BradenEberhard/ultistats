@@ -50,7 +50,7 @@ update_player_stats <- function(conn, base_url) {
   update_table(conn=conn, table_name='player_stats', data=player_stats_data, index_col="playerID", whole_table = TRUE)
 
 
-  update_advanced_stats(conn, base_url, Sys.getenv("GOOGLE_BUCKET_NAME"))
+  update_advanced_stats(conn, base_url)
   advanced_stats <- get_table(conn, "advanced_stats")
   yearly_advanced_stats <- compute_advanced_stats(advanced_stats) # requires advanced_stats table
   career_stats <- compute_career_stats(advanced_stats) # aggregating career-level stats
@@ -165,18 +165,17 @@ update_penalties <- function(conn, base_url) {
 #' 
 #' @param conn A database connection object to interact with the database.
 #' @param base_url The base URL for fetching external data (currently unused in the function).
-#' @param google_bucket google bucket for fetching external data
 #' 
 #' @return NULL This function does not return any value. It updates the `advanced_stats` table in the database.
-update_advanced_stats <- function(conn, base_url, google_bucket) {
-  fv_model_path <- "fv_xgb.model"
-  fv_preprocessing_info_path <- "preprocessing_info_fv.rds"
-  cp_model_path <- "cp_xgb.model"
-  cp_preprocessing_info_path <- "preprocessing_info_cp.rds"
+update_advanced_stats <- function(conn, base_url) {
+  fv_model_filename <- Sys.getenv("FV_MODEL_FILENAME")
+  fv_preprocessing_info_filename <- Sys.getenv("FV_MODEL_INFO_FILENAME")
+  cp_model_filename <- Sys.getenv("CP_MODEL_FILENAME")
+  cp_preprocessing_info_filename <- Sys.getenv("CP_MODEL_INFO_FILENAME")
   
   throws_data <- get_throws_data(conn)
-  fv_df <- predict_fv_for_throws(throws_data, fv_model_path, google_bucket, fv_preprocessing_info_path)
-  advanced_stats_df <- predict_advanced_stats(throws_data, google_bucket, fv_df, cp_model_path, cp_preprocessing_info_path)
+  fv_df <- predict_fv_for_throws(throws_data, fv_model_filename, fv_preprocessing_info_filename)
+  advanced_stats_df <- predict_advanced_stats(throws_data, fv_df, cp_model_filename, cp_preprocessing_info_filename)
   advanced_stats_df <- mutate_advanced_stats(advanced_stats_df)
   advanced_stats_df <- calculate_aec(advanced_stats_df)
   advanced_stats_df <- clean_advanced_stats(advanced_stats_df)
@@ -432,17 +431,13 @@ add_time_left <- function(game_df) {
   return(game_df)
 }
 
-#' @importFrom xgboost xgb.load.raw xgb.DMatrix
 #' @importFrom dplyr select
-#' @importFrom googleCloudStorageR gcs_get_object
 #' @importFrom stats predict
-predict_fv <- function(model_path, google_bucket, preprocessing_info_path, throws_data) {
+predict_fv <- function(model_filename, preprocessing_info_filename, throws_data) {
   # Load model and preprocessing info
-  xgb_model <- xgb.load.raw(gcs_get_object(model_path, google_bucket))
-  temp_file <- tempfile(fileext = ".rds")
-  gcs_get_object(preprocessing_info_path, google_bucket, saveToDisk = temp_file)
-  preprocessing_info <- readRDS(temp_file)
-  unlink(temp_file)
+  xgb_model <- get_model_data_from_db(model_filename)
+  preprocessing_info <- get_model_data_from_db(preprocessing_info_filename)
+
   scaling_params <- preprocessing_info$scaling_params
   thrower_features <- preprocessing_info$features
   # Prepare features
@@ -480,14 +475,11 @@ predict_fv <- function(model_path, google_bucket, preprocessing_info_path, throw
   return(output_dataframe)
 }
 
-#' @importFrom xgboost xgb.load.raw xgb.DMatrix
 #' @importFrom dplyr select
 #' @importFrom stats predict
-predict_cp <- function(model_path, google_bucket, preprocessing_info_path, throws_data) {
-  xgb_model <- xgb.load.raw(gcs_get_object(model_path, google_bucket))
-  temp_file <- tempfile(fileext = ".rds")
-  gcs_get_object(preprocessing_info_path, google_bucket, saveToDisk = temp_file)
-  preprocessing_info <- readRDS(temp_file)
+predict_cp <- function(model_filename, preprocessing_info_filename, throws_data) {
+  xgb_model <- get_model_data_from_db(model_filename)
+  preprocessing_info <- get_model_data_from_db(preprocessing_info_filename)
   scaling_params <- preprocessing_info$scaling_params
   thrower_features <- preprocessing_info$features
   # Prepare features
