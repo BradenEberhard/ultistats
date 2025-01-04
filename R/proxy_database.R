@@ -1,7 +1,7 @@
 # Function to open the database connection
 #' @importFrom RPostgres Postgres
 open_db_connection <- function() {
-  print("connecting")
+  print("connecting...")
   # Get credentials from environment variables
   db_host <- "db.aigpxkcwhnnedqsewgxy.supabase.co"
   db_port <- "5432"
@@ -18,7 +18,7 @@ open_db_connection <- function() {
                          dbname = db_name,
                          user = db_user,
                          password = db_password)
-  
+  print("connected")
   return(conn)
 }
 
