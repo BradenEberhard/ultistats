@@ -1,15 +1,12 @@
 # Function to open the database connection
 #' @importFrom RPostgres Postgres
 open_db_connection <- function() {
-  print("connecting")
   # Get credentials from environment variables
   db_host <- Sys.getenv("DB_HOST")
   db_port <- Sys.getenv("DB_PORT")
   db_name <- Sys.getenv("DB_NAME")
   db_user <- Sys.getenv("DB_USER")
   db_password <- Sys.getenv("DB_PASSWORD")
-
-  print(db_host)
   
   # Create the connection string
   conn <- DBI::dbConnect(Postgres(),

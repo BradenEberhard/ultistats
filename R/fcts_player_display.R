@@ -30,7 +30,7 @@ generate_thrower_plots <- function(plot_list, all_player_stats, input, output, n
 
 # Logic for displaying radial histograms
 #' @importFrom stats na.omit
-generate_radial_histogram_plot <- function(input, player_selector, year_selector, all_player_stats, db_path, role = "thrower") {
+generate_radial_histogram_plot <- function(input, player_selector, year_selector, all_player_stats, role = "thrower") {
   req(input$player_selector, input$year_selector)
   player_id <- get_playerID_by_fullName(input, all_player_stats)
   conn <- open_db_connection()
