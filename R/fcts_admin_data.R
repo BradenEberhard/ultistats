@@ -211,8 +211,7 @@ update_all_tables <- function(conn, base_url) {
       list(update_func = update_teams, table_name = "Teams"),
       list(update_func = update_blocks, table_name = "Blocks"),
       list(update_func = update_pulls, table_name = "Pulls"),
-      list(update_func = update_penalties, table_name = "Penalties"),
-      list(update_func = update_advanced_stats, table_name = "Advanced Stats")
+      list(update_func = update_penalties, table_name = "Penalties")
     )
     
     for (i in seq_along(table_updates)) { ##TODO increment progress isnt working correctly
