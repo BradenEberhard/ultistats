@@ -78,7 +78,7 @@ generate_grade_panel <- function(ns, role, grade_categories) {
 
 # Logic to update years with a new player
 update_year_selector <- function(player_selector, all_player_stats, session) {
-  req(player_selector)
+  req(player_selector, player_selector != "")
   stats <- all_player_stats %>% filter(.data$fullName == player_selector)
   updateSelectInput(session, "year_selector", 
     choices = sort(stats$year), 
@@ -97,7 +97,10 @@ create_switch <- function(input_name, condition, true_label, false_label, select
 ### Server functions
 
 # filters a player stats df, reformats and renames it
-convert_to_metric_df <- function(input, df, all_metrics, all_years=FALSE) {
+convert_to_metric_df <- function(input, df, all_metrics, selected_player=NULL, all_years=FALSE) {
+  if (is.null(selected_player)) {
+    selected_player <- input$player_selector
+  }
   handler_value <- ifelse(is.null(input$handler_switch_value), FALSE, input$handler_switch_value)
   offense_value <- ifelse(is.null(input$offense_switch_value), FALSE, input$offense_switch_value)
   if (!all_years) {
@@ -112,7 +115,7 @@ convert_to_metric_df <- function(input, df, all_metrics, all_years=FALSE) {
     metric_data <- lapply(unique_years, function(year) {
       year_df <- adjust_for_year(df, year) # Adjust the data for the specific year
       lapply(all_metrics, function(metric) {
-        result <- process_metric(metric, year_df, input$player_selector)
+        result <- process_metric(metric, year_df, selected_player)
         if (!is.null(result)) {
           result$year <- year
           return(result)
@@ -123,7 +126,7 @@ convert_to_metric_df <- function(input, df, all_metrics, all_years=FALSE) {
     metric_data <- do.call(c, metric_data)
   } else {
     metric_data <- lapply(all_metrics, function(metric) {
-      result <- process_metric(metric, df, input$player_selector)
+      result <- process_metric(metric, df, selected_player)
       if (!is.null(result)) {
         return(result)
       }
@@ -136,7 +139,7 @@ convert_to_metric_df <- function(input, df, all_metrics, all_years=FALSE) {
 
 # Fetch selected player stats
 get_selected_player_stats <- function(player_selector, year_selector, all_player_stats) {
-  req(player_selector, year_selector)
+  req(player_selector, year_selector, player_selector != "", year_selector != "")
   all_player_stats %>%
     filter(.data$fullName == player_selector & .data$year == year_selector)
 }
@@ -148,10 +151,13 @@ get_selected_player_stats <- function(player_selector, year_selector, all_player
 #' @importFrom ggrepel geom_text_repel
 generate_yearly_percentile_plot <- function(metric_df, title) {
   metric_df$year <- as.numeric(metric_df$year)
+  metric_df <- metric_df %>% filter(!is.na(value)) %>%
+    filter(!(metric_full_name%in% c("Receiving Yards Per 100 Possessions", "Offensive Points Per Game") & year < 2021))
   last_points <- metric_df %>%
     group_by(.data$metric) %>%
     filter(.data$year == max(.data$year))
-  text_repel_offset <- ifelse(length(unique(metric_df$year)) > 1, 0.1, 0)
+  text_repel_offset <- ifelse(length(unique(metric_df$year)) > 1, (max(metric_df$year) - min(metric_df$year)) / 10, 0)
+
   # Create the ggplot
   plot <- ggplot(
     metric_df, 
@@ -200,6 +206,7 @@ generate_yearly_percentile_plot <- function(metric_df, title) {
       plot.title = element_text(size = 20, face = "bold"),
       axis.title = element_text(size = 18),
       axis.text = element_text(size = 16),
+      axis.text.x = element_text(angle = 45, hjust = 1),
       plot.margin = margin(10, 50, 10, 10)
     ) + coord_cartesian(clip = "off")
   
@@ -222,7 +229,7 @@ generate_yearly_percentile_plot <- function(metric_df, title) {
 #' @importFrom tidyr drop_na
 create_skill_percentiles_plot <- function(session, plot_data) {
   plot_data <- plot_data %>% drop_na()
-  container_width <- session$clientData[["output_player_display-skill_percentiles_plot_width"]]
+  container_width <- shinybrowser::get_width()
   y_variable <- if (container_width < 500) "metric_abbreviation" else "metric_full_name"
 
   plot_ly() %>%

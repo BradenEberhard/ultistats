@@ -51,7 +51,7 @@ generate_radial_histogram_plot <- function(input, player_selector, year_selector
 
 # Logic to update overal skill percentiles plot with a new player
 generate_skill_percentiles_plot <- function(input, session, all_player_stats) {
-  req(input$player_selector, input$year_selector)
+  req(input$player_selector, input$year_selector, input$stat_category, !is.null(input$handler_switch_value), !is.null(input$offense_switch_value))
   all_metrics <- get_metrics(input$stat_category)
   plot_data <- convert_to_metric_df(input, all_player_stats, all_metrics)
   create_skill_percentiles_plot(session, plot_data)
@@ -64,14 +64,14 @@ get_passer_plot <- function(input, df, metrics, title) {
 }
 
 #' @importFrom stats median
-get_thrower_grade <- function(input, df) {
+get_thrower_grade <- function(input, df, selected_player) {
   usage_metrics <- c("completions", "completions_per_possession", "games", "offensive_points_per_game")
   efficiency_metrics <- c("cpoe", "xcp", "offensive_efficiency", "completion_percentage")
   contribution_metrics <- c("thrower_ec_per_possession", "thrower_aec_per_possession", "yardsThrown_per_possession")
   scores_metrics <- c("assists_per_possession", "hockeyAssists_per_possession", "turnovers_per_possession")
 
 
-  metric_data <- convert_to_metric_df(input, df, c(usage_metrics, efficiency_metrics, contribution_metrics, scores_metrics))
+  metric_data <- convert_to_metric_df(input, df, c(usage_metrics, efficiency_metrics, contribution_metrics, scores_metrics), selected_player)
 
   usage_percentile <- metric_data[metric_data$metric %in% usage_metrics, ]$percentile %>% median() %>% round(0)
   efficiency_percentile <- metric_data[metric_data$metric %in% efficiency_metrics, ]$percentile %>% median() %>% round(0)
@@ -88,13 +88,13 @@ get_thrower_grade <- function(input, df) {
 }
 
 #' @importFrom stats median
-get_receiver_grade <- function(input, df) {
+get_receiver_grade <- function(input, df, selected_player) {
   usage_metrics <- c("receptions", "receptions_per_possession", "games", "offensive_points_per_game")
   efficiency_metrics <- c("offensive_efficiency", "receiver_aec_per_possession")
   contribution_metrics <- c("goals_per_possession", "drops_per_possession", "yardsReceived_per_possession")
 
 
-  metric_data <- convert_to_metric_df(input, df, c(usage_metrics, efficiency_metrics, contribution_metrics))
+  metric_data <- convert_to_metric_df(input, df, c(usage_metrics, efficiency_metrics, contribution_metrics), selected_player)
 
   usage_percentile <- metric_data[metric_data$metric %in% usage_metrics, ]$percentile %>% median() %>% round(0)
   efficiency_percentile <- metric_data[metric_data$metric %in% efficiency_metrics, ]$percentile %>% median() %>% round(0)
@@ -110,12 +110,12 @@ get_receiver_grade <- function(input, df) {
 }
 
 #' @importFrom stats median
-get_defense_grade <- function(input, df) {
+get_defense_grade <- function(input, df, selected_player) {
   usage_metrics <- c("games", "defensive_points_per_game")
   efficiency_metrics <- c("defensive_efficiency", "blocks", "blocks_per_possession")
 
 
-  metric_data <- convert_to_metric_df(input, df, c(usage_metrics, efficiency_metrics))
+  metric_data <- convert_to_metric_df(input, df, c(usage_metrics, efficiency_metrics), selected_player)
 
   usage_percentile <- metric_data[metric_data$metric %in% usage_metrics, ]$percentile %>% median() %>% round(0)
   efficiency_percentile <- metric_data[metric_data$metric %in% efficiency_metrics, ]$percentile %>% median() %>% round(0)

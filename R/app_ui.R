@@ -14,11 +14,20 @@ app_ui <- function(request) {
       version = 5       # Ensure you're using Bootstrap 5
     ),
     # First nav_panel: Player
-    nav_panel(
+    nav_menu(
       title = "Player", 
       value = "player", 
       icon = shiny::icon("chart-line"),
-      mod_player_display_ui("player_display")
+      nav_panel(
+        title = "Profile",
+        value = "player_profile",
+        mod_player_display_ui("player_profile")
+      ),
+      nav_panel(
+        title = "Leaderboard",
+        value = "player_leaderboard",
+        mod_player_leaderboard_ui("player_leaderboard")
+      )
     ),
     # Second nav_panel: Team
     nav_panel(
