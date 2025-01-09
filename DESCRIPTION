@@ -31,7 +31,6 @@ Imports:
     stats,
     dotenv,
     RPostgres,
-    profvis,
     DT,
     htmlwidgets,
     shinybrowser
