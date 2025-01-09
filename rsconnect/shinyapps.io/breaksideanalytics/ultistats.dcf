@@ -1,0 +1,10 @@
+name: ultistats
+title: ultistats
+username: breaksideanalytics
+account: breaksideanalytics
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 13691458
+bundleId: 9628825
+url: https://breaksideanalytics.shinyapps.io/ultistats/
+version: 1
