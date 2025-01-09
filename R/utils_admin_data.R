@@ -10,7 +10,7 @@ get_current_timestamp <- function() {
 fetch_and_process_player_stats <- function(conn, base_url) {
   players <- get_player_ids(conn)
   player_stats_data <- fetch_player_stats(base_url, players)
-  throws_data <- get_throws_data(conn)
+  throws_data <- get_table_from_db(conn, table_name = "throws")
   
   # Preprocess games per player
   games_per_player <- throws_data %>% 

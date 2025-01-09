@@ -664,7 +664,7 @@ map_metrics_to_formula <- function(df, metric_names) {
     ),
     "receiver_aec_per_possession" = list(
       formula = function(df) (df$receiver_ec / df$oOpportunities) * 100,
-      display_name = "Receiver Adjusted Expected Contribution Per Game",
+      display_name = "Receiver Adjusted Expected Contribution Per 100 Possessions",
       abbreviation = "R-aEC/100P"
     ),
     "thrower_ec_per_possession" = list(
@@ -719,7 +719,7 @@ map_metrics_to_formula <- function(df, metric_names) {
     ),
     "plus_minus_per_possession" = list(
       formula = function(df) (df$goals/df$oOpportunities + df$assists/df$oOpportunities + df$blocks/df$dOpportunities + (df$hockeyAssists * 0.5)/df$oOpportunities - df$throwaways/df$oOpportunities - df$stalls/df$oOpportunities - df$drops/df$oOpportunities) * 100,
-      display_name = "Plus Minus",
+      display_name = "Plus Minus Per 100 Possessions",
       abbreviation = "PM/100P"
     )
   )

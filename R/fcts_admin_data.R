@@ -173,7 +173,7 @@ update_advanced_stats <- function(conn, base_url) {
   cp_model_filename <- Sys.getenv("CP_MODEL_FILENAME")
   cp_preprocessing_info_filename <- Sys.getenv("CP_MODEL_INFO_FILENAME")
   
-  throws_data <- get_throws_data(conn)
+  throws_data <- get_table_from_db(conn, table_name = "throws")
   fv_df <- predict_fv_for_throws(throws_data, fv_model_filename, fv_preprocessing_info_filename)
   advanced_stats_df <- predict_advanced_stats(throws_data, fv_df, cp_model_filename, cp_preprocessing_info_filename)
   advanced_stats_df <- mutate_advanced_stats(advanced_stats_df)

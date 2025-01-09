@@ -77,185 +77,182 @@ mod_player_display_ui <- function(id) {
 #' @importFrom ggiraph renderGirafe
 #' @noRd 
 mod_player_display_server <- function(id) {
-  profvis::profvis({
-
-    moduleServer(id, function(input, output, session) {
-      ### Variables
-      ns <- session$ns
-      thrower_plot_config <- list(
-        usage = list(
-          metrics = c("completions", "completions_per_possession", "games", "offensive_points_per_game"),
-          label = "usage",
-          title = "Usage"
-        ),
-        efficiency = list(
-          metrics = c("completion_percentage", "xcp", "cpoe", "offensive_efficiency"),
-          label = "efficiency",
-          title = "Efficiency"
-        ),
-        scores = list(
-          metrics = c("assists_per_possession", "hockeyAssists_per_possession", "turnovers_per_possession"),
-          label = "scores",
-          title = "Scoring Per 100 Possessions"
-        ),
-        contribution = list(
-          metrics = c("yardsThrown_per_possession", "thrower_ec_per_possession", "thrower_aec_per_possession"),
-          label = "contribution",
-          title = "Contribution Per 100 Possessions"
-        )
+  moduleServer(id, function(input, output, session) {
+    ### Variables
+    ns <- session$ns
+    thrower_plot_config <- list(
+      usage = list(
+        metrics = c("completions", "completions_per_possession", "games", "offensive_points_per_game"),
+        label = "usage",
+        title = "Usage"
+      ),
+      efficiency = list(
+        metrics = c("completion_percentage", "xcp", "cpoe", "offensive_efficiency"),
+        label = "efficiency",
+        title = "Efficiency"
+      ),
+      scores = list(
+        metrics = c("assists_per_possession", "hockeyAssists_per_possession", "turnovers_per_possession"),
+        label = "scores",
+        title = "Scoring Per 100 Possessions"
+      ),
+      contribution = list(
+        metrics = c("yardsThrown_per_possession", "thrower_ec_per_possession", "thrower_aec_per_possession"),
+        label = "contribution",
+        title = "Contribution Per 100 Possessions"
       )
-      
-      receiver_plot_config <- list(
-        usage = list(
-          metrics = c("receptions", "receptions_per_possession", "games", "offensive_points_per_game"),
-          label = "usage",
-          title = "Usage"
-        ),
-        efficiency = list(
-          metrics = c("offensive_efficiency", "receiver_aec_per_possession"),
-          label = "efficiency",
-          title = "Efficiency"
-        ),
-        contribution = list(
-          metrics = c("yardsReceived_per_possession", "goals_per_possession", "drops_per_possession"),
-          label = "contribution",
-          title = "Contribution Per 100 Possessions"
-        )
+    )
+    
+    receiver_plot_config <- list(
+      usage = list(
+        metrics = c("receptions", "receptions_per_possession", "games", "offensive_points_per_game"),
+        label = "usage",
+        title = "Usage"
+      ),
+      efficiency = list(
+        metrics = c("offensive_efficiency", "receiver_aec_per_possession"),
+        label = "efficiency",
+        title = "Efficiency"
+      ),
+      contribution = list(
+        metrics = c("yardsReceived_per_possession", "goals_per_possession", "drops_per_possession"),
+        label = "contribution",
+        title = "Contribution Per 100 Possessions"
       )
-      
-      defense_plot_config <- list(
-        usage = list(
-          metrics = c("games", "defensive_points_per_game"),
-          label = "usage",
-          title = "Usage"
-        ),
-        efficiency = list(
-          metrics = c("defensive_efficiency", "blocks", "blocks_per_possession"),
-          label = "efficiency",
-          title = "Efficiency"
-        )
+    )
+    
+    defense_plot_config <- list(
+      usage = list(
+        metrics = c("games", "defensive_points_per_game"),
+        label = "usage",
+        title = "Usage"
+      ),
+      efficiency = list(
+        metrics = c("defensive_efficiency", "blocks", "blocks_per_possession"),
+        label = "efficiency",
+        title = "Efficiency"
       )
+    )
+    
+    conn <- open_db_connection()
+    session$onSessionEnded(function() {close_db_connection(conn)})
+    
+    all_player_stats <- get_all_player_stats(conn)  
+    
+    output$player_name <- renderText({
+      req(input$player_selector, input$player_selector != "", all_player_stats, all_player_stats)
+      stats <- all_player_stats %>% filter(.data$fullName == input$player_selector)
+      paste(stats$firstName[[1]], stats$lastName[[1]])
+    })
+    
+    ### Inputs
+    output$handler_switch <- renderUI(create_switch("handler_switch_value", selected_player_stats()$handler, "Handler", "Cutter", selected_player_stats, ns))
+    output$offense_switch <- renderUI(create_switch("offense_switch_value", selected_player_stats()$offense, "Offense", "Defense", selected_player_stats, ns))
+    
+    observeEvent(input$player_selector, update_year_selector(input$player_selector, all_player_stats, session))
+    observe({
+      req(all_player_stats)
+      relevant_players <- subset(all_player_stats, year >= 2021) %>% .[!duplicated(.$fullName), ] %>% pull(fullName)
+      updateSelectizeInput(session, "player_selector", server = TRUE, choices = relevant_players, selected = "Jordan Kerr")
+    })
+    
+    ### Reactive Variables
+    selected_player_stats <- reactive(get_selected_player_stats(input$player_selector, input$year_selector, all_player_stats))
+    
+    thrower_percentiles <- reactive({
+      req(input$player_selector, input$year_selector, !is.null(input$handler_switch_value), !is.null(input$offense_switch_value))
+      get_thrower_grade(
+        input = input,
+        df = all_player_stats,
+        selected_player = input$player_selector
+      )
+    })
+    
+    receiver_percentiles <- reactive({
+      req(input$player_selector, input$year_selector, !is.null(input$handler_switch_value), !is.null(input$offense_switch_value))
+      get_receiver_grade(
+        input = input,
+        df = all_player_stats,
+        selected_player = input$player_selector
+      )
+    })
+    
+    defense_percentiles <- reactive({
+      req(input$player_selector, input$year_selector, !is.null(input$handler_switch_value), !is.null(input$offense_switch_value))
+      get_defense_grade(
+        input = input,
+        df = all_player_stats,
+        selected_player = input$player_selector
+      )
+    })
+    
+    ### Plots
+    output$skill_percentiles_plot <- renderPlotly(generate_skill_percentiles_plot(input, session, all_player_stats))
+    
+    output$thrower_radial_histogram_plot <- renderPlot({
+      generate_radial_histogram_plot(
+        input = input,
+        player_selector = input$player_selector,
+        year_selector = input$year_selector,
+        all_player_stats = all_player_stats,
+        role = "thrower"
+      )
+    })
+    
+    output$receiver_radial_histogram_plot <- renderPlot({
+      generate_radial_histogram_plot(
+        input = input,
+        player_selector = input$player_selector,
+        year_selector = input$year_selector,
+        all_player_stats = all_player_stats,
+        role = "receiver"
+      )
+    })
+    
+    generate_plot_outputs("thrower", all_player_stats, input, output, thrower_plot_config)
+    
+    generate_plot_outputs("receiver", all_player_stats, input, output, receiver_plot_config)
+    
+    generate_plot_outputs("defense", all_player_stats, input, output, defense_plot_config)
+    
+    ### Grades
+    
+    lapply(c("Overall", "Contribution", "Usage", "Efficiency", "Scores"), function(category) {
+      category_lower <- tolower(category)
       
-      conn <- open_db_connection()
-      session$onSessionEnded(function() {close_db_connection(conn)})
-      
-      all_player_stats <- get_all_player_stats(conn)  
-      
-      output$player_name <- renderText({
-        req(input$player_selector, input$player_selector != "", all_player_stats, all_player_stats)
-        stats <- all_player_stats %>% filter(.data$fullName == input$player_selector)
-        paste(stats$firstName[[1]], stats$lastName[[1]])
+      output[[paste0("thrower_", category_lower, "_grade")]] <- renderText({
+        get_letter_grade(thrower_percentiles()[[paste0(category_lower, "_percentile")]])
       })
       
-      ### Inputs
-      output$handler_switch <- renderUI(create_switch("handler_switch_value", selected_player_stats()$handler, "Handler", "Cutter", selected_player_stats, ns))
-      output$offense_switch <- renderUI(create_switch("offense_switch_value", selected_player_stats()$offense, "Offense", "Defense", selected_player_stats, ns))
-      
-      observeEvent(input$player_selector, update_year_selector(input$player_selector, all_player_stats, session))
-      observe({
-        req(all_player_stats)
-        relevant_players <- subset(all_player_stats, year >= 2021) %>% .[!duplicated(.$fullName), ] %>% pull(fullName)
-        updateSelectizeInput(session, "player_selector", server = TRUE, choices = relevant_players, selected = "Jordan Kerr")
-      })
-      
-      ### Reactive Variables
-      selected_player_stats <- reactive(get_selected_player_stats(input$player_selector, input$year_selector, all_player_stats))
-      
-      thrower_percentiles <- reactive({
-        req(input$player_selector, input$year_selector, !is.null(input$handler_switch_value), !is.null(input$offense_switch_value))
-        get_thrower_grade(
-          input = input,
-          df = all_player_stats,
-          selected_player = input$player_selector
-        )
-      })
-      
-      receiver_percentiles <- reactive({
-        req(input$player_selector, input$year_selector, !is.null(input$handler_switch_value), !is.null(input$offense_switch_value))
-        get_receiver_grade(
-          input = input,
-          df = all_player_stats,
-          selected_player = input$player_selector
-        )
-      })
-      
-      defense_percentiles <- reactive({
-        req(input$player_selector, input$year_selector, !is.null(input$handler_switch_value), !is.null(input$offense_switch_value))
-        get_defense_grade(
-          input = input,
-          df = all_player_stats,
-          selected_player = input$player_selector
-        )
-      })
-      
-      ### Plots
-      output$skill_percentiles_plot <- renderPlotly(generate_skill_percentiles_plot(input, session, all_player_stats))
-      
-      output$thrower_radial_histogram_plot <- renderPlot({
-        generate_radial_histogram_plot(
-          input = input,
-          player_selector = input$player_selector,
-          year_selector = input$year_selector,
-          all_player_stats = all_player_stats,
-          role = "thrower"
-        )
-      })
-      
-      output$receiver_radial_histogram_plot <- renderPlot({
-        generate_radial_histogram_plot(
-          input = input,
-          player_selector = input$player_selector,
-          year_selector = input$year_selector,
-          all_player_stats = all_player_stats,
-          role = "receiver"
-        )
-      })
-      
-      generate_plot_outputs("thrower", all_player_stats, input, output, thrower_plot_config)
-      
-      generate_plot_outputs("receiver", all_player_stats, input, output, receiver_plot_config)
-      
-      generate_plot_outputs("defense", all_player_stats, input, output, defense_plot_config)
-      
-      ### Grades
-      
-      lapply(c("Overall", "Contribution", "Usage", "Efficiency", "Scores"), function(category) {
-        category_lower <- tolower(category)
-        
-        output[[paste0("thrower_", category_lower, "_grade")]] <- renderText({
-          get_letter_grade(thrower_percentiles()[[paste0(category_lower, "_percentile")]])
-        })
-        
-        output[[paste0("thrower_", category_lower, "_percentile")]] <- renderText({
-          paste0("(", thrower_percentiles()[[paste0(category_lower, "_percentile")]], "th Percentile)")
-        })
-      })
-      
-      lapply(c("Overall", "Contribution", "Usage", "Efficiency"), function(category) {
-        category_lower <- tolower(category)
-        
-        output[[paste0("receiver_", category_lower, "_grade")]] <- renderText({
-          get_letter_grade(receiver_percentiles()[[paste0(category_lower, "_percentile")]])
-        })
-        
-        output[[paste0("receiver_", category_lower, "_percentile")]] <- renderText({
-          paste0("(", receiver_percentiles()[[paste0(category_lower, "_percentile")]], "th Percentile)")
-        })
-      })
-      
-      lapply(c("Overall", "Usage", "Efficiency"), function(category) {
-        category_lower <- tolower(category)
-        
-        output[[paste0("defense_", category_lower, "_grade")]] <- renderText({
-          get_letter_grade(defense_percentiles()[[paste0(category_lower, "_percentile")]])
-        })
-        
-        output[[paste0("defense_", category_lower, "_percentile")]] <- renderText({
-          paste0("(", defense_percentiles()[[paste0(category_lower, "_percentile")]], "th Percentile)")
-        })
+      output[[paste0("thrower_", category_lower, "_percentile")]] <- renderText({
+        paste0("(", thrower_percentiles()[[paste0(category_lower, "_percentile")]], "th Percentile)")
       })
     })
-  })%>% htmlwidgets::saveWidget("profvis_output.html")
-  }
+    
+    lapply(c("Overall", "Contribution", "Usage", "Efficiency"), function(category) {
+      category_lower <- tolower(category)
+      
+      output[[paste0("receiver_", category_lower, "_grade")]] <- renderText({
+        get_letter_grade(receiver_percentiles()[[paste0(category_lower, "_percentile")]])
+      })
+      
+      output[[paste0("receiver_", category_lower, "_percentile")]] <- renderText({
+        paste0("(", receiver_percentiles()[[paste0(category_lower, "_percentile")]], "th Percentile)")
+      })
+    })
+    
+    lapply(c("Overall", "Usage", "Efficiency"), function(category) {
+      category_lower <- tolower(category)
+      
+      output[[paste0("defense_", category_lower, "_grade")]] <- renderText({
+        get_letter_grade(defense_percentiles()[[paste0(category_lower, "_percentile")]])
+      })
+      
+      output[[paste0("defense_", category_lower, "_percentile")]] <- renderText({
+        paste0("(", defense_percentiles()[[paste0(category_lower, "_percentile")]], "th Percentile)")
+      })
+    })
+  })
+}
   
   

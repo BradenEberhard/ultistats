@@ -211,7 +211,7 @@ get_player_ids <- function(conn) {
 }
 
 
-get_throws_data <- function(conn, table_name = "throws") {
+get_table_from_db <- function(conn, table_name = "throws") {
   # Check if the connection is valid
   if (is.null(conn)) {
     stop("The database connection is not open.")
@@ -251,12 +251,6 @@ get_player_passes_by_role <- function(conn, player_id, role = "thrower") {
 }
 
 get_all_player_stats <- function(conn) {
-  # Check if the table exists in the database
-  tables <- DBI::dbListTables(conn)
-  if (!"player_stats" %in% tables) {
-    return(NULL)  # Return NULL or handle the absence of the table as needed
-  }
-
   # SQL query to fetch player stats by playerID
   query <- glue("SELECT * FROM player_stats")
 
@@ -335,4 +329,16 @@ get_model_data_from_db <- function(filename) {
   } else {
     stop("Unsupported file extension.")
   }
+}
+
+get_team_players <- function(conn, team_id, year) {
+  query <- glue::glue("
+    SELECT *
+    FROM players
+    WHERE \"teamID\" = '{team_id}' AND year = {year}
+  ")
+  
+  # Execute the query and fetch the data
+  players_data <- DBI::dbGetQuery(conn, query)
+  return(players_data)
 }

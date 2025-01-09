@@ -29,7 +29,6 @@ app_ui <- function(request) {
         mod_player_leaderboard_ui("player_leaderboard")
       )
     ),
-    # Second nav_panel: Team
     nav_panel(
       title = "Team", 
       value = "team", 

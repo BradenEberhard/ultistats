@@ -1,19 +1,21 @@
 mod_team_display_ui <- function(id) {
   ns <- NS(id)
   tagList(
-    # includeCSS("inst/app/www/card-reveal-full-screen.css"),
-    # card(
-    #   card_header("my header"),
-    #   card_body(
-    #     class = "card-reveal-full-screen", 
-    #     textOutput(ns("full_screen_output1")) # Updated ID
-    #   ),
-    #   full_screen = TRUE
-    # ),
-    # card(
-    #   card_header("header 2"),
-    #   card_body(textOutput(ns("full_screen_output2")))
-    # )
+    bslib::page_sidebar(
+      sidebar = sidebar(
+        title="Controls",
+        selectizeInput(
+          inputId = ns("team_selector"),
+          label = "Team",
+          choices = get_teams_names(),
+          selected = "shred"
+        ),
+        selectInput(ns("year_selector"), "Year", choices = current_year <- c(2021:as.numeric(format(Sys.Date(), "%Y"))), selected = 2024)
+      ),
+      page_fluid(
+        verbatimTextOutput(ns("selected_team_id")) 
+      )
+    )
   )
 }
 
@@ -23,15 +25,15 @@ mod_team_display_ui <- function(id) {
 mod_team_display_server <- function(id) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
+  
 
-    # Render the text for the first textOutput
-    output$full_screen_output1 <- renderText({
-      "Full Screen Enabled in Section 1!!!"
-    })
-    
-    # Render the text for the second textOutput
-    output$full_screen_output2 <- renderText({
-      "Full Screen Enabled in Section 2!!!"
+    # Display the selected team ID
+    output$selected_team_id <- renderPrint({
+      req(input$team_selector) # Ensure input is available
+      conn <- open_db_connection()
+      on.exit(close_db_connection(conn))
+      players <- get_team_players(conn, input$team_selector, input$year_selector)$fullName
+      paste("Players: ", players)
     })
   })
 }
