@@ -2,16 +2,14 @@ create_observe_event <- function(input, input_id, update_function, timestamps, b
   observeEvent(input[[input_id]], {
     if (!is.null(progress_message)) {
       withProgress(message = progress_message, value = 0, {
-        conn <- open_db_connection()
-        on.exit(close_db_connection(conn))
-        update_function(conn, base_url)
+        pool <- get_db_pool()
+        update_function(pool, base_url)
         
         timestamps(NULL)
       })
     } else {
-      conn <- open_db_connection()
-      on.exit(close_db_connection(conn))
-      update_function(conn, base_url)
+      pool <- get_db_pool()
+      update_function(pool, base_url)
       timestamps(NULL)
     }
   })
@@ -19,39 +17,39 @@ create_observe_event <- function(input, input_id, update_function, timestamps, b
 
 
 # Function to update each table with progress
-update_table_progress <- function(conn, table_update_func, table_name, progress_fn, base_url) {
+update_table_progress <- function(pool, table_update_func, table_name, progress_fn, base_url) {
   progress_fn(detail = paste("Processing", table_name))
-  table_update_func(conn, base_url)
+  table_update_func(pool, base_url)
   progress_fn(detail = paste("Finished", table_name))
 }
 
 # Function to process and update games
-update_games <- function(conn, base_url) {
+update_games <- function(pool, base_url) {
   games_data <- fetch_games(base_url) %>% mutate(insertTimestamp = get_current_timestamp())
-  create_table(conn=conn, table_name='games', data=games_data, index_cols="gameID", override=TRUE)
-  update_table(conn=conn, table_name='games', data=games_data, index_col="gameID", whole_table = TRUE)
+  create_table(pool=pool, table_name='games', data=games_data, index_cols="gameID", override=TRUE)
+  update_table(pool=pool, table_name='games', data=games_data, index_col="gameID", whole_table = TRUE)
 }
 
 #' Function to Process and Update Player Stats
 #' 
 #' This function fetches, processes, and updates the player statistics in a database. It computes advanced statistics, combines them with yearly and career data, adds timestamps, calculates additional stats, and processes data for final insertion or update in the `player_stats` table.
 #' 
-#' @param conn A database connection object to interact with the database.
+#' @param pool A database connection object to interact with the database.
 #' @param base_url The base URL to fetch player data from an external API or service.
 #' 
 #' @return NULL This function does not return any value. It updates the `player_stats` table in the database.
-update_player_stats <- function(conn, base_url) {
+update_player_stats <- function(pool, base_url) {
   # Fetch and process player stats data from external source
-  player_stats_data <- fetch_and_process_player_stats(conn, base_url) %>% compute_career_data_from_player_stats()
+  player_stats_data <- fetch_and_process_player_stats(pool, base_url) %>% compute_career_data_from_player_stats()
   # Compute advanced stats (ec, xcp, etc.) using the advanced_stats table
 
   # Insert or update player stats in the player_stats table
-  create_table(conn=conn, table_name='player_stats', data=player_stats_data, index_cols="playerID", override=TRUE)
-  update_table(conn=conn, table_name='player_stats', data=player_stats_data, index_col="playerID", whole_table = TRUE)
+  create_table(pool=pool, table_name='player_stats', data=player_stats_data, index_cols="playerID", override=TRUE)
+  update_table(pool=pool, table_name='player_stats', data=player_stats_data, index_col="playerID", whole_table = TRUE)
 
 
-  update_advanced_stats(conn, base_url)
-  advanced_stats <- get_table(conn, "advanced_stats")
+  update_advanced_stats(pool, base_url)
+  advanced_stats <- get_table(pool, "advanced_stats")
   yearly_advanced_stats <- compute_advanced_stats(advanced_stats) # requires advanced_stats table
   career_stats <- compute_career_stats(advanced_stats) # aggregating career-level stats
   # Combine yearly and career stats into a single data frame
@@ -64,49 +62,49 @@ update_player_stats <- function(conn, base_url) {
   player_stats_data <- process_player_stats(player_stats_data)
   
   # Insert or update player stats in the player_stats table
-  create_table(conn=conn, table_name='player_stats', data=player_stats_data, index_cols="playerID", override=TRUE)
-  update_table(conn=conn, table_name='player_stats', data=player_stats_data, index_col="playerID", whole_table = TRUE)
+  create_table(pool=pool, table_name='player_stats', data=player_stats_data, index_cols="playerID", override=TRUE)
+  update_table(pool=pool, table_name='player_stats', data=player_stats_data, index_col="playerID", whole_table = TRUE)
 }
 
 
 # Function to process and update players
-update_players <- function(conn, base_url) {
+update_players <- function(pool, base_url) {
   players_data <- fetch_players(base_url) %>% as_tibble() %>% unnest(.data$teams) %>% 
     mutate(insertTimestamp = get_current_timestamp()) %>%
     get_full_name()
 
-  create_table(conn=conn, table_name='players', data=players_data, index_cols="playerID", override=TRUE)
-  update_table(conn=conn, table_name='players', data=players_data, index_col="playerID", whole_table = TRUE)
+  create_table(pool=pool, table_name='players', data=players_data, index_cols="playerID", override=TRUE)
+  update_table(pool=pool, table_name='players', data=players_data, index_col="playerID", whole_table = TRUE)
 }
 
 # Function to process and update teams
-update_teams <- function(conn, base_url) {
+update_teams <- function(pool, base_url) {
   teams_data <- fetch_teams(base_url) %>% as_tibble() %>% unnest(.data$division, names_sep = "_") %>%
     mutate(insertTimestamp = get_current_timestamp())
 
-  create_table(conn=conn, table_name='teams', data=teams_data, index_cols="teamID", override=TRUE)
-  update_table(conn=conn, table_name='teams', data=teams_data, index_col="teamID", whole_table = TRUE)
+  create_table(pool=pool, table_name='teams', data=teams_data, index_cols="teamID", override=TRUE)
+  update_table(pool=pool, table_name='teams', data=teams_data, index_col="teamID", whole_table = TRUE)
 }
 
 # Function to process and update pulls
-update_pulls <- function(conn, base_url) {
-  game_ids <- get_game_ids(conn)
+update_pulls <- function(pool, base_url) {
+  game_ids <- get_game_ids(pool)
   withProgress(message = "Processing Pulls", value = 0, {
     for (i in seq_along(game_ids)) {
       current_game_id <- game_ids[[i]]
       game_data <- fetch_game(base_url, current_game_id)
       pull_data <- get_pulls_from_id(game_data, current_game_id) %>% 
         mutate(insertTimestamp = get_current_timestamp())
-      create_table(conn=conn, table_name='pulls', data=pull_data, index_cols="gameID", override=FALSE)
-      update_table(conn=conn, table_name='pulls', data=pull_data, index_col="gameID", whole_table = FALSE)
+      create_table(pool=pool, table_name='pulls', data=pull_data, index_cols="gameID", override=FALSE)
+      update_table(pool=pool, table_name='pulls', data=pull_data, index_col="gameID", whole_table = FALSE)
       incProgress(1 / length(game_ids), detail = paste("Processing game ID", current_game_id))
     }
   })
 }
 
 # Function to process and update throws
-update_throws <- function(conn, base_url) {
-  game_ids <- get_game_ids(conn)
+update_throws <- function(pool, base_url) {
+  game_ids <- get_game_ids(pool)
   withProgress(message = "Processing throws", value = 0, {
     for (i in seq_along(game_ids)) {
       current_game_id <- game_ids[[i]]
@@ -120,40 +118,40 @@ update_throws <- function(conn, base_url) {
       throws_data$x_diff <- throws_data$receiver_x - throws_data$thrower_x
       throws_data$y_diff <- throws_data$receiver_y - throws_data$thrower_y
       throws_data$throw_angle <- atan2(throws_data$y_diff, throws_data$x_diff) * (180 / pi)
-      create_table(conn=conn, table_name='throws', data=throws_data, index_cols=list("gameID","thrower", "throwID"), override=FALSE)
-      update_table(conn=conn, table_name='throws', data=throws_data, index_col="gameID", whole_table = FALSE)
+      create_table(pool=pool, table_name='throws', data=throws_data, index_cols=list("gameID","thrower", "throwID"), override=FALSE)
+      update_table(pool=pool, table_name='throws', data=throws_data, index_col="gameID", whole_table = FALSE)
       incProgress(1 / length(game_ids), detail = paste("Processing game ID", current_game_id))
     }
   })
 }
 
 # Function to process and update blocks
-update_blocks <- function(conn, base_url) {
-  game_ids <- get_game_ids(conn)
+update_blocks <- function(pool, base_url) {
+  game_ids <- get_game_ids(pool)
   withProgress(message = "Processing Blocks", value = 0, {
     for (i in seq_along(game_ids)) {
       current_game_id <- game_ids[[i]]
       game_data <- fetch_game(base_url, current_game_id)
       blocks_data <- get_blocks_from_id(game_data, current_game_id) %>%
         mutate(insertTimestamp = get_current_timestamp())
-      create_table(conn=conn, table_name='blocks', data=blocks_data, index_cols="gameID", override=FALSE)
-      update_table(conn=conn, table_name='blocks', data=blocks_data, index_col="gameID", whole_table = FALSE)
+      create_table(pool=pool, table_name='blocks', data=blocks_data, index_cols="gameID", override=FALSE)
+      update_table(pool=pool, table_name='blocks', data=blocks_data, index_col="gameID", whole_table = FALSE)
       incProgress(1 / length(game_ids), detail = paste("Processing game ID", current_game_id))
     }
   })
 }
 
 # Function to process and update penalties
-update_penalties <- function(conn, base_url) {
-  game_ids <- get_game_ids(conn)
+update_penalties <- function(pool, base_url) {
+  game_ids <- get_game_ids(pool)
   withProgress(message = "Processing Penalties", value = 0, {
     for (i in seq_along(game_ids)) {
       current_game_id <- game_ids[[i]]
       game_data <- fetch_game(base_url, current_game_id)
       penalties_data <- get_penalties_from_id(game_data, current_game_id) %>%
         mutate(insertTimestamp = get_current_timestamp())
-      create_table(conn=conn, table_name='penalties', data=penalties_data, index_cols="gameID", override=FALSE)
-      update_table(conn=conn, table_name='penalties', data=penalties_data, index_col="gameID", whole_table = FALSE)
+      create_table(pool=pool, table_name='penalties', data=penalties_data, index_cols="gameID", override=FALSE)
+      update_table(pool=pool, table_name='penalties', data=penalties_data, index_col="gameID", whole_table = FALSE)
       incProgress(1 / length(game_ids), detail = paste("Processing game ID", current_game_id))
     }
   })
@@ -163,31 +161,31 @@ update_penalties <- function(conn, base_url) {
 #' 
 #' This function fetches throws data, processes it through prediction models for both feature value (fv) and control points (cp), then applies additional transformations and calculations to derive advanced statistics. Finally, it updates or creates the `advanced_stats` table in the database with the processed data.
 #' 
-#' @param conn A database connection object to interact with the database.
+#' @param pool A database connection object to interact with the database.
 #' @param base_url The base URL for fetching external data (currently unused in the function).
 #' 
 #' @return NULL This function does not return any value. It updates the `advanced_stats` table in the database.
-update_advanced_stats <- function(conn, base_url) {
+update_advanced_stats <- function(pool, base_url) {
   fv_model_filename <- Sys.getenv("FV_MODEL_FILENAME")
   fv_preprocessing_info_filename <- Sys.getenv("FV_MODEL_INFO_FILENAME")
   cp_model_filename <- Sys.getenv("CP_MODEL_FILENAME")
   cp_preprocessing_info_filename <- Sys.getenv("CP_MODEL_INFO_FILENAME")
   
-  throws_data <- get_table_from_db(conn, table_name = "throws")
+  throws_data <- get_table_from_db(pool, table_name = "throws")
   fv_df <- predict_fv_for_throws(throws_data, fv_model_filename, fv_preprocessing_info_filename)
   advanced_stats_df <- predict_advanced_stats(throws_data, fv_df, cp_model_filename, cp_preprocessing_info_filename)
   advanced_stats_df <- mutate_advanced_stats(advanced_stats_df)
   advanced_stats_df <- calculate_aec(advanced_stats_df)
   advanced_stats_df <- clean_advanced_stats(advanced_stats_df)
 
-  create_table(conn=conn, table_name="advanced_stats", data=advanced_stats_df, index_cols="gameID", override=TRUE)
-  update_table(conn=conn, table_name='advanced_stats', data=advanced_stats_df, index_col="gameID", whole_table=TRUE)
+  create_table(pool=pool, table_name="advanced_stats", data=advanced_stats_df, index_cols="gameID", override=TRUE)
+  update_table(pool=pool, table_name='advanced_stats', data=advanced_stats_df, index_col="gameID", whole_table=TRUE)
 }
 
 
 
 # Function to update all tables
-update_all_tables <- function(conn, base_url) {
+update_all_tables <- function(pool, base_url) {
   withProgress(message = 'Processing All Tables', value = 0, { 
     num_tables <- 8 + 1
     
@@ -203,7 +201,7 @@ update_all_tables <- function(conn, base_url) {
     )
     
     for (i in seq_along(table_updates)) { ##TODO increment progress isnt working correctly
-      update_table_progress(conn, table_updates[[i]]$update_func, table_updates[[i]]$table_name, incProgress, base_url)
+      update_table_progress(pool, table_updates[[i]]$update_func, table_updates[[i]]$table_name, incProgress, base_url)
       incProgress(1/num_tables)  
     }
     

@@ -6,9 +6,12 @@
 #' @noRd
 #' 
 app_ui <- function(request) {
+
+  
   golem_add_external_resources()
   bslib::page_navbar(
     title = "Game Dashboard",
+    id = "main_nav",
     theme = bslib::bs_theme(
       preset = "darkly",   # Choose the theme (e.g., "lux", "cosmo", "flatly", etc.)
       version = 5       # Ensure you're using Bootstrap 5

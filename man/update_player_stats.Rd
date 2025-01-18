@@ -4,10 +4,10 @@
 \alias{update_player_stats}
 \title{Function to Process and Update Player Stats}
 \usage{
-update_player_stats(conn, base_url)
+update_player_stats(pool, base_url)
 }
 \arguments{
-\item{conn}{A database connection object to interact with the database.}
+\item{pool}{A database connection object to interact with the database.}
 
 \item{base_url}{The base URL to fetch player data from an external API or service.}
 }

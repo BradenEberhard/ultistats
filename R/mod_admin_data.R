@@ -50,14 +50,13 @@ mod_admin_data_server <- function(id){
     # set reactive variables
     timestamps <- reactiveVal(NULL)
     tables <- reactive({
-      conn <- open_db_connection()
-      on.exit(close_db_connection(conn))
-      table_names <- get_table_names(conn)
+      pool <- get_db_pool()
+      table_names <- get_table_names(pool)
       if (is.null(table_names)) {
         return(NULL)
       }
       timestamps({sapply(table_names, function(table) {
-        get_recent_timestamp(conn, table)
+        get_recent_timestamp(pool, table)
       })})
       tables <- data.frame(table_name = table_names, recent_timestamp = timestamps())
     })

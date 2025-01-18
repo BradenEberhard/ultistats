@@ -1,3 +1,6 @@
+#' team_display UI Functions
+#'
+#' @noRd 
 mod_team_display_ui <- function(id) {
   ns <- NS(id)
   tagList(
@@ -13,7 +16,8 @@ mod_team_display_ui <- function(id) {
         selectInput(ns("year_selector"), "Year", choices = current_year <- c(2021:as.numeric(format(Sys.Date(), "%Y"))), selected = 2024)
       ),
       page_fluid(
-        verbatimTextOutput(ns("selected_team_id")) 
+        verbatimTextOutput(ns("selected_team_id")),
+
       )
     )
   )
@@ -25,14 +29,12 @@ mod_team_display_ui <- function(id) {
 mod_team_display_server <- function(id) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
-  
 
     # Display the selected team ID
     output$selected_team_id <- renderPrint({
       req(input$team_selector) # Ensure input is available
-      conn <- open_db_connection()
-      on.exit(close_db_connection(conn))
-      players <- get_team_players(conn, input$team_selector, input$year_selector)$fullName
+      pool <- get_db_pool()
+      players <- get_team_players(pool, input$team_selector, input$year_selector)$fullName
       paste("Players: ", players)
     })
   })

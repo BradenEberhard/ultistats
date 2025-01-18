@@ -78,12 +78,12 @@ generate_grade_panel <- function(ns, role, grade_categories) {
 
 # Logic to update years with a new player
 update_year_selector <- function(player_selector, all_player_stats, session) {
-  req(player_selector, player_selector != "")
+  req(player_selector)
   stats <- all_player_stats %>% filter(.data$fullName == player_selector)
+  valid_years <- stats$year[stats$year >= 2021]
   updateSelectInput(session, "year_selector", 
-    choices = sort(stats$year), 
-    selected = max(stats$year))
-  
+    choices = sort(valid_years), 
+    selected = max(valid_years))
 }
 
 # Logic for switches
@@ -152,7 +152,8 @@ get_selected_player_stats <- function(player_selector, year_selector, all_player
 generate_yearly_percentile_plot <- function(metric_df, title) {
   metric_df$year <- as.numeric(metric_df$year)
   metric_df <- metric_df %>% filter(!is.na(value)) %>%
-    filter(!(metric_full_name%in% c("Receiving Yards Per 100 Possessions", "Offensive Points Per Game") & year < 2021))
+    filter(!(metric_full_name %in% c("Games Played", "Throwing Yards Per 100 Possessions", "Receiving Yards Per 100 Possessions", "Defensive Points Per Game", "Receptions Per 100 Possessions", "Offensive Points Per Game") & year < 2021))
+
   last_points <- metric_df %>%
     group_by(.data$metric) %>%
     filter(.data$year == max(.data$year))

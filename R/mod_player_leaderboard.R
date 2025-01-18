@@ -19,9 +19,13 @@ mod_player_leaderboard_ui <- function(id) {
       ),
       page_fluid(
         layout_column_wrap(
+          width = "700px",
           card(DT::dataTableOutput(ns("grade_table")), full_screen=TRUE) |> withSpinner() |> bslib::as_fill_carrier(),
-          card(DT::dataTableOutput(ns("metrics_table")), full_screen=TRUE) |> withSpinner() |> bslib::as_fill_carrier()
-        )
+          card(DT::dataTableOutput(ns("metrics_table")), full_screen=TRUE) |> withSpinner() |> bslib::as_fill_carrier(),
+          min_height = "1100px"
+        ),
+        h4("Selected Name:"),
+        textOutput(ns("selected_name"))
       )
     )
   )
@@ -34,18 +38,42 @@ mod_player_leaderboard_server <- function(id){
   moduleServer(id, function(input, output, session){
     ns <- session$ns
 
-    conn <- open_db_connection()
-    session$onSessionEnded(function() {close_db_connection(conn)})
+    pool <- get_db_pool()
+    player_link_name <- reactiveValues(player_name = "Jordan Kerr")
 
-    all_player_stats <- get_all_player_stats(conn)  
-    
-    output$metrics_table <- DT::renderDataTable({
+    all_player_stats <- get_all_player_stats(pool)  
+    metric_table_result <- reactive({
       get_metric_table(input, all_player_stats)
     })
-
-    output$grade_table <- DT::renderDataTable({
+    grade_table <- reactive({
       get_grade_table(input, all_player_stats)
     })
+
+    output$metrics_table <- DT::renderDT(server=FALSE, {
+      format_dt(metric_table_result()$metric_table, c("Name", metric_table_result()$metric_name, "O Possessions", "D Possessions", "%"))
+    })
+
+    output$grade_table <- DT::renderDT(server=FALSE, {
+      format_dt(grade_table(), c("Name", "Overall Percentile", "Thrower Percentile", "Receiver Percentile", "Defense Percentile", "Offensive Possessions", "Defensive Possessions"))
+    })
+
+    observe({
+      selected_row <- input$grade_table_rows_selected
+      if (length(selected_row) > 0) {
+        selected_name <- grade_table()[selected_row, "fullName"]
+        player_link_name$player_name <- selected_name
+      }
+    })
+
+    observe({
+      selected_row <- input$metrics_table_rows_selected
+      if (length(selected_row) > 0) {
+        selected_name <- metric_table_result()$metric_table[selected_row, "fullName"]
+        player_link_name$player_name <- selected_name
+      }
+    })
+
+    return(reactive(player_link_name$player_name))
 
   })
 }

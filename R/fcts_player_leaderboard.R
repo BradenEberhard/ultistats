@@ -1,3 +1,38 @@
+# Helper function to format the datatable
+format_dt <- function(metric_table, column_names) {
+  DT::datatable(
+    metric_table,
+    rownames = FALSE,
+    colnames = column_names,
+    options = list(
+      pageLength = 10, 
+      autoWidth = TRUE,
+      select = list(
+        style = "os",
+        selector = 'tr>td:nth-child(1)'
+      )
+    ),
+    extensions = c("Select"),
+    selection = 'none',
+    class = "compact"
+  ) %>%
+    DT::formatStyle(
+      columns = colnames(metric_table), 
+      fontSize = '12px', 
+      lineHeight = '70%',
+    ) %>%
+    DT::formatStyle(
+      columns = "fullName", # Apply style only to the "Name" column
+      cursor = "pointer",
+      `white-space` = "nowrap", # Prevent text wrapping
+      `overflow` = "hidden",    # Hide overflowing text
+      `text-overflow` = "ellipsis", # Display ellipses for overflowed text
+      `textDecoration` = "underline"
+    )
+}
+
+
+
 get_grade_table <- function(input, all_player_stats) {
   filtered_stats <- all_player_stats %>% filter(year == input$year_selector)
   filtered_stats <- remove_low_opportunities(filtered_stats, percentage = 0.2)
@@ -10,25 +45,7 @@ get_grade_table <- function(input, all_player_stats) {
   filtered_stats <- filtered_stats[order(-filtered_stats$overall_percentile), ]
   metric_table <- filtered_stats %>% select(fullName, overall_percentile, thrower_percentile, receiver_percentile, defense_percentile, oOpportunities, dOpportunities)
 
-  dt <- DT::datatable(
-    metric_table,
-    options = list(pageLength = 10, autoWidth = TRUE),
-    rownames = FALSE,
-    class = "compact",
-    colnames = c("Name", "Overall Percentile", "Thrower Percentile", "Receiver Percentile", "Defense Percentile", "Offensive Possessions", "Defensive Possessions")
-  ) %>%
-    DT::formatStyle(
-      columns = colnames(metric_table), 
-      fontSize = '12px', 
-      lineHeight='70%'
-    ) %>%
-      DT::formatStyle(
-        columns = "fullName", # Apply style only to the "Name" column
-        `white-space` = "nowrap", # Prevent text wrapping
-        `overflow` = "hidden",    # Hide overflowing text
-        `text-overflow` = "ellipsis" # Display ellipses for overflowed text
-      ) 
-  return(dt)
+  return(metric_table)
 }
 
 get_metric_table <- function(input, all_player_stats) {
@@ -43,28 +60,14 @@ get_metric_table <- function(input, all_player_stats) {
     dpossessions = filtered_stats$dOpportunities
   )
 
+  if (nrow(metric_table) == 0) {
+    return(format_dt(metric_table, c("Name", "Metric", "O Possessions", "D Possessions", "%")))
+  }
+
   metric_table$percentile <- sapply(metric_table$value, calc_percentile, all_values = mapped_metrics[[current_metric]]$value)
   metric_table$percentile <- metric_table$percentile %>% round(2)
   metric_table$value <- metric_table$value %>% round(2)
   metric_table <- metric_table[order(-metric_table$percentile), ]
 
-  dt <- DT::datatable(
-    metric_table,
-    options = list(pageLength = 10, autoWidth = TRUE),
-    rownames = FALSE,
-    colnames = c("Name", mapped_metrics[[current_metric]]$display_name, "O Possessions", "D Possessions", "%"),
-    class = "compact"
-  ) %>%
-    DT::formatStyle(
-      columns = colnames(metric_table), 
-      fontSize = '12px', 
-      lineHeight='70%'
-    ) %>%
-      DT::formatStyle(
-        columns = "fullName", # Apply style only to the "Name" column
-        `white-space` = "nowrap", # Prevent text wrapping
-        `overflow` = "hidden",    # Hide overflowing text
-        `text-overflow` = "ellipsis" # Display ellipses for overflowed text
-      ) 
-  return(dt)
+  return(list(metric_table = metric_table, metric_name = mapped_metrics[[current_metric]]$display_name))
 }

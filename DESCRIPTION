@@ -33,7 +33,9 @@ Imports:
     RPostgres,
     DT,
     htmlwidgets,
-    shinybrowser
+    shinybrowser,
+    pool,
+    shiny.router
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.3.2

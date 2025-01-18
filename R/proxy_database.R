@@ -1,40 +1,37 @@
 # Function to open the database connection
 #' @importFrom RPostgres Postgres
-open_db_connection <- function() {
-  # Get credentials from environment variables
-  db_host <- Sys.getenv("DB_HOST")
-  db_port <- Sys.getenv("DB_PORT")
-  db_name <- Sys.getenv("DB_NAME")
-  db_user <- Sys.getenv("DB_USER")
-  db_password <- Sys.getenv("DB_PASSWORD")
-  
-  # Create the connection string
-  conn <- DBI::dbConnect(Postgres(),
-                         host = db_host,
-                         port = db_port,
-                         dbname = db_name,
-                         user = db_user,
-                         password = db_password)
-  
-  return(conn)
-}
-
-# Function to close the database connection
-close_db_connection <- function(conn) {
-  if (!is.null(conn)) {
-    DBI::dbDisconnect(conn)
+#' @importFrom pool poolClose
+get_db_pool <- local({
+  pool <- NULL
+  function() {
+    if (is.null(pool)) {
+      # Initialize the pool if it hasn't been created
+      pool <<- pool::dbPool(
+        drv = RPostgres::Postgres(),
+        dbname = Sys.getenv("DB_NAME"),
+        host = Sys.getenv("DB_HOST"),
+        port = Sys.getenv("DB_PORT"),
+        user = Sys.getenv("DB_USER"),
+        password = Sys.getenv("DB_PASSWORD")
+      )
+      # Ensure the pool is closed when the app stops
+      onStop(function() {
+        poolClose(pool)
+      })
+    }
+    pool
   }
-}
+})
 
 
-get_table_names <- function(conn) {
+get_table_names <- function(pool) {
   # Check if the connection is valid
-  if (is.null(conn)) {
+  if (is.null(pool)) {
     stop("The database connection is not open.")
   }
   
   query <- "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';"
-  result <- DBI::dbGetQuery(conn, query)
+  result <- DBI::dbGetQuery(pool, query)
   
   if (nrow(result) == 0) {
     message("No tables found in the database.")
@@ -47,9 +44,9 @@ get_table_names <- function(conn) {
 
 
 
-get_recent_timestamp <- function(conn, table) {
+get_recent_timestamp <- function(pool, table) {
   column_check_query <- paste0("SELECT column_name FROM information_schema.columns WHERE table_name = '", table, "' AND column_name = 'insertTimestamp';")
-  column_check_result <- DBI::dbGetQuery(conn, column_check_query)
+  column_check_result <- DBI::dbGetQuery(pool, column_check_query)
   
   # If the column does not exist, return an error message
   if (nrow(column_check_result) == 0) {
@@ -57,7 +54,7 @@ get_recent_timestamp <- function(conn, table) {
   }
 
   query <- paste0("SELECT \"insertTimestamp\" FROM \"", table, "\" ORDER BY \"insertTimestamp\" DESC LIMIT 1;")
-  result <- DBI::dbGetQuery(conn, query)
+  result <- DBI::dbGetQuery(pool, query)
   
   
   # Check if the result is empty
@@ -75,22 +72,22 @@ get_recent_timestamp <- function(conn, table) {
   return(format(readable_date, "%Y-%m-%d %H:%M:%S"))
 }
 
-get_game_ids <- function(conn) {
+get_game_ids <- function(pool) {
   # Check if the connection is valid
-  if (is.null(conn)) {
+  if (is.null(pool)) {
     stop("The database connection is not open.")
   }
   
   # Query the games table to get unique gameID values
   query <- "SELECT DISTINCT \"gameID\" FROM \"games\""
-  result <- DBI::dbGetQuery(conn, query)
+  result <- DBI::dbGetQuery(pool, query)
   
   # Return the vector of unique gameIDs
   return(result$gameID)
 }
 
 
-create_table <- function(conn, table_name, data, index_cols = NULL, override = FALSE) {
+create_table <- function(pool, table_name, data, index_cols = NULL, override = FALSE) {
   # Convert timestamp columns to POSIXct
   timestamp_cols <- grep("Timestamp", names(data), ignore.case = TRUE, value = TRUE)
   for (col in timestamp_cols) {
@@ -98,13 +95,13 @@ create_table <- function(conn, table_name, data, index_cols = NULL, override = F
   }
   
   # Check if the connection is valid
-  if (is.null(conn)) {
+  if (is.null(pool)) {
     stop("The database connection is not open.")
   }
   
   # If override is TRUE, drop the table if it exists
   if (override) {
-    DBI::dbExecute(conn, paste0("DROP TABLE IF EXISTS \"", table_name, "\";"))
+    DBI::dbExecute(pool, paste0("DROP TABLE IF EXISTS \"", table_name, "\";"))
   }
   
   # Function to map R types to PostgreSQL types
@@ -130,10 +127,10 @@ create_table <- function(conn, table_name, data, index_cols = NULL, override = F
   
   # Create the SQL query to create the table
   create_query <- paste0("CREATE TABLE IF NOT EXISTS \"", table_name, "\" (", paste(column_definitions, collapse = ", "), ");")
-  DBI::dbExecute(conn, create_query)
+  DBI::dbExecute(pool, create_query)
   
   # Function to check if index exists
-  check_index_exists <- function(conn, table_name, index_cols) {
+  check_index_exists <- function(pool, table_name, index_cols) {
     # Convert index columns into a format suitable for the query
     index_cols <- paste0("\"", index_cols, "\"")
     
@@ -142,20 +139,20 @@ create_table <- function(conn, table_name, data, index_cols = NULL, override = F
     
     # Query the system catalog to check if the index already exists
     query <- paste0("SELECT 1 FROM pg_indexes WHERE tablename = '", table_name, "' AND indexname = '", index_name, "';")
-    result <- DBI::dbGetQuery(conn, query)
+    result <- DBI::dbGetQuery(pool, query)
     
     # Return TRUE if the index exists, FALSE otherwise
     return(nrow(result) > 0)
   }
   
   # Function to create the index
-  create_index <- function(conn, table_name, index_cols) {
+  create_index <- function(pool, table_name, index_cols) {
     # Check if the index already exists
-    if (!check_index_exists(conn, table_name, index_cols)) {
+    if (!check_index_exists(pool, table_name, index_cols)) {
       # Create the index if it doesn't exist
       index_cols <- paste0("\"", index_cols, "\"")
       index_query <- paste0("CREATE INDEX IF NOT EXISTS \"", table_name, "_index\" ON \"", table_name, "\"(", paste(index_cols, collapse = ", "), ");")
-      DBI::dbExecute(conn, index_query)
+      DBI::dbExecute(pool, index_query)
     } else {
       message("Index already exists.")
     }
@@ -164,7 +161,7 @@ create_table <- function(conn, table_name, data, index_cols = NULL, override = F
   # Create the index if index_cols is provided
   if (!is.null(index_cols)) {
     index_cols <- if (!is.vector(index_cols)) c(index_cols) else index_cols
-    create_index(conn, table_name, index_cols)
+    create_index(pool, table_name, index_cols)
   }
   
   return(NULL)
@@ -174,7 +171,7 @@ create_table <- function(conn, table_name, data, index_cols = NULL, override = F
 
 
 #' @importFrom glue glue
-update_table <- function(conn, table_name, data, index_col, whole_table) {
+update_table <- function(pool, table_name, data, index_col, whole_table) {
   # Check if the index_col exists in the data
   if (!(index_col %in% colnames(data))) {
     stop(paste("Column", index_col, "does not exist in the provided data"))
@@ -190,52 +187,52 @@ update_table <- function(conn, table_name, data, index_col, whole_table) {
   # Delete existing rows with the same gameID if not updating the whole table
   if (!whole_table) {
     delete_sql <- glue("DELETE FROM {table_name} WHERE \"{index_col}\" = '{game_id}'")
-    DBI::dbExecute(conn, delete_sql)
+    DBI::dbExecute(pool, delete_sql)
   } else {
     # Delete all data in the table if updating the whole table
     delete_sql <- glue("DELETE FROM {table_name}")
-    DBI::dbExecute(conn, delete_sql)
+    DBI::dbExecute(pool, delete_sql)
   }
 
   # Insert the new data into the table
-  DBI::dbWriteTable(conn, table_name, data, append = TRUE, row.names = FALSE)
+  DBI::dbWriteTable(pool, table_name, data, append = TRUE, row.names = FALSE)
   
   invisible(TRUE)  # Return nothing, but indicate success
 }
 
 
-get_player_ids <- function(conn) {
+get_player_ids <- function(pool) {
   query <- "SELECT DISTINCT \"playerID\" FROM \"players\""
-  result <- DBI::dbGetQuery(conn, query)
+  result <- DBI::dbGetQuery(pool, query)
   return(result$playerID)
 }
 
 
-get_table_from_db <- function(conn, table_name = "throws") {
+get_table_from_db <- function(pool, table_name = "throws") {
   # Check if the connection is valid
-  if (is.null(conn)) {
+  if (is.null(pool)) {
     stop("The database connection is not open.")
   }
   
   # Query the throws table to retrieve all data
   query <- glue("SELECT * FROM {table_name};")
-  result <- DBI::dbGetQuery(conn, query)
+  result <- DBI::dbGetQuery(pool, query)
   
   # Return the result as a data frame
   return(result)
 }
 
-get_player_stats <- function(conn, player_id) {
+get_player_stats <- function(pool, player_id) {
   # SQL query to fetch player stats by playerID
   query <- glue("SELECT * FROM player_stats WHERE \"playerID\" = '{player_id}'")
   
   # Execute the query and return the result
-  player_stats <- DBI::dbGetQuery(conn, query)
+  player_stats <- DBI::dbGetQuery(pool, query)
   
   return(player_stats)
 }
 
-get_player_passes_by_role <- function(conn, player_id, role = "thrower") {
+get_player_passes_by_role <- function(pool, player_id, role = "thrower") {
   # SQL query to fetch player stats by playerID with a join on advanced_stats
   query <- glue("
     SELECT t.*, a.* 
@@ -245,39 +242,39 @@ get_player_passes_by_role <- function(conn, player_id, role = "thrower") {
   ")
   
   # Execute the query and return the result
-  player_passes <- DBI::dbGetQuery(conn, query)
+  player_passes <- DBI::dbGetQuery(pool, query)
   player_passes <- player_passes[, !duplicated(names(player_passes))]
   return(player_passes)
 }
 
-get_all_player_stats <- function(conn) {
+get_all_player_stats <- function(pool) {
   # SQL query to fetch player stats by playerID
   query <- glue("SELECT * FROM player_stats")
 
   # Execute the query and return the result
-  all_player_stats <- DBI::dbGetQuery(conn, query)
+  all_player_stats <- DBI::dbGetQuery(pool, query)
 
   return(all_player_stats)
 }
 
 
-get_table <- function(conn, table_name) {
+get_table <- function(pool, table_name) {
   # Check if the connection is valid
-  if (is.null(conn)) {
+  if (is.null(pool)) {
     stop("The database connection is not open.")
   }
   
   # Query the throws table to retrieve all data
   query <- glue("SELECT * FROM {table_name};")
-  result <- DBI::dbGetQuery(conn, query)
+  result <- DBI::dbGetQuery(pool, query)
   
   # Return the result as a data frame
   return(result)
 }
 
-get_team_id <- function(conn, player_id, year) {
+get_team_id <- function(pool, player_id, year) {
   # Ensure the connection is valid
-  if (is.null(conn)) {
+  if (is.null(pool)) {
     stop("Database connection is null.")
   }
   
@@ -285,11 +282,11 @@ get_team_id <- function(conn, player_id, year) {
   query <- glue(
     "SELECT teamID 
      FROM players 
-     WHERE playerID = {DBI::dbQuoteLiteral(conn, player_id)} 
-       AND year = {DBI::dbQuoteLiteral(conn, year)}"
+     WHERE playerID = {DBI::dbQuoteLiteral(pool, player_id)} 
+       AND year = {DBI::dbQuoteLiteral(pool, year)}"
   )
   
-  result <- DBI::dbGetQuery(conn, query)
+  result <- DBI::dbGetQuery(pool, query)
   
   # Return the teamID, or NULL if no match
   if (nrow(result) > 0) {
@@ -301,13 +298,13 @@ get_team_id <- function(conn, player_id, year) {
 }
 
 get_model_data_from_db <- function(filename) {
-  conn <- open_db_connection()
-  on.exit(close_db_connection(conn))
+  pool <- open_db_connection()
+  on.exit(close_db_connection(pool))
   # Query to get the file data from the database
   query <- "SELECT file_data FROM model_files WHERE filename = $1"
   
   # Fetch the file data as raw bytes
-  result <- DBI::dbGetQuery(conn, query, params = list(filename))
+  result <- DBI::dbGetQuery(pool, query, params = list(filename))
   
   if (nrow(result) == 0) {
     stop("File not found in the database.")
@@ -331,7 +328,7 @@ get_model_data_from_db <- function(filename) {
   }
 }
 
-get_team_players <- function(conn, team_id, year) {
+get_team_players <- function(pool, team_id, year) {
   query <- glue::glue("
     SELECT *
     FROM players
@@ -339,6 +336,6 @@ get_team_players <- function(conn, team_id, year) {
   ")
   
   # Execute the query and fetch the data
-  players_data <- DBI::dbGetQuery(conn, query)
+  players_data <- DBI::dbGetQuery(pool, query)
   return(players_data)
 }

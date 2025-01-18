@@ -33,10 +33,9 @@ generate_thrower_plots <- function(plot_list, all_player_stats, input, output, n
 generate_radial_histogram_plot <- function(input, player_selector, year_selector, all_player_stats, role = "thrower") {
   req(input$player_selector, input$year_selector)
   player_id <- get_playerID_by_fullName(input, all_player_stats)
-  conn <- open_db_connection()
-  on.exit(close_db_connection(conn))
+  pool <- get_db_pool()
 
-  player_passes <- get_player_passes_by_role(conn, player_id, role)
+  player_passes <- get_player_passes_by_role(pool, player_id, role)
   player_passes$adjusted_angle <- (as.integer(player_passes$throw_angle) + 90) %% 360 - 180
   player_passes$year <- substr(player_passes$gameID, 1, 4)
   passes <- if (year_selector == "Career") {

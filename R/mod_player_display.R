@@ -61,7 +61,7 @@ mod_player_display_ui <- function(id) {
                   withSpinner() |> 
                   bslib::as_fill_carrier()
               })
-            )  
+            )
           )
         )
       )
@@ -76,7 +76,7 @@ mod_player_display_ui <- function(id) {
 #' @importFrom tidyr gather
 #' @importFrom ggiraph renderGirafe
 #' @noRd 
-mod_player_display_server <- function(id) {
+mod_player_display_server <- function(id, player_name) {
   moduleServer(id, function(input, output, session) {
     ### Variables
     ns <- session$ns
@@ -134,26 +134,33 @@ mod_player_display_server <- function(id) {
       )
     )
     
-    conn <- open_db_connection()
-    session$onSessionEnded(function() {close_db_connection(conn)})
+    pool <- get_db_pool()
+    all_player_stats <- get_all_player_stats(pool)  
     
-    all_player_stats <- get_all_player_stats(conn)  
-    
-    output$player_name <- renderText({
-      req(input$player_selector, input$player_selector != "", all_player_stats, all_player_stats)
+    observeEvent(input$player_selector, {
+      req(input$player_selector, all_player_stats)
       stats <- all_player_stats %>% filter(.data$fullName == input$player_selector)
-      paste(stats$firstName[[1]], stats$lastName[[1]])
+      output$player_name <- renderText({
+        paste(stats$firstName[[1]], stats$lastName[[1]])
+      })
+      output$handler_switch <- renderUI({
+        create_switch("handler_switch_value", selected_player_stats()$handler, "Handler", "Cutter", selected_player_stats, ns)
+      })
+      output$offense_switch <- renderUI({
+        create_switch("offense_switch_value", selected_player_stats()$offense, "Offense", "Defense", selected_player_stats, ns)
+      })
     })
     
     ### Inputs
-    output$handler_switch <- renderUI(create_switch("handler_switch_value", selected_player_stats()$handler, "Handler", "Cutter", selected_player_stats, ns))
-    output$offense_switch <- renderUI(create_switch("offense_switch_value", selected_player_stats()$offense, "Offense", "Defense", selected_player_stats, ns))
     
-    observeEvent(input$player_selector, update_year_selector(input$player_selector, all_player_stats, session))
+    observeEvent(input$player_selector, {
+      update_year_selector(input$player_selector, all_player_stats, session)
+    })
+    
     observe({
-      req(all_player_stats)
+      req(all_player_stats, player_name)
       relevant_players <- subset(all_player_stats, year >= 2021) %>% .[!duplicated(.$fullName), ] %>% pull(fullName)
-      updateSelectizeInput(session, "player_selector", server = TRUE, choices = relevant_players, selected = "Jordan Kerr")
+      updateSelectizeInput(session, "player_selector", server = TRUE, choices = relevant_players, selected = player_name())
     })
     
     ### Reactive Variables
@@ -187,7 +194,19 @@ mod_player_display_server <- function(id) {
     })
     
     ### Plots
-    output$skill_percentiles_plot <- renderPlotly(generate_skill_percentiles_plot(input, session, all_player_stats))
+    observe({
+      input$player_selector
+      freezeReactiveValue(input, "year_selector")
+    })
+
+    output$skill_percentiles_plot <- renderPlotly({
+      req(input$player_selector, input$year_selector, input$stat_category, !is.null(input$handler_switch_value), !is.null(input$offense_switch_value))
+      isolate({
+        plot <- generate_skill_percentiles_plot(input, session, all_player_stats)
+      })
+      plot
+    })
+    
     
     output$thrower_radial_histogram_plot <- renderPlot({
       generate_radial_histogram_plot(
@@ -252,7 +271,7 @@ mod_player_display_server <- function(id) {
         paste0("(", defense_percentiles()[[paste0(category_lower, "_percentile")]], "th Percentile)")
       })
     })
-  })
+    })
 }
   
   
