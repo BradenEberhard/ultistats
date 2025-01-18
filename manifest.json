@@ -2164,6 +2164,42 @@
         "RemoteSha": "4.10.4"
       }
     },
+    "pool": {
+      "Source": "CRAN",
+      "Repository": "https://cran.rstudio.com",
+      "description": {
+        "Type": "Package",
+        "Package": "pool",
+        "Title": "Object Pooling",
+        "Version": "1.0.4",
+        "Authors@R": "c(\n    person(\"Joe\", \"Cheng\", , \"joe@posit.co\", role = \"aut\"),\n    person(\"Barbara\", \"Borges\", role = \"aut\"),\n    person(\"Hadley\", \"Wickham\", , \"hadley@posit.co\", role = c(\"aut\", \"cre\")),\n    person(\"Posit Software, PBC\", role = c(\"cph\", \"fnd\"))\n  )",
+        "Description": "Enables the creation of object pools, which make it less\n    computationally expensive to fetch a new object. Currently the only\n    supported pooled objects are 'DBI' connections.",
+        "License": "MIT + file LICENSE",
+        "URL": "https://github.com/rstudio/pool, https://rstudio.github.io/pool/",
+        "BugReports": "https://github.com/rstudio/pool/issues",
+        "Depends": "methods, R (>= 3.6.0)",
+        "Imports": "DBI (>= 1.2.1), later (>= 1.0.0), R6, rlang (>= 1.0.0)",
+        "Suggests": "covr, dbplyr (>= 2.4.0), dplyr, knitr, rmarkdown, RSQLite,\nshiny, testthat (>= 3.0.0), tibble",
+        "VignetteBuilder": "knitr",
+        "Config/Needs/website": "tidyverse/tidytemplate",
+        "Config/testthat/edition": "3",
+        "Encoding": "UTF-8",
+        "RoxygenNote": "7.3.2",
+        "NeedsCompilation": "no",
+        "Packaged": "2024-10-07 14:58:02 UTC; hadleywickham",
+        "Author": "Joe Cheng [aut],\n  Barbara Borges [aut],\n  Hadley Wickham [aut, cre],\n  Posit Software, PBC [cph, fnd]",
+        "Maintainer": "Hadley Wickham <hadley@posit.co>",
+        "Repository": "CRAN",
+        "Date/Publication": "2024-10-07 15:30:02 UTC",
+        "Built": "R 4.4.1; ; 2024-10-07 16:19:31 UTC; unix",
+        "RemoteType": "standard",
+        "RemotePkgRef": "pool",
+        "RemoteRef": "pool",
+        "RemoteRepos": "https://cran.rstudio.com/",
+        "RemotePkgPlatform": "aarch64-apple-darwin20",
+        "RemoteSha": "1.0.4"
+      }
+    },
     "processx": {
       "Source": "CRAN",
       "Repository": "https://cran.rstudio.com",
@@ -3114,7 +3150,7 @@
   },
   "files": {
     ".env": {
-      "checksum": "8aad582c7b85a58430611a181aa04caa"
+      "checksum": "7da15454d860e443ce0af08bbccb6a4f"
     },
     ".Rbuildignore": {
       "checksum": "c553ddf47c9e80e13d98831a8447d3c5"
@@ -3123,7 +3159,7 @@
       "checksum": "d456ef129e120c48c8211450db4becfc"
     },
     "DESCRIPTION": {
-      "checksum": "39fa26f46c0f657c0a30dc5de4029d06"
+      "checksum": "d8197d2cda1d0f64317befedc717df36"
     },
     "inst/app/www/favicon.ico": {
       "checksum": "81560d1b906a530c87fa0acbb2f5cca4"
@@ -3132,7 +3168,7 @@
       "checksum": "5aa70534cf8668dc51852033f454cd70"
     },
     "NAMESPACE": {
-      "checksum": "7330f00e7600513a2f847e8943a5a3a4"
+      "checksum": "795abc11fc311ac33b8c681521f7019c"
     },
     "R/_disable_autoload.R": {
       "checksum": "1178c335d6c11555fd1c4ec6098dfee6"
@@ -3141,10 +3177,10 @@
       "checksum": "c1911e82cf1d6a3a7e93885c90a97b91"
     },
     "R/app_server.R": {
-      "checksum": "a785fc949f409402fa3b9a4876411c77"
+      "checksum": "8f514d7ef791e989e9a737b09b9f6f71"
     },
     "R/app_ui.R": {
-      "checksum": "2f7584d22af07de3cbc8b181e642ce76"
+      "checksum": "c0feac8587167ba2d710cd784c48183e"
     },
     "R/class_event_handlers.R": {
       "checksum": "2cabed04f75106fd4c7534b128527c04"
@@ -3156,43 +3192,43 @@
       "checksum": "c252c48e8fbf96ad7ba9559d9941f8aa"
     },
     "R/fcts_admin_data.R": {
-      "checksum": "2318b9a73bddcac71f885f38da81e866"
+      "checksum": "9d03bc0e76cf449c994ff1868e15acb1"
     },
     "R/fcts_player_display.R": {
-      "checksum": "2d106e2b2002bd9eb1fca28eb0318055"
+      "checksum": "c77c7b53ac3f4f6d4b86dfb669c1f82e"
     },
     "R/fcts_player_leaderboard.R": {
-      "checksum": "e9f5200395fd1796637465407208047f"
+      "checksum": "d795a35de4899b2682c971a33e118413"
     },
     "R/fcts_team_display.R": {
-      "checksum": "a54b1ac6c7e915a22bfadabf048087f9"
+      "checksum": "0bc972ae360868ab718f84b8bf2212cf"
     },
     "R/mod_admin_data.R": {
-      "checksum": "a8f961125e0294785f630a6dc23b5813"
+      "checksum": "8618747c38ac0d7020188155d19911c1"
     },
     "R/mod_player_display.R": {
-      "checksum": "6c42cb220b65f5f8f4925fff330dc63f"
+      "checksum": "d908430f55c9d296fbb5a5b4acb499eb"
     },
     "R/mod_player_leaderboard.R": {
-      "checksum": "3df25e60233be3856bae97569f92f5b5"
+      "checksum": "d99eb9bc6077e971d16bf5363405a8d4"
     },
     "R/mod_team_display.R": {
-      "checksum": "be708ddf54f956c34e07e5993f17ffa2"
+      "checksum": "153743098fb1dc080515e9998be485e3"
     },
     "R/proxy_api.R": {
       "checksum": "72ec272a05e201a6b1de4ec2b79fbcec"
     },
     "R/proxy_database.R": {
-      "checksum": "6a057faac5dbe0d292d0277c60239804"
+      "checksum": "b4e9764fc123ec845f1eac6a32f6f82f"
     },
     "R/run_app.R": {
       "checksum": "070f9a924121c6b8744f8fe567d65801"
     },
     "R/utils_admin_data.R": {
-      "checksum": "f776e8804dc827bfda98880a548f5844"
+      "checksum": "08b90c666d2f8ca4f2b8bba4c8836488"
     },
     "R/utils_player_display.R": {
-      "checksum": "7b4d7582d8b1327f1439133f96a4d3ef"
+      "checksum": "e4b057f471ca061c66844c00e922a107"
     },
     "R/utils_player_leaderboard.R": {
       "checksum": "a4121c1786f80051bc0f792a591ac73a"
