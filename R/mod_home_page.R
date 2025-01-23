@@ -1,17 +1,17 @@
-#' account UI Function
+#' home_page UI Function
 #'
-#' @description A shiny Module displaying user account status and business information for payment processing.
+#' @description A shiny Module displaying user home_page status and business information for payment processing.
 #'
 #' @param id,input,output,session Internal parameters for {shiny}.
 #'
 #' @noRd 
 #'
 #' @importFrom shiny NS tagList 
-mod_account_ui <- function(id) {
+mod_home_page_ui <- function(id) {
   ns <- NS(id)
   tagList(
     div(
-      class = "account-section",
+      class = "home_page-section",
       hr(),
       h4("Business Information"),
       div(
@@ -44,10 +44,10 @@ mod_account_ui <- function(id) {
   )
 }
     
-#' account Server Functions
+#' home_page Server Functions
 #'
 #' @noRd 
-mod_account_server <- function(id) {
+mod_home_page_server <- function(id) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
 
@@ -55,7 +55,7 @@ mod_account_server <- function(id) {
 }
     
 ## To be copied in the UI
-# mod_account_ui("account_1")
+# mod_home_page_ui("home_page_1")
     
 ## To be copied in the server
-# mod_account_server("account_1")
+# mod_home_page_server("home_page_1")
