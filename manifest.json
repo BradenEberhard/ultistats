@@ -3630,7 +3630,7 @@
       "checksum": "5aa70534cf8668dc51852033f454cd70"
     },
     "NAMESPACE": {
-      "checksum": "795abc11fc311ac33b8c681521f7019c"
+      "checksum": "8fc850d8834b97dce9dcb982b4c5a35f"
     },
     "R/app_config.R": {
       "checksum": "c1911e82cf1d6a3a7e93885c90a97b91"
@@ -3639,7 +3639,7 @@
       "checksum": "2d874a8d7592ec6c43072564a291e134"
     },
     "R/app_ui.R": {
-      "checksum": "125926271b18e3070d4209ba078c747d"
+      "checksum": "736d9b9fa46ab0207a286435ff0757a1"
     },
     "R/class_event_handlers.R": {
       "checksum": "2cabed04f75106fd4c7534b128527c04"
@@ -3663,7 +3663,7 @@
       "checksum": "0bc972ae360868ab718f84b8bf2212cf"
     },
     "R/mod_account.R": {
-      "checksum": "abaf850f263bb67356c169e4281a235a"
+      "checksum": "274736bb33d5f0b7b594519782f6ee2c"
     },
     "R/mod_admin_data.R": {
       "checksum": "8618747c38ac0d7020188155d19911c1"

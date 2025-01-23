@@ -16,11 +16,11 @@ mod_account_ui <- function(id) {
       h4("Business Information"),
       div(
         h5("Description of Services"),
-        p("We offer detailed ultimate frisbee performance tracking, team management tools, leaderboards, and advanced analytics.")
+        p("We offer detailed ultimate frisbee performance tracking, team management tools, leaderboards, and advanced analytics")
       ),
       div(
         h5("Transaction Currency"),
-        p("All transactions are processed in USD unless stated otherwise.")
+        p("All transactions are processed in USD unless stated otherwise")
       ),
       div(
         h5("Customer Service Contact Details"),
@@ -38,7 +38,7 @@ mod_account_ui <- function(id) {
       ),
       div(
         h5("Security Capabilities and Policy for Transmission of Payment Card Details"),
-        p("All payment card details are encrypted and transmitted securely using Stripe’s payment processing technology. We do not store your card information on our servers.")
+        p("All payment card details are encrypted and transmitted securely using Stripe's payment processing technology. We do not store your card information on our servers.")
       )
     )
   )
