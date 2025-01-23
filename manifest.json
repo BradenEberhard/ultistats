@@ -3177,10 +3177,10 @@
       "checksum": "c1911e82cf1d6a3a7e93885c90a97b91"
     },
     "R/app_server.R": {
-      "checksum": "8f514d7ef791e989e9a737b09b9f6f71"
+      "checksum": "431baff2cace73755124b96040b4326f"
     },
     "R/app_ui.R": {
-      "checksum": "c0feac8587167ba2d710cd784c48183e"
+      "checksum": "5b91394f32a4a40154615b805bfbd79b"
     },
     "R/class_event_handlers.R": {
       "checksum": "2cabed04f75106fd4c7534b128527c04"
@@ -3203,11 +3203,11 @@
     "R/fcts_team_display.R": {
       "checksum": "0bc972ae360868ab718f84b8bf2212cf"
     },
-    "R/mod_account.R": {
-      "checksum": "274736bb33d5f0b7b594519782f6ee2c"
-    },
     "R/mod_admin_data.R": {
       "checksum": "8618747c38ac0d7020188155d19911c1"
+    },
+    "R/mod_home_page.R": {
+      "checksum": "4fa6e1aadf149fcc663b74adc378957e"
     },
     "R/mod_player_display.R": {
       "checksum": "d908430f55c9d296fbb5a5b4acb499eb"
