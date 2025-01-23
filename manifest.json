@@ -3203,6 +3203,9 @@
     "R/fcts_team_display.R": {
       "checksum": "0bc972ae360868ab718f84b8bf2212cf"
     },
+    "R/mod_account.R": {
+      "checksum": "274736bb33d5f0b7b594519782f6ee2c"
+    },
     "R/mod_admin_data.R": {
       "checksum": "8618747c38ac0d7020188155d19911c1"
     },
