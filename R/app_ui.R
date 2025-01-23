@@ -16,7 +16,12 @@ app_ui <- function(request) {
       preset = "darkly",   # Choose the theme (e.g., "lux", "cosmo", "flatly", etc.)
       version = 5       # Ensure you're using Bootstrap 5
     ),
-    # First nav_panel: Player
+    nav_panel(
+      title = "Home", 
+      value = "home", 
+      icon = shiny::icon("house"),
+      mod_account_ui("home_display")
+    ),
     nav_menu(
       title = "Player", 
       value = "player", 
