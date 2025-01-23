@@ -69,8 +69,8 @@ golem_add_external_resources <- function() {
   )
 
   tags$head(
-    favicon(),
-    bundle_resources(
+    golem::favicon(),
+    golem::bundle_resources(
       path = app_sys("app/www"),
       app_title = "ultistats"
     )
