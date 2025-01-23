@@ -302,73 +302,6 @@
         "Built": "R 4.4.0; ; 2024-04-05 15:19:18 UTC; unix"
       }
     },
-    "automagic": {
-      "Source": "CRAN",
-      "Repository": "https://cran.rstudio.com",
-      "description": {
-        "Package": "automagic",
-        "Type": "Package",
-        "Title": "Automagically Document and Install Packages Necessary to Run R\nCode",
-        "Version": "0.5.1",
-        "Authors@R": "c(\n    person(\"Cole\", \"Brokamp\",\n    email = \"cole.brokamp@gmail.com\", role = c(\"aut\", \"cre\")),\n    person(\"Steph\", \"Locke\", role = \"ctb\"))",
-        "Description": "Parse R code in a given directory for R packages and attempt to install them from CRAN or GitHub. Optionally use a dependencies file for tighter control over which package versions to install.",
-        "License": "GPL",
-        "Encoding": "UTF-8",
-        "LazyData": "true",
-        "RoxygenNote": "6.1.1",
-        "Depends": "R (>= 3.1.0)",
-        "Imports": "dplyr, formatR, knitr, magrittr, purrr, remotes, yaml",
-        "URL": "https://github.com/cole-brokamp/automagic",
-        "BugReports": "https://github.com/cole-brokamp/automagic/issues",
-        "Suggests": "testthat",
-        "NeedsCompilation": "no",
-        "Packaged": "2019-03-05 21:23:46 UTC; cole",
-        "Author": "Cole Brokamp [aut, cre],\n  Steph Locke [ctb]",
-        "Maintainer": "Cole Brokamp <cole.brokamp@gmail.com>",
-        "Repository": "CRAN",
-        "Date/Publication": "2019-03-05 21:30:22 UTC",
-        "Built": "R 4.4.0; ; 2024-04-06 11:18:24 UTC; unix",
-        "RemoteType": "standard",
-        "RemotePkgRef": "automagic",
-        "RemoteRef": "automagic",
-        "RemoteRepos": "https://cran.rstudio.com/",
-        "RemotePkgPlatform": "aarch64-apple-darwin20",
-        "RemoteSha": "0.5.1"
-      }
-    },
-    "backports": {
-      "Source": "CRAN",
-      "Repository": "https://cran.rstudio.com",
-      "description": {
-        "Package": "backports",
-        "Type": "Package",
-        "Title": "Reimplementations of Functions Introduced Since R-3.0.0",
-        "Version": "1.5.0",
-        "Authors@R": "c(\n    person(\"Michel\", \"Lang\", NULL, \"michellang@gmail.com\",\n      role = c(\"cre\", \"aut\"), comment = c(ORCID = \"0000-0001-9754-0393\")),\n    person(\"Duncan\", \"Murdoch\", NULL, \"murdoch.duncan@gmail.com\",\n      role = c(\"aut\")),\n    person(\"R Core Team\", role = \"aut\"))",
-        "Maintainer": "Michel Lang <michellang@gmail.com>",
-        "Description": "\n    Functions introduced or changed since R v3.0.0 are re-implemented in this\n    package. The backports are conditionally exported in order to let R resolve\n    the function name to either the implemented backport, or the respective base\n    version, if available. Package developers can make use of new functions or\n    arguments by selectively importing specific backports to\n    support older installations.",
-        "URL": "https://github.com/r-lib/backports",
-        "BugReports": "https://github.com/r-lib/backports/issues",
-        "License": "GPL-2 | GPL-3",
-        "NeedsCompilation": "yes",
-        "ByteCompile": "yes",
-        "Depends": "R (>= 3.0.0)",
-        "Encoding": "UTF-8",
-        "RoxygenNote": "7.3.1",
-        "Packaged": "2024-05-23 11:56:25 UTC; michel",
-        "Author": "Michel Lang [cre, aut] (<https://orcid.org/0000-0001-9754-0393>),\n  Duncan Murdoch [aut],\n  R Core Team [aut]",
-        "Repository": "CRAN",
-        "Date/Publication": "2024-05-23 12:30:02 UTC",
-        "Built": "R 4.4.0; aarch64-apple-darwin20; 2024-05-23 14:58:03 UTC; unix",
-        "Archs": "backports.so.dSYM",
-        "RemoteType": "standard",
-        "RemotePkgRef": "backports",
-        "RemoteRef": "backports",
-        "RemoteRepos": "https://cran.rstudio.com/",
-        "RemotePkgPlatform": "aarch64-apple-darwin20",
-        "RemoteSha": "1.5.0"
-      }
-    },
     "base64enc": {
       "Source": "CRAN",
       "Repository": "https://cran.rstudio.com",
@@ -389,40 +322,6 @@
         "Date/Publication": "2015-07-28 08:03:37",
         "Built": "R 4.4.0; aarch64-apple-darwin20; 2024-04-05 15:01:24 UTC; unix",
         "Archs": "base64enc.so.dSYM"
-      }
-    },
-    "base64url": {
-      "Source": "CRAN",
-      "Repository": "https://cran.rstudio.com",
-      "description": {
-        "Package": "base64url",
-        "Type": "Package",
-        "Title": "Fast and URL-Safe Base64 Encoder and Decoder",
-        "Version": "1.4",
-        "Authors@R": "c(\n    person(\"Michel\", \"Lang\", NULL, \"michellang@gmail.com\",\n      role = c(\"cre\", \"aut\"), comment = c(ORCID = \"0000-0001-9754-0393\")),\n    person(NULL, \"Apache Foundation\", NULL, NULL, role = c(\"ctb\", \"cph\")),\n    person(NULL, \"Free Software Foundation\", NULL, NULL, role = c(\"ctb\", \"cph\"))\n    )",
-        "Description": "In contrast to RFC3548, the 62nd character (\"+\") is replaced with\n    \"-\", the 63rd character (\"/\") is replaced with \"_\". Furthermore, the encoder\n    does not fill the string with trailing \"=\". The resulting encoded strings\n    comply to the regular expression pattern \"[A-Za-z0-9_-]\" and thus are\n    safe to use in URLs or for file names.\n    The package also comes with a simple base32 encoder/decoder suited for\n    case insensitive file systems.",
-        "URL": "https://github.com/mllg/base64url",
-        "BugReports": "https://github.com/mllg/base64url/issues",
-        "NeedsCompilation": "yes",
-        "License": "GPL-3",
-        "Encoding": "UTF-8",
-        "Imports": "backports (>= 1.1.0)",
-        "Suggests": "base64enc, checkmate, knitr, microbenchmark, openssl,\nrmarkdown, testthat",
-        "RoxygenNote": "6.0.1",
-        "VignetteBuilder": "knitr",
-        "Packaged": "2018-05-14 09:41:23 UTC; lang",
-        "Author": "Michel Lang [cre, aut] (<https://orcid.org/0000-0001-9754-0393>),\n  Apache Foundation [ctb, cph],\n  Free Software Foundation [ctb, cph]",
-        "Maintainer": "Michel Lang <michellang@gmail.com>",
-        "Repository": "CRAN",
-        "Date/Publication": "2018-05-14 09:58:28 UTC",
-        "Built": "R 4.4.0; aarch64-apple-darwin20; 2024-04-05 15:58:19 UTC; unix",
-        "Archs": "base64url.so.dSYM",
-        "RemoteType": "standard",
-        "RemotePkgRef": "base64url",
-        "RemoteRef": "base64url",
-        "RemoteRepos": "https://cran.rstudio.com/",
-        "RemotePkgPlatform": "aarch64-apple-darwin20",
-        "RemoteSha": "1.4"
       }
     },
     "bit": {
@@ -1133,39 +1032,6 @@
         "Built": "R 4.4.1; ; 2024-11-18 04:10:53 UTC; unix"
       }
     },
-    "formatR": {
-      "Source": "CRAN",
-      "Repository": "https://cran.rstudio.com",
-      "description": {
-        "Package": "formatR",
-        "Type": "Package",
-        "Title": "Format R Code Automatically",
-        "Version": "1.14",
-        "Authors@R": "c(\n    person(\"Yihui\", \"Xie\", role = c(\"aut\", \"cre\"), email = \"xie@yihui.name\", comment = c(ORCID = \"0000-0003-0645-5666\")),\n    person(\"Ed\", \"Lee\", role = \"ctb\"),\n    person(\"Eugene\", \"Ha\", role = \"ctb\"),\n    person(\"Kohske\", \"Takahashi\", role = \"ctb\"),\n    person(\"Pavel\", \"Krivitsky\", role = \"ctb\"),\n    person()\n    )",
-        "Description": "Provides a function tidy_source() to format R source code. Spaces\n    and indent will be added to the code automatically, and comments will be\n    preserved under certain conditions, so that R code will be more\n    human-readable and tidy. There is also a Shiny app as a user interface in\n    this package (see tidy_app()).",
-        "Depends": "R (>= 3.2.3)",
-        "Suggests": "rstudioapi, shiny, testit, rmarkdown, knitr",
-        "License": "GPL",
-        "URL": "https://github.com/yihui/formatR",
-        "BugReports": "https://github.com/yihui/formatR/issues",
-        "VignetteBuilder": "knitr",
-        "RoxygenNote": "7.2.3",
-        "Encoding": "UTF-8",
-        "NeedsCompilation": "no",
-        "Packaged": "2023-01-17 21:46:29 UTC; yihui",
-        "Author": "Yihui Xie [aut, cre] (<https://orcid.org/0000-0003-0645-5666>),\n  Ed Lee [ctb],\n  Eugene Ha [ctb],\n  Kohske Takahashi [ctb],\n  Pavel Krivitsky [ctb]",
-        "Maintainer": "Yihui Xie <xie@yihui.name>",
-        "Repository": "CRAN",
-        "Date/Publication": "2023-01-17 22:30:02 UTC",
-        "Built": "R 4.4.0; ; 2024-04-05 15:37:35 UTC; unix",
-        "RemoteType": "standard",
-        "RemotePkgRef": "formatR",
-        "RemoteRef": "formatR",
-        "RemoteRepos": "https://cran.rstudio.com/",
-        "RemotePkgPlatform": "aarch64-apple-darwin20",
-        "RemoteSha": "1.14"
-      }
-    },
     "fs": {
       "Source": "CRAN",
       "Repository": "https://cran.rstudio.com",
@@ -1672,41 +1538,6 @@
         "Archs": "isoband.so.dSYM"
       }
     },
-    "jose": {
-      "Source": "CRAN",
-      "Repository": "https://cran.rstudio.com",
-      "description": {
-        "Package": "jose",
-        "Type": "Package",
-        "Title": "JavaScript Object Signing and Encryption",
-        "Version": "1.2.1",
-        "Authors@R": "person(\"Jeroen\", \"Ooms\", role = c(\"aut\", \"cre\"), \n    email = \"jeroenooms@gmail.com\", comment = c(ORCID = \"0000-0002-4035-0289\"))",
-        "Description": "Read and write JSON Web Keys (JWK, rfc7517), generate and verify JSON\n    Web Signatures (JWS, rfc7515) and encode/decode JSON Web Tokens (JWT, rfc7519)\n    <https://datatracker.ietf.org/wg/jose/documents/>. These standards provide \n    modern signing and encryption formats that are natively supported by browsers\n    via the JavaScript WebCryptoAPI <https://www.w3.org/TR/WebCryptoAPI/#jose>, \n    and used by services like OAuth 2.0, LetsEncrypt, and Github Apps.",
-        "License": "MIT + file LICENSE",
-        "URL": "https://r-lib.r-universe.dev/jose",
-        "BugReports": "https://github.com/r-lib/jose/issues",
-        "Depends": "openssl (>= 1.2.1)",
-        "Imports": "jsonlite",
-        "RoxygenNote": "7.1.2",
-        "VignetteBuilder": "knitr",
-        "Suggests": "spelling, testthat, knitr, rmarkdown",
-        "Encoding": "UTF-8",
-        "Language": "en-US",
-        "NeedsCompilation": "no",
-        "Packaged": "2024-10-03 14:12:53 UTC; jeroen",
-        "Author": "Jeroen Ooms [aut, cre] (<https://orcid.org/0000-0002-4035-0289>)",
-        "Maintainer": "Jeroen Ooms <jeroenooms@gmail.com>",
-        "Repository": "CRAN",
-        "Date/Publication": "2024-10-04 12:20:01 UTC",
-        "Built": "R 4.4.1; ; 2024-10-04 13:39:32 UTC; unix",
-        "RemoteType": "standard",
-        "RemotePkgRef": "jose",
-        "RemoteRef": "jose",
-        "RemoteRepos": "https://cran.rstudio.com/",
-        "RemotePkgPlatform": "aarch64-apple-darwin20",
-        "RemoteSha": "1.2.1"
-      }
-    },
     "jquerylib": {
       "Source": "CRAN",
       "Repository": "https://cran.rstudio.com",
@@ -2158,38 +1989,6 @@
         "Archs": "openssl.so.dSYM"
       }
     },
-    "otp": {
-      "Source": "CRAN",
-      "Repository": "https://cran.rstudio.com",
-      "description": {
-        "Package": "otp",
-        "Title": "One Time Password Generation and Verification",
-        "Version": "0.1.1",
-        "Date": "2024-01-22",
-        "Authors@R": "\n    person(given = \"Randy\",\n           family = \"Lai\",\n           role = c(\"aut\", \"cre\", \"cph\"),\n           email = \"randy.cs.lai@gmail.com\")",
-        "Description": "Generating and validating One-time Password based on \n    Hash-based Message Authentication Code (HOTP) \n    and Time Based One-time Password (TOTP)\n    according to RFC 4226 <https://datatracker.ietf.org/doc/html/rfc4226> and\n    RFC 6238 <https://datatracker.ietf.org/doc/html/rfc6238>.",
-        "License": "MIT + file LICENSE",
-        "Encoding": "UTF-8",
-        "URL": "https://github.com/randy3k/otp",
-        "BugReports": "https://github.com/randy3k/otp/issues",
-        "Imports": "R6, base64url, openssl",
-        "RoxygenNote": "7.3.0",
-        "Suggests": "testthat (>= 2.1.0), covr",
-        "NeedsCompilation": "no",
-        "Packaged": "2024-01-22 23:56:59 UTC; randylai",
-        "Author": "Randy Lai [aut, cre, cph]",
-        "Maintainer": "Randy Lai <randy.cs.lai@gmail.com>",
-        "Repository": "CRAN",
-        "Date/Publication": "2024-01-23 00:20:02 UTC",
-        "Built": "R 4.4.0; ; 2024-04-06 05:34:08 UTC; unix",
-        "RemoteType": "standard",
-        "RemotePkgRef": "otp",
-        "RemoteRef": "otp",
-        "RemoteRepos": "https://cran.rstudio.com/",
-        "RemotePkgPlatform": "aarch64-apple-darwin20",
-        "RemoteSha": "0.1.1"
-      }
-    },
     "pillar": {
       "Source": "CRAN",
       "Repository": "https://cran.rstudio.com",
@@ -2363,40 +2162,6 @@
         "RemoteRepos": "https://cran.rstudio.com/",
         "RemotePkgPlatform": "aarch64-apple-darwin20",
         "RemoteSha": "4.10.4"
-      }
-    },
-    "polished": {
-      "Source": "CRAN",
-      "Repository": "https://cran.rstudio.com",
-      "description": {
-        "Package": "polished",
-        "Type": "Package",
-        "Title": "Authentication and Hosting for 'shiny' Apps",
-        "Version": "0.8.1",
-        "Authors@R": "c(\n  person(\"Andy\", \"Merlino\", email = \"andy.merlino@tychobra.com\", role = c(\"aut\", \"cre\")),\n  person(\"Patrick\", \"Howard\", email = \"patrick.howard@tychobra.com\", role = c(\"aut\")),\n  person(\"Tychobra LLC\", role = c(\"cph\", \"fnd\")))",
-        "Maintainer": "Andy Merlino <andy.merlino@tychobra.com>",
-        "Description": "Authentication, user administration, hosting, and additional infrastructure for 'shiny' apps. See\n  <https://polished.tech> for additional documentation and examples.",
-        "License": "MIT + file LICENSE",
-        "URL": "https://github.com/tychobra/polished, https://polished.tech",
-        "BugReports": "https://github.com/tychobra/polished/issues",
-        "Encoding": "UTF-8",
-        "Imports": "automagic, digest, dplyr, desc, DT, htmltools, httr, jose,\njsonlite, lubridate, otp, purrr, rlang, rmarkdown, shiny,\nshinycssloaders, shinydashboard, shinyFeedback, shinyjs,\nshinyWidgets, stats, stringr, tibble, tidyr, utils, uuid, yaml",
-        "Suggests": "base64enc, config, knitr, plumber, testthat (>= 3.0.0), xfun",
-        "VignetteBuilder": "knitr",
-        "RoxygenNote": "7.2.3",
-        "Config/testthat/edition": "3",
-        "NeedsCompilation": "no",
-        "Packaged": "2023-02-11 15:11:50 UTC; andy",
-        "Author": "Andy Merlino [aut, cre],\n  Patrick Howard [aut],\n  Tychobra LLC [cph, fnd]",
-        "Repository": "CRAN",
-        "Date/Publication": "2023-02-11 15:30:02 UTC",
-        "Built": "R 4.4.0; ; 2024-04-06 22:24:45 UTC; unix",
-        "RemoteType": "standard",
-        "RemotePkgRef": "polished",
-        "RemoteRef": "polished",
-        "RemoteRepos": "https://cran.rstudio.com/",
-        "RemotePkgPlatform": "aarch64-apple-darwin20",
-        "RemoteSha": "0.8.1"
       }
     },
     "pool": {
@@ -2584,36 +2349,6 @@
         "Archs": "rappdirs.so.dSYM"
       }
     },
-    "remotes": {
-      "Source": "CRAN",
-      "Repository": "https://cran.rstudio.com",
-      "description": {
-        "Package": "remotes",
-        "Title": "R Package Installation from Remote Repositories, Including\n'GitHub'",
-        "Version": "2.5.0",
-        "Authors@R": "c(\n    person(\"Gábor\", \"Csárdi\", , \"csardi.gabor@gmail.com\", role = c(\"aut\", \"cre\")),\n    person(\"Jim\", \"Hester\", role = \"aut\"),\n    person(\"Hadley\", \"Wickham\", role = \"aut\"),\n    person(\"Winston\", \"Chang\", role = \"aut\"),\n    person(\"Martin\", \"Morgan\", role = \"aut\"),\n    person(\"Dan\", \"Tenenbaum\", role = \"aut\"),\n    person(\"Posit Software, PBC\", role = c(\"cph\", \"fnd\")),\n    person(\"Ascent Digital Services\", role = \"cph\")\n  )",
-        "Description": "Download and install R packages stored in 'GitHub', 'GitLab',\n    'Bitbucket', 'Bioconductor', or plain 'subversion' or 'git'\n    repositories.  This package provides the 'install_*' functions in\n    'devtools'. Indeed most of the code was copied over from 'devtools'.",
-        "License": "MIT + file LICENSE",
-        "URL": "https://remotes.r-lib.org, https://github.com/r-lib/remotes#readme",
-        "BugReports": "https://github.com/r-lib/remotes/issues",
-        "Depends": "R (>= 3.0.0)",
-        "Imports": "methods, stats, tools, utils",
-        "Suggests": "brew, callr, codetools, covr, curl, git2r (>= 0.23.0), knitr,\nmockery, pingr, pkgbuild (>= 1.0.1), rmarkdown, rprojroot,\ntestthat (>= 3.0.0), webfakes, withr",
-        "VignetteBuilder": "knitr",
-        "Config/Needs/website": "tidyverse/tidytemplate",
-        "Config/testthat/edition": "3",
-        "Encoding": "UTF-8",
-        "RoxygenNote": "7.2.3",
-        "SystemRequirements": "Subversion for install_svn, git for install_git",
-        "NeedsCompilation": "no",
-        "Packaged": "2024-03-17 12:41:55 UTC; gaborcsardi",
-        "Author": "Gábor Csárdi [aut, cre],\n  Jim Hester [aut],\n  Hadley Wickham [aut],\n  Winston Chang [aut],\n  Martin Morgan [aut],\n  Dan Tenenbaum [aut],\n  Posit Software, PBC [cph, fnd],\n  Ascent Digital Services [cph]",
-        "Maintainer": "Gábor Csárdi <csardi.gabor@gmail.com>",
-        "Repository": "CRAN",
-        "Date/Publication": "2024-03-17 13:20:02 UTC",
-        "Built": "R 4.4.0; ; 2024-04-05 15:19:54 UTC; unix"
-      }
-    },
     "rlang": {
       "Source": "CRAN",
       "Repository": "https://cran.rstudio.com",
@@ -2794,107 +2529,6 @@
         "Built": "R 4.4.1; ; 2024-12-14 00:26:59 UTC; unix"
       }
     },
-    "shinyFeedback": {
-      "Source": "CRAN",
-      "Repository": "https://cran.rstudio.com",
-      "description": {
-        "Package": "shinyFeedback",
-        "Type": "Package",
-        "Title": "Display User Feedback in Shiny Apps",
-        "Version": "0.4.0",
-        "Date": "2021-09-23",
-        "Authors@R": "c(\n  person(\"Andy\", \"Merlino\", email = \"andy.merlino@tychobra.com\", role = c(\"aut\", \"cre\")),\n  person(\"Patrick\", \"Howard\", email = \"patrick.howard@tychobra.com\", role = c(\"aut\")))",
-        "Description": "Easily display user feedback in Shiny apps.",
-        "License": "MIT + file LICENSE",
-        "Depends": "R (>= 3.1.2)",
-        "RoxygenNote": "7.1.2",
-        "Encoding": "UTF-8",
-        "Suggests": "knitr, rmarkdown",
-        "VignetteBuilder": "knitr",
-        "Imports": "fontawesome, htmltools, jsonlite, shiny",
-        "URL": "https://github.com/merlinoa/shinyFeedback",
-        "BugReports": "https://github.com/merlinoa/shinyFeedback/issues",
-        "NeedsCompilation": "no",
-        "Packaged": "2021-09-23 17:26:42 UTC; andy",
-        "Author": "Andy Merlino [aut, cre],\n  Patrick Howard [aut]",
-        "Maintainer": "Andy Merlino <andy.merlino@tychobra.com>",
-        "Repository": "CRAN",
-        "Date/Publication": "2021-09-23 18:30:08 UTC",
-        "Built": "R 4.4.0; ; 2024-04-06 09:16:43 UTC; unix",
-        "RemoteType": "standard",
-        "RemotePkgRef": "shinyFeedback",
-        "RemoteRef": "shinyFeedback",
-        "RemoteRepos": "https://cran.rstudio.com/",
-        "RemotePkgPlatform": "aarch64-apple-darwin20",
-        "RemoteSha": "0.4.0"
-      }
-    },
-    "shinyWidgets": {
-      "Source": "CRAN",
-      "Repository": "https://cran.rstudio.com",
-      "description": {
-        "Package": "shinyWidgets",
-        "Title": "Custom Inputs Widgets for Shiny",
-        "Version": "0.8.7",
-        "Authors@R": "c(\n  person(\"Victor\", \"Perrier\", email = \"victor.perrier@dreamrs.fr\", role = c(\"aut\", \"cre\", \"cph\")),\n  person(\"Fanny\", \"Meyer\", role = \"aut\"),\n  person(\"David\", \"Granjon\", role = \"aut\"),\n  person(\"Ian\", \"Fellows\", role = \"ctb\", comment = \"Methods for mutating vertical tabs & updateMultiInput\"),\n  person(\"Wil\", \"Davis\", role = \"ctb\", comment = \"numericRangeInput function\"),\n  person(\"Spencer\", \"Matthews\", role = \"ctb\", comment = \"autoNumeric methods\"),\n  person(family = \"JavaScript and CSS libraries authors\", role = c(\"ctb\", \"cph\"), comment = \"All authors are listed in LICENSE.md\")\n  )",
-        "Description": "Collection of custom input controls and user interface components for 'Shiny' applications. \n  Give your applications a unique and colorful style !",
-        "URL": "https://github.com/dreamRs/shinyWidgets,\nhttps://dreamrs.github.io/shinyWidgets/",
-        "BugReports": "https://github.com/dreamRs/shinyWidgets/issues",
-        "License": "GPL-3",
-        "Encoding": "UTF-8",
-        "LazyData": "true",
-        "RoxygenNote": "7.3.2",
-        "Depends": "R (>= 3.1.0)",
-        "Imports": "bslib, sass, shiny (>= 1.6.0), htmltools (>= 0.5.1), jsonlite,\ngrDevices, rlang",
-        "Suggests": "testthat, covr, ggplot2, DT, scales, shinydashboard,\nshinydashboardPlus",
-        "NeedsCompilation": "no",
-        "Packaged": "2024-09-23 06:53:57 UTC; perri",
-        "Author": "Victor Perrier [aut, cre, cph],\n  Fanny Meyer [aut],\n  David Granjon [aut],\n  Ian Fellows [ctb] (Methods for mutating vertical tabs &\n    updateMultiInput),\n  Wil Davis [ctb] (numericRangeInput function),\n  Spencer Matthews [ctb] (autoNumeric methods),\n  JavaScript and CSS libraries authors [ctb, cph] (All authors are listed\n    in LICENSE.md)",
-        "Maintainer": "Victor Perrier <victor.perrier@dreamrs.fr>",
-        "Repository": "CRAN",
-        "Date/Publication": "2024-09-23 07:40:02 UTC",
-        "Built": "R 4.4.1; ; 2024-09-23 08:37:59 UTC; unix",
-        "RemoteType": "standard",
-        "RemotePkgRef": "shinyWidgets",
-        "RemoteRef": "shinyWidgets",
-        "RemoteRepos": "https://cran.rstudio.com/",
-        "RemotePkgPlatform": "aarch64-apple-darwin20",
-        "RemoteSha": "0.8.7"
-      }
-    },
-    "shinyauthr": {
-      "Source": "CRAN",
-      "Repository": "https://cran.rstudio.com",
-      "description": {
-        "Package": "shinyauthr",
-        "Type": "Package",
-        "Title": "'Shiny' Authentication Modules",
-        "Version": "1.0.0",
-        "Authors@R": "\n    c(person(given = \"Paul\", \n             family = \"Campbell\", \n             email = \"pacampbell91@gmail.com\",\n             role = c(\"aut\", \"cre\"),\n             comment = c(ORCID = \"0000-0003-1018-6606\")),\n      person(given = \"Michael\", \n             family = \"Dewar\", \n             email = \"michael.p.dewar@gmail.com\", \n             role = \"ctb\"))",
-        "Description": "Add in-app user authentication to 'shiny', \n    allowing you to secure publicly hosted apps and \n    build dynamic user interfaces from user information.",
-        "License": "MIT + file LICENSE",
-        "Encoding": "UTF-8",
-        "Imports": "shiny (>= 1.5.0), shinyjs, dplyr, rlang, sodium, glue",
-        "Suggests": "DBI, RSQLite, lubridate, shinydashboard, testthat (>= 3.0.0),\nshinytest, knitr, rmarkdown, covr",
-        "RoxygenNote": "7.1.1",
-        "URL": "https://github.com/paulc91/shinyauthr",
-        "BugReports": "https://github.com/paulc91/shinyauthr/issues",
-        "Config/testthat/edition": "3",
-        "NeedsCompilation": "no",
-        "Packaged": "2021-07-19 10:41:29 UTC; paul",
-        "Author": "Paul Campbell [aut, cre] (<https://orcid.org/0000-0003-1018-6606>),\n  Michael Dewar [ctb]",
-        "Maintainer": "Paul Campbell <pacampbell91@gmail.com>",
-        "Repository": "CRAN",
-        "Date/Publication": "2021-07-20 07:20:02 UTC",
-        "Built": "R 4.4.0; ; 2024-04-06 16:08:07 UTC; unix",
-        "RemoteType": "standard",
-        "RemotePkgRef": "shinyauthr",
-        "RemoteRef": "shinyauthr",
-        "RemoteRepos": "https://cran.rstudio.com/",
-        "RemotePkgPlatform": "aarch64-apple-darwin20",
-        "RemoteSha": "1.0.0"
-      }
-    },
     "shinybrowser": {
       "Source": "CRAN",
       "Repository": "https://cran.rstudio.com",
@@ -2951,102 +2585,6 @@
         "RemoteRepos": "https://cran.rstudio.com/",
         "RemotePkgPlatform": "aarch64-apple-darwin20",
         "RemoteSha": "1.1.0"
-      }
-    },
-    "shinydashboard": {
-      "Source": "CRAN",
-      "Repository": "https://cran.rstudio.com",
-      "description": {
-        "Package": "shinydashboard",
-        "Title": "Create Dashboards with 'Shiny'",
-        "Version": "0.7.2",
-        "Authors@R": "c(\n    person(\"Winston\", \"Chang\", role = c(\"aut\", \"cre\"), email = \"winston@rstudio.com\"),\n    person(\"Barbara\", \"Borges Ribeiro\", role = \"aut\", email = \"barbara@rstudio.com\"),\n    person(family = \"RStudio\", role = \"cph\"),\n    person(family = \"Almasaeed Studio\", role = c(\"ctb\", \"cph\"), comment = \"AdminLTE theme for Bootstrap\"),\n    person(family = \"Adobe Systems Incorporated\", role = c(\"ctb\", \"cph\"), comment = \"Source Sans Pro font\")\n    )",
-        "Description": "Create dashboards with 'Shiny'. This package provides\n    a theme on top of 'Shiny', making it easy to create attractive dashboards.",
-        "URL": "http://rstudio.github.io/shinydashboard/",
-        "Depends": "R (>= 3.0)",
-        "License": "GPL (>= 2) | file LICENSE",
-        "Imports": "utils, shiny (>= 1.0.0), htmltools (>= 0.2.6), promises",
-        "BugReports": "https://github.com/rstudio/shinydashboard",
-        "RoxygenNote": "6.0.1.9000",
-        "NeedsCompilation": "no",
-        "Packaged": "2021-09-29 17:40:23 UTC; winston",
-        "Author": "Winston Chang [aut, cre],\n  Barbara Borges Ribeiro [aut],\n  RStudio [cph],\n  Almasaeed Studio [ctb, cph] (AdminLTE theme for Bootstrap),\n  Adobe Systems Incorporated [ctb, cph] (Source Sans Pro font)",
-        "Maintainer": "Winston Chang <winston@rstudio.com>",
-        "Repository": "CRAN",
-        "Date/Publication": "2021-09-30 12:10:06 UTC",
-        "Built": "R 4.4.0; ; 2024-04-06 09:15:52 UTC; unix",
-        "RemoteType": "standard",
-        "RemotePkgRef": "shinydashboard",
-        "RemoteRef": "shinydashboard",
-        "RemoteRepos": "https://cran.rstudio.com/",
-        "RemotePkgPlatform": "aarch64-apple-darwin20",
-        "RemoteSha": "0.7.2"
-      }
-    },
-    "shinyjs": {
-      "Source": "CRAN",
-      "Repository": "https://cran.rstudio.com",
-      "description": {
-        "Package": "shinyjs",
-        "Title": "Easily Improve the User Experience of Your Shiny Apps in Seconds",
-        "Version": "2.1.0",
-        "Authors@R": "person(\"Dean\", \"Attali\", \n    email = \"daattali@gmail.com\",\n    role = c(\"aut\", \"cre\"),\n    comment= c(ORCID=\"0000-0002-5645-3493\"))",
-        "Description": "Perform common useful JavaScript operations in Shiny apps that will\n    greatly improve your apps without having to know any JavaScript. Examples\n    include: hiding an element, disabling an input, resetting an input back to\n    its original value, delaying code execution by a few seconds, and many more\n    useful functions for both the end user and the developer. 'shinyjs' can also\n    be used to easily call your own custom JavaScript functions from R.",
-        "URL": "https://deanattali.com/shinyjs/",
-        "BugReports": "https://github.com/daattali/shinyjs/issues",
-        "Depends": "R (>= 3.1.0)",
-        "Imports": "digest (>= 0.6.8), jsonlite, shiny (>= 1.0.0)",
-        "Suggests": "htmltools (>= 0.2.9), knitr (>= 1.7), rmarkdown, shinyAce,\nshinydisconnect, testthat (>= 0.9.1)",
-        "License": "MIT + file LICENSE",
-        "VignetteBuilder": "knitr",
-        "RoxygenNote": "7.1.1",
-        "Encoding": "UTF-8",
-        "NeedsCompilation": "no",
-        "Packaged": "2021-12-21 11:32:22 UTC; Dean-X1C",
-        "Author": "Dean Attali [aut, cre] (<https://orcid.org/0000-0002-5645-3493>)",
-        "Maintainer": "Dean Attali <daattali@gmail.com>",
-        "Repository": "CRAN",
-        "Date/Publication": "2021-12-23 10:10:02 UTC",
-        "Built": "R 4.4.0; ; 2024-04-06 10:53:15 UTC; unix",
-        "RemoteType": "standard",
-        "RemotePkgRef": "shinyjs",
-        "RemoteRef": "shinyjs",
-        "RemoteRepos": "https://cran.rstudio.com/",
-        "RemotePkgPlatform": "aarch64-apple-darwin20",
-        "RemoteSha": "2.1.0"
-      }
-    },
-    "sodium": {
-      "Source": "CRAN",
-      "Repository": "https://cran.rstudio.com",
-      "description": {
-        "Package": "sodium",
-        "Type": "Package",
-        "Title": "A Modern and Easy-to-Use Crypto Library",
-        "Version": "1.4.0",
-        "Authors@R": "person(\"Jeroen\", \"Ooms\", role = c(\"aut\", \"cre\"), email = \"jeroenooms@gmail.com\",\n    comment = c(ORCID = \"0000-0002-4035-0289\"))",
-        "Description": "Bindings to 'libsodium' <https://doc.libsodium.org/>: a modern, \n    easy-to-use software library for encryption, decryption, signatures, password\n    hashing and more. Sodium uses curve25519, a state-of-the-art Diffie-Hellman \n    function by Daniel Bernstein, which has become very popular after it was \n    discovered that the NSA had backdoored Dual EC DRBG.",
-        "License": "MIT + file LICENSE",
-        "URL": "https://docs.ropensci.org/sodium/ https://github.com/r-lib/sodium",
-        "BugReports": "https://github.com/r-lib/sodium/issues",
-        "SystemRequirements": "libsodium (>= 1.0.3)",
-        "VignetteBuilder": "knitr",
-        "Suggests": "knitr, rmarkdown",
-        "RoxygenNote": "7.2.3",
-        "NeedsCompilation": "yes",
-        "Packaged": "2024-12-16 14:16:42 UTC; jeroen",
-        "Author": "Jeroen Ooms [aut, cre] (<https://orcid.org/0000-0002-4035-0289>)",
-        "Maintainer": "Jeroen Ooms <jeroenooms@gmail.com>",
-        "Repository": "CRAN",
-        "Date/Publication": "2024-12-16 15:00:05 UTC",
-        "Built": "R 4.4.1; aarch64-apple-darwin20; 2024-12-16 16:04:27 UTC; unix",
-        "Archs": "sodium.so.dSYM",
-        "RemoteType": "standard",
-        "RemotePkgRef": "sodium",
-        "RemoteRef": "sodium",
-        "RemoteRepos": "https://cran.rstudio.com/",
-        "RemotePkgPlatform": "aarch64-apple-darwin20",
-        "RemoteSha": "1.4.0"
       }
     },
     "sourcetools": {
@@ -3621,7 +3159,7 @@
       "checksum": "d456ef129e120c48c8211450db4becfc"
     },
     "DESCRIPTION": {
-      "checksum": "9b2efa45dc0b082ed7c7a90819c1af01"
+      "checksum": "d8197d2cda1d0f64317befedc717df36"
     },
     "inst/app/www/favicon.ico": {
       "checksum": "81560d1b906a530c87fa0acbb2f5cca4"
@@ -3630,16 +3168,19 @@
       "checksum": "5aa70534cf8668dc51852033f454cd70"
     },
     "NAMESPACE": {
-      "checksum": "8fc850d8834b97dce9dcb982b4c5a35f"
+      "checksum": "795abc11fc311ac33b8c681521f7019c"
+    },
+    "R/_disable_autoload.R": {
+      "checksum": "1178c335d6c11555fd1c4ec6098dfee6"
     },
     "R/app_config.R": {
       "checksum": "c1911e82cf1d6a3a7e93885c90a97b91"
     },
     "R/app_server.R": {
-      "checksum": "2d874a8d7592ec6c43072564a291e134"
+      "checksum": "8f514d7ef791e989e9a737b09b9f6f71"
     },
     "R/app_ui.R": {
-      "checksum": "736d9b9fa46ab0207a286435ff0757a1"
+      "checksum": "c0feac8587167ba2d710cd784c48183e"
     },
     "R/class_event_handlers.R": {
       "checksum": "2cabed04f75106fd4c7534b128527c04"
@@ -3662,14 +3203,11 @@
     "R/fcts_team_display.R": {
       "checksum": "0bc972ae360868ab718f84b8bf2212cf"
     },
-    "R/mod_account.R": {
-      "checksum": "274736bb33d5f0b7b594519782f6ee2c"
-    },
     "R/mod_admin_data.R": {
       "checksum": "8618747c38ac0d7020188155d19911c1"
     },
     "R/mod_player_display.R": {
-      "checksum": "6a63929714568d23867240c764d7901f"
+      "checksum": "d908430f55c9d296fbb5a5b4acb499eb"
     },
     "R/mod_player_leaderboard.R": {
       "checksum": "d99eb9bc6077e971d16bf5363405a8d4"
@@ -3684,7 +3222,7 @@
       "checksum": "b4e9764fc123ec845f1eac6a32f6f82f"
     },
     "R/run_app.R": {
-      "checksum": "6bb56c7f530923ffabf982284d2dc2c2"
+      "checksum": "070f9a924121c6b8744f8fe567d65801"
     },
     "R/utils_admin_data.R": {
       "checksum": "08b90c666d2f8ca4f2b8bba4c8836488"

@@ -16,12 +16,7 @@ app_ui <- function(request) {
       preset = "darkly",   # Choose the theme (e.g., "lux", "cosmo", "flatly", etc.)
       version = 5       # Ensure you're using Bootstrap 5
     ),
-    nav_panel(
-      title = "Home", 
-      value = "home", 
-      icon = shiny::icon("house"),
-      mod_account_ui("home_display")
-    ),
+    # First nav_panel: Player
     nav_menu(
       title = "Player", 
       value = "player", 
@@ -60,17 +55,17 @@ app_ui <- function(request) {
 #' resources inside the Shiny application.
 #'
 #' @import shiny
-#' @importFrom golem add_resource_path favicon bundle_resources
+#' @importFrom golem add_resource_path activate_js favicon bundle_resources
 #' @noRd
 golem_add_external_resources <- function() {
-  golem::add_resource_path(
+  add_resource_path(
     "www",
     app_sys("app/www")
   )
 
   tags$head(
-    golem::favicon(),
-    golem::bundle_resources(
+    favicon(),
+    bundle_resources(
       path = app_sys("app/www"),
       app_title = "ultistats"
     )

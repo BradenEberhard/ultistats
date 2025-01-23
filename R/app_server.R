@@ -12,5 +12,4 @@ app_server <- function(input, output, session) {
   observeEvent(player_link_name(), {
     updateTabsetPanel(session, 'main_nav', selected = 'player_profile')
   })  
-  mod_account_server("account_display")
 }

@@ -14,9 +14,11 @@ run_app <- function(
   uiPattern = "/",
   ...
 ) {
+  # Ensure that `options` for shinyApp are set for autoreload during development
+  
   # Run the shiny app with the provided arguments
   shinyApp(
-    ui = app_ui,
+    ui = app_ui(),
     server = app_server,
   )
 }

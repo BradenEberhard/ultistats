@@ -16,13 +16,6 @@ mod_player_display_ui <- function(id) {
   tagList(
     tags$style(get_HTML()),
     bslib::page_sidebar(
-      # tags$head(tags$style(HTML(
-      # "
-      # .bslib-sidebar-layout > .collapse-toggle {
-      #     margin-top: 45px;
-      # }
-      # "
-      # ))),
       shinybrowser::detect(),
       sidebar = sidebar(
         title="Controls",
