@@ -14,15 +14,9 @@ run_app <- function(
   uiPattern = "/",
   ...
 ) {
-  addResourcePath("www", system.file("app/www", package = "ultistats"))
-  # Ensure that `options` for shinyApp are set for autoreload during development
-  polished::polished_config(
-    app_name = "Breakside Analytics",
-    api_key = "J9NWzwdiEeosTz08Rs0wGtih83CNMPXDFs"
-  )
   # Run the shiny app with the provided arguments
   shinyApp(
-    ui = app_ui(),
+    ui = app_ui,
     server = app_server,
   )
 }
