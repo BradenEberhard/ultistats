@@ -53,7 +53,14 @@ get_recent_timestamp <- function(pool, table) {
     return("insertTimestamp column does not exist in the table")
   }
 
-  query <- paste0("SELECT \"insertTimestamp\" FROM \"", table, "\" ORDER BY \"insertTimestamp\" DESC LIMIT 1;")
+  query <- glue::glue_sql(
+    "SELECT \"insertTimestamp\" 
+     FROM {`table`} 
+     ORDER BY \"insertTimestamp\" DESC 
+     LIMIT 1;",
+    .con = pool
+  )
+  
   result <- DBI::dbGetQuery(pool, query)
   
   
@@ -101,7 +108,11 @@ create_table <- function(pool, table_name, data, index_cols = NULL, override = F
   
   # If override is TRUE, drop the table if it exists
   if (override) {
-    DBI::dbExecute(pool, paste0("DROP TABLE IF EXISTS \"", table_name, "\";"))
+    drop_query <- glue::glue_sql(
+      "DROP TABLE IF EXISTS {`table_name`};",
+      .con = pool
+    )
+    DBI::dbExecute(pool, drop_query)
   }
   
   # Function to map R types to PostgreSQL types
@@ -121,12 +132,27 @@ create_table <- function(pool, table_name, data, index_cols = NULL, override = F
   
   # Get the column names and types for the data
   column_definitions <- sapply(names(data), function(col_name) {
-    col_type <- map_r_to_sql_type(class(data[[col_name]])[1])  # Get the first class of the column
-    paste0('"', col_name, '"', " ", col_type)  # Add double quotes around the column name
+    # Validate column name
+    if (!grepl("^[a-zA-Z0-9_]+$", col_name)) {
+      stop(paste("Invalid column name:", col_name))
+    }
+    
+    # Map R type to SQL type
+    col_type <- map_r_to_sql_type(class(data[[col_name]])[1])
+    
+    # Return SQL column definition
+    glue_sql("\"{col_name}\" {col_type}", .con = pool)
   })
   
   # Create the SQL query to create the table
-  create_query <- paste0("CREATE TABLE IF NOT EXISTS \"", table_name, "\" (", paste(column_definitions, collapse = ", "), ");")
+  create_query <- glue::glue_sql(
+    "CREATE TABLE IF NOT EXISTS {`table_name`} ({`columns`*});",
+    table_name = table_name,
+    columns = column_definitions,
+    .con = pool
+  )
+  
+  # Execute the query
   DBI::dbExecute(pool, create_query)
   
   # Function to check if index exists
@@ -138,7 +164,16 @@ create_table <- function(pool, table_name, data, index_cols = NULL, override = F
     index_name <- paste0(table_name, "_", paste(index_cols, collapse = "_"), "_index")
     
     # Query the system catalog to check if the index already exists
-    query <- paste0("SELECT 1 FROM pg_indexes WHERE tablename = '", table_name, "' AND indexname = '", index_name, "';")
+    query <- glue::glue_sql(
+      "SELECT 1 
+       FROM pg_indexes 
+       WHERE tablename = {table_name} AND indexname = {index_name};",
+      table_name = table_name,
+      index_name = index_name,
+      .con = pool
+    )
+    
+    # Execute the query
     result <- DBI::dbGetQuery(pool, query)
     
     # Return TRUE if the index exists, FALSE otherwise
@@ -150,8 +185,13 @@ create_table <- function(pool, table_name, data, index_cols = NULL, override = F
     # Check if the index already exists
     if (!check_index_exists(pool, table_name, index_cols)) {
       # Create the index if it doesn't exist
-      index_cols <- paste0("\"", index_cols, "\"")
-      index_query <- paste0("CREATE INDEX IF NOT EXISTS \"", table_name, "_index\" ON \"", table_name, "\"(", paste(index_cols, collapse = ", "), ");")
+      index_query <- glue::glue_sql(
+        "CREATE INDEX IF NOT EXISTS {`table_name`}_index ON {`table_name`} ({index_cols*});",
+        table_name = table_name,
+        index_cols = index_cols,
+        .con = pool
+      )
+      
       DBI::dbExecute(pool, index_query)
     } else {
       message("Index already exists.")

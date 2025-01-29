@@ -31,7 +31,7 @@ mod_player_display_ui <- function(id) {
       fluidRow(
         card(
           h2("Skill Percentiles"),
-          withSpinner(plotlyOutput(ns("skill_percentiles_plot")))
+          withSpinner(girafeOutput(ns("skill_percentiles_plot")))
         )
       ),
       bslib::accordion(
@@ -199,7 +199,7 @@ mod_player_display_server <- function(id, player_name) {
       freezeReactiveValue(input, "year_selector")
     })
 
-    output$skill_percentiles_plot <- renderPlotly({
+    output$skill_percentiles_plot <- renderGirafe({
       req(input$player_selector, input$year_selector, input$stat_category, !is.null(input$handler_switch_value), !is.null(input$offense_switch_value))
       isolate({
         plot <- generate_skill_percentiles_plot(input, session, all_player_stats)
