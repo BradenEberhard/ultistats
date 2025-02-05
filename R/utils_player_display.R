@@ -139,7 +139,7 @@ convert_to_metric_df <- function(input, df, all_metrics, selected_player=NULL, a
 
 # Fetch selected player stats
 get_selected_player_stats <- function(player_selector, year_selector, all_player_stats) {
-  req(player_selector, year_selector, player_selector != "", year_selector != "")
+  req(player_selector, year_selector)
   all_player_stats %>%
     filter(.data$fullName == player_selector & .data$year == year_selector)
 }
@@ -292,7 +292,7 @@ radial_histogram_plot <- function(passes, bin_width = 24, role = "thrower") {
   max_y <- max(table(cut(passes, breaks = bin_cutoffs)))
 
   ggplot(data.frame(passes), aes(x = passes)) +
-    geom_histogram(breaks = bin_cutoffs, fill = "blue", color = "white", boundary = 0) +
+    geom_histogram(breaks = bin_cutoffs, fill = "#052e85", color = "white", boundary = 0) +
     coord_polar(start = pi, clip = "off") +
     scale_x_continuous(limits = c(-180, 180), breaks = seq(-180, 180, 45)) +
     theme_minimal() +

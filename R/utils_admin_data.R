@@ -10,19 +10,18 @@ get_current_timestamp <- function() {
 fetch_and_process_player_stats <- function(pool, base_url) {
   players <- get_player_ids(pool)
   player_stats_data <- fetch_player_stats(base_url, players)
-  throws_data <- get_table_from_db(pool, table_name = "throws")
-  
+  player_game_data <- get_table_from_db(pool, table_name = "player_game_stats")
+
   # Preprocess games per player
-  games_per_player <- throws_data %>% 
+  games_per_player <- player_game_data %>% 
     mutate(year = as.numeric(substr(.data$gameID, 1, 4))) %>% 
-    separate_rows(.data$line, sep = ",") %>% 
-    distinct(.data$line, .data$year, .data$gameID) %>% 
-    group_by(.data$line,.data$ year) %>% 
+    distinct(.data$playerID, .data$year, .data$gameID) %>% 
+    group_by(.data$playerID,.data$ year) %>% 
     summarise(games = n_distinct(.data$gameID), .groups = "drop")
   
   # Join and return
   player_stats_data <- player_stats_data %>%
-    left_join(games_per_player, by = c("playerID" = "line", "year" = "year")) %>%
+    left_join(games_per_player, by = c("playerID" = "playerID", "year" = "year")) %>%
     mutate(games = replace_na(.data$games, 0), year = as.character(.data$year))
   
   return(player_stats_data)
@@ -182,7 +181,7 @@ get_full_name <- function(players_data) {
     mutate(fullName = paste(.data$firstName, .data$lastName)) %>%
     mutate(
       fullName = ifelse(duplicated(.data$fullName) | duplicated(.data$fullName, fromLast = TRUE),
-                        paste(.data$fullName, "(", .data$playerID, ")"), 
+                        paste0(.data$fullName, " (", .data$playerID, ")"), 
                         .data$fullName)
     )
 

@@ -21,6 +21,7 @@ mod_admin_data_ui <- function(id) {
         actionButton(ns("update_blocks_button"), "Update Blocks Table", class = "btn btn-primary"),
         actionButton(ns("update_pulls_button"), "Update Pulls Table", class = "btn btn-primary"),
         actionButton(ns("update_throws_button"), "Update Throws Table", class = "btn btn-primary"),
+        actionButton(ns("update_player_game_stats_button"), "Update Player Game Stats Table", class = "btn btn-primary"),
         actionButton(ns("update_penalties_button"), "Update Penalties Table", class = "btn btn-primary"),
         actionButton(ns("update_advanced_stats_button"), "Update Advanced Stats", class = "btn btn-primary")
       )
@@ -70,6 +71,7 @@ mod_admin_data_server <- function(id){
     create_observe_event(input, "update_blocks_button", update_blocks, timestamps, base_url)
     create_observe_event(input, "update_penalties_button", update_penalties, timestamps, base_url)
     create_observe_event(input, "update_throws_button", update_throws, timestamps, base_url)
+    create_observe_event(input, "update_player_game_stats_button", update_player_game_stats, timestamps, base_url)
     create_observe_event(input, "update_all", update_all_tables, timestamps, base_url)
 
 

@@ -114,3 +114,20 @@ fetch_player_stats <- function(base_url, players) {
   }
   do.call(rbind, all_player_stats)
 }
+
+fetch_player_game_stats <- function(base_url, gameID) {
+  endpoint <- paste0("playerGameStats?gameID=", gameID)
+  api_url <- paste0(base_url, endpoint)
+
+    response <- httr::GET(api_url)
+    
+  if (httr::status_code(response) == 200) {
+    response_data <- jsonlite::fromJSON(httr::content(response, "text", encoding = "UTF-8"))
+    player_game_stats_table <- response_data$data
+    player_game_stats_table <- tidyr::unnest(player_game_stats_table, cols = c("player"))
+  } else {
+    warning("Failed to fetch data for game: ", paste(gameID))
+  }
+
+  return(player_game_stats_table)
+}

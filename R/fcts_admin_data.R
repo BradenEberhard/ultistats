@@ -43,11 +43,6 @@ update_player_stats <- function(pool, base_url) {
   player_stats_data <- fetch_and_process_player_stats(pool, base_url) %>% compute_career_data_from_player_stats()
   # Compute advanced stats (ec, xcp, etc.) using the advanced_stats table
 
-  # Insert or update player stats in the player_stats table
-  create_table(pool=pool, table_name='player_stats', data=player_stats_data, index_cols="playerID", override=TRUE)
-  update_table(pool=pool, table_name='player_stats', data=player_stats_data, index_col="playerID", whole_table = TRUE)
-
-
   update_advanced_stats(pool, base_url)
   advanced_stats <- get_table(pool, "advanced_stats")
   yearly_advanced_stats <- compute_advanced_stats(advanced_stats) # requires advanced_stats table
@@ -60,7 +55,7 @@ update_player_stats <- function(pool, base_url) {
   
   # Process player stats for efficiency, full names, and other transformations
   player_stats_data <- process_player_stats(player_stats_data)
-  
+
   # Insert or update player stats in the player_stats table
   create_table(pool=pool, table_name='player_stats', data=player_stats_data, index_cols="playerID", override=TRUE)
   update_table(pool=pool, table_name='player_stats', data=player_stats_data, index_col="playerID", whole_table = TRUE)
@@ -97,6 +92,22 @@ update_pulls <- function(pool, base_url) {
         mutate(insertTimestamp = get_current_timestamp())
       create_table(pool=pool, table_name='pulls', data=pull_data, index_cols="gameID", override=FALSE)
       update_table(pool=pool, table_name='pulls', data=pull_data, index_col="gameID", whole_table = FALSE)
+      incProgress(1 / length(game_ids), detail = paste("Processing game ID", current_game_id))
+    }
+  })
+}
+
+# Function to process and update throws
+update_player_game_stats <- function(pool, base_url) {
+  game_ids <- get_game_ids(pool)
+  withProgress(message = "Processing player game stats", value = 0, {
+    for (i in seq_along(game_ids)) {
+      current_game_id <- game_ids[[i]]
+      game_data <- fetch_player_game_stats(base_url, current_game_id)
+      game_data <- game_data %>% mutate(gameID = current_game_id)
+
+      create_table(pool=pool, table_name='player_game_stats', data=game_data, index_cols=list("gameID","playerID"), override=FALSE)
+      update_table(pool=pool, table_name='player_game_stats', data=game_data, index_col="gameID", whole_table = FALSE)
       incProgress(1 / length(game_ids), detail = paste("Processing game ID", current_game_id))
     }
   })
@@ -192,12 +203,13 @@ update_all_tables <- function(pool, base_url) {
     table_updates <- list(
       list(update_func = update_games, table_name = "Games"),
       list(update_func = update_players, table_name = "Players"),
+      list(update_func = update_player_game_stats, table_name = "Player Game Stats"),
       list(update_func = update_throws, table_name = "Throws"),
       list(update_func = update_player_stats, table_name = "Player Stats"),
       list(update_func = update_teams, table_name = "Teams"),
       list(update_func = update_blocks, table_name = "Blocks"),
       list(update_func = update_pulls, table_name = "Pulls"),
-      list(update_func = update_penalties, table_name = "Penalties")
+      list(update_func = update_penalties, table_name = "Penalties"),
     )
     
     for (i in seq_along(table_updates)) { ##TODO increment progress isnt working correctly

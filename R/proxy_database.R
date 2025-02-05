@@ -1,4 +1,30 @@
 # Function to open the database connection
+open_db_connection <- function() {
+  # Get credentials from environment variables
+  db_host <- Sys.getenv("DB_HOST")
+  db_port <- Sys.getenv("DB_PORT")
+  db_name <- Sys.getenv("DB_NAME")
+  db_user <- Sys.getenv("DB_USER")
+  db_password <- Sys.getenv("DB_PASSWORD")
+  
+  # Create the connection string
+  conn <- DBI::dbConnect(Postgres(),
+                         host = db_host,
+                         port = db_port,
+                         dbname = db_name,
+                         user = db_user,
+                         password = db_password)
+  
+  return(conn)
+}
+
+# Function to close the database connection
+close_db_connection <- function(conn) {
+  if (!is.null(conn)) {
+    DBI::dbDisconnect(conn)
+  }
+}
+
 #' @importFrom RPostgres Postgres
 #' @importFrom pool poolClose
 get_db_pool <- local({
