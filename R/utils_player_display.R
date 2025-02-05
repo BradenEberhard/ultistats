@@ -147,8 +147,9 @@ get_selected_player_stats <- function(player_selector, year_selector, all_player
 ### Plots 
 
 # ggiraph plots for percentiles over years
-#' @importFrom ggiraph geom_line_interactive geom_point_interactive girafe girafe_options opts_hover opts_hover_inv opts_toolbar opts_sizing opts_selection
+#' @importFrom ggiraph geom_line_interactive geom_segment_interactive geom_text_interactive geom_point_interactive girafe girafe_options opts_hover opts_hover_inv opts_toolbar opts_sizing opts_selection
 #' @importFrom ggrepel geom_text_repel
+#' @importFrom scales comma
 generate_yearly_percentile_plot <- function(metric_df, title) {
   metric_df$year <- as.numeric(metric_df$year)
   metric_df <- metric_df %>% filter(!is.na(value)) %>%
@@ -230,60 +231,64 @@ generate_yearly_percentile_plot <- function(metric_df, title) {
 #' @importFrom tidyr drop_na
 create_skill_percentiles_plot <- function(session, plot_data) {
   plot_data <- plot_data %>% drop_na()
-  container_width <- shinybrowser::get_width()
-  y_variable <- if (container_width < 500) "metric_abbreviation" else "metric_full_name"
 
-  plot_ly() %>%
-    add_segments(
-      data = plot_data,
-      x = 0, 
-      xend = ~percentile, 
-      y = ~reorder(.data[[y_variable]], percentile), 
-      yend = ~reorder(.data[[y_variable]], percentile),
-      line = list(color = "black", width = 2),
-      text = ~paste(
-        if (container_width < 500) metric_full_name else metric_abbreviation, 
-        ":", 
-        sub("\\.0+$", "", scales::comma(value, accuracy = 0.01)), 
-        "<br>Percentile:", 
-        percentile
+  gg <- ggplot(plot_data, aes(
+    x = percentile, 
+    y = reorder(metric_abbreviation, percentile)
+  )) +
+    geom_segment_interactive(
+      aes(
+        x = 0, 
+        xend = percentile, 
+        yend = reorder(metric_abbreviation, percentile),
+        tooltip = paste(
+          metric_abbreviation, ":", 
+          sub("\\.0+$", "", comma(value, accuracy = 0.01)), 
+          "<br>Percentile:", percentile
+        )
       ),
-      hoverinfo = "text", # Display custom hover text
-      hoveron = "points+fills",  # Enable hover effects on both points and lines
-      showlegend = FALSE
-    ) %>%
-    add_trace(
-      data = plot_data,
-      x = ~percentile, 
-      y = ~reorder(.data[[y_variable]], percentile), 
-      type = "scatter", 
-      mode = "markers", 
-      marker = list(size = 8, color = "black"),
-      text = ~paste(
-        if (container_width < 500) metric_full_name else metric_abbreviation, 
-        ":", 
-        sub("\\.0+$", "", scales::comma(value, accuracy = 0.01)), 
-        "<br>Percentile:", 
-        percentile
+      color = "black", size = 1
+    ) +
+  geom_point_interactive(
+    aes(
+      tooltip = paste(
+        metric_abbreviation, ":", 
+        sub("\\.0+$", "", comma(value, accuracy = 0.01)), 
+        "<br>Percentile:", percentile
+      )
+    ),
+    size = 3, color = "black"
+  ) +
+    geom_text_interactive(
+      aes(
+        x = -2,  
+        label = metric_abbreviation,
+        tooltip = paste(metric_full_name, ":\n", metric_description)  # Custom tooltip for labels
       ),
-      hoverinfo = "text", # Display custom hover text
-      hoveron = "points+fills",  # Enable hover effects on both points and lines
-      showlegend = FALSE
-    ) %>%
-      layout(
-        xaxis = list(
-          title = list(text = "Percentile", font = list(size = 20)), 
-          range = c(0, 102), 
-          tickfont = list(size = 14)
-        ),
-        yaxis = list(
-          title = list(text = "Metric", font = list(size = 20)),
-          ticksuffix = " ",
-          tickfont = list(size = 14)
-        ),
-        showlegend = FALSE 
-      ) %>%
-    config(displayModeBar = FALSE)
+      hjust = 1, size = 5, color = "black"
+    ) +
+    labs(x = "Percentile", y = "Metric") +
+    theme_minimal(base_size = 16) +
+    theme(
+      axis.title = element_text(size = 20),
+      axis.text = element_text(size = 14),
+      axis.text.y = element_blank(),
+      axis.title.y = element_text(margin = margin(r = 25)),
+      panel.grid.major.y = element_blank()
+    ) + coord_cartesian(clip="off")
+  
+  interactive_plot <- girafe(ggobj = gg)
+  interactive_plot <- girafe_options(
+    interactive_plot,
+    opts_hover(
+      css = "stroke:black; stroke-width:20px; r:20px; transition: all 0.1s ease;"
+    ),
+    opts_hover_inv(css = "opacity:0.5; filter:saturate(10%);"),
+    opts_toolbar(saveaspng = FALSE, hidden = c("selection")),
+    opts_selection(type = "none")
+  )
+
+  return(interactive_plot)
 }
 
 # radial histogram plot
@@ -371,7 +376,8 @@ process_metric <- function(metric, df, player_full_name) {
       percentile = percentile_value,
       value = player_value,
       metric_full_name = metric_info$display_name,
-      metric_abbreviation = metric_info$abbreviation
+      metric_abbreviation = metric_info$abbreviation,
+      metric_description = metric_info$description
     ))
   }
   return(NULL)
@@ -406,322 +412,359 @@ map_metrics_to_formula <- function(df, metric_names) {
     "receptions" = list(
       formula = function(df) df$catches,
       display_name = "Receptions",
-      abbreviation = "R"
+      abbreviation = "R",
+      description = "Total number of catches"
     ),
     "drops" = list(
       formula = function(df) df$drops,
       display_name = "Drops",
-      abbreviation = "D"
+      abbreviation = "D",
+      description = "Total number of drops"
     ),
     "receiver_ec" = list(
       formula = function(df) df$receiver_ec,
       display_name = "Receiver Expected Contribution",
-      abbreviation = "R-EC"
+      abbreviation = "R-EC",
+      description = "Contribution towards a score from passes caught"
     ),
     "receiver_aec" = list(
       formula = function(df) df$receiver_ec,
       display_name = "Receiver Adjusted Expected Contribution",
-      abbreviation = "R-aEC"
+      abbreviation = "R-aEC",
+      description = "Contribution towards a score from passes caught adjusted for comparison to goals"
     ),
     "turnovers" = list(
       formula = function(df) df$throwaways,
       display_name = "Turnovers",
-      abbreviation = "Turns"
+      abbreviation = "Turns",
+      description = "Total number of turnovers"
     ),
     "plus_minus" = list(
       formula = function(df) df$goals + df$assists + df$blocks + (df$hockeyAssists * 0.5 ) - df$throwaways - df$stalls - df$drops,
       display_name = "Plus Minus",
-      abbreviation = "PM"
+      abbreviation = "PM",
+      description = "goals + assists + blocks + hockey assists/2 - throwaways - stalls - drops"
     ),
     "assists" = list(
       formula = function(df) df$assists,
       display_name = "Assists",
-      abbreviation = "A"
+      abbreviation = "A",
+      description = "Total number of assists"
     ),
     "hockeyAssists" = list(
       formula = function(df) df$hockeyAssists,
       display_name = "Hockey Assists",
-      abbreviation = "HA"
+      abbreviation = "HA",
+      description = "Total number of hockey assists"
     ),
     "goals" = list(
       formula = function(df) df$goals,
       display_name = "Goals",
-      abbreviation = "G"
+      abbreviation = "G",
+      description = "Total number of goals scored"
     ),
     "blocks" = list(
       formula = function(df) df$blocks,
       display_name = "Blocks",
-      abbreviation = "B"
+      abbreviation = "B",
+      description = "Total number of blocks"
     ),
     "thrower_ec" = list(
       formula = function(df) df$thrower_ec,
       display_name = "Thrower Expected Contribution",
-      abbreviation = "T-EC"
-    ),"thrower_aec" = list(
+      abbreviation = "T-EC",
+      description = "Contribution towards a score from thrown passes"
+    ),
+    "thrower_aec" = list(
       formula = function(df) df$thrower_aec,
       display_name = "Thrower Adjusted Expected Contribution",
-      abbreviation = "T-aEC"
-    ),"yardsThrown" = list(
+      abbreviation = "T-aEC",
+      description = "Contribution towards a score from thrown passes adjusted for comparison to assists"
+    ),
+    "yardsThrown" = list(
       formula = function(df) df$yardsThrown,
       display_name = "Throwing Yards",
-      abbreviation = "TY"
+      abbreviation = "TY",
+      description = "Total yards thrown"
     ),
     "yardsReceived" = list(
       formula = function(df) df$yardsReceived,  
       display_name = "Receiving Yards",
-      abbreviation = "RY"
+      abbreviation = "RY",
+      description = "Total yards received"
     ),
     "games" = list(
       formula = function(df) df$games,  
       display_name = "Games Played",
-      abbreviation = "GP"
+      abbreviation = "GP",
+      description = "Total number of games played"
     ),
     "completions" = list(
       formula = function(df) df$completions,  
       display_name = "Completions",
-      abbreviation = "C"
+      abbreviation = "C",
+      description = "Total number of successful pass completions"
     ),
     "possessions" = list(
       formula = function(df) df$oOpportunities,  
       display_name = "Possessions",
-      abbreviation = "P"
+      abbreviation = "P",
+      description = "Total number of offensive possessions"
     ),
     "defensive_possessions" = list(
       formula = function(df) df$dOpportunities,  
       display_name = "Defensive Possessions",
-      abbreviation = "DP"
+      abbreviation = "DP",
+      description = "Total number of defensive possessions"
     ),
     "offensive_points" = list(
       formula = function(df) df$oPointsPlayed,  
       display_name = "Offensive Points",
-      abbreviation = "OP"
+      abbreviation = "OP",
+      description = "Total offensive points played"
     ),
     "defensive_points" = list(
       formula = function(df) df$dPointsPlayed,  
       display_name = "Defensive Points",
-      abbreviation = "DP"
+      abbreviation = "DP",
+      description = "Total defensive points played"
     ),
     ## Rate Based
     "xcp" = list(
       formula = function(df) df$xcp * 100,  
       display_name = "Expected Completion Percentage",
-      abbreviation = "xCP"
+      abbreviation = "xCP",
+      description = "Percentage of passes expected to be completed based on throw risk"
     ),
     "cpoe" = list(
       formula = function(df) df$cpoe * 100,  
       display_name = "Completion Percentage Over Expected",
-      abbreviation = "CPOE"
+      abbreviation = "CPOE",
+      description = "Difference between actual completion percentage and expected based on throw risk"
     ),
     "completion_percentage" = list(
       formula = function(df) (df$completions / df$throwAttempts) * 100,
       display_name = "Completion Percentage",
-      abbreviation = "CP"
+      abbreviation = "CP",
+      description = "Percentage of passes completed"
     ),
     "offensive_efficiency" = list(
       formula = function(df) (df$oOpportunityScores / df$oOpportunities) * 100,  
       display_name = "Offensive Efficiency",
-      abbreviation = "OE"
+      abbreviation = "OE",
+      description = "Offensive success rate, based on percentage of scores vs opportunities"
     ),
     "defensive_efficiency" = list(
       formula = function(df) (df$dOpportunityStops / df$dOpportunities) * 100,  
       display_name = "Defensive Efficiency",
-      abbreviation = "DE"
+      abbreviation = "DE",
+      description = "Defensive success rate, based on percentage of stops vs opportunities"
     ),
     ## Per Game
     "receptions_per_game" = list(
       formula = function(df) df$catches / df$games,
       display_name = "Receptions Per Game",
-      abbreviation = "R/GP"
+      abbreviation = "R/GP",
+      description = "Average number of receptions per game."
     ),
     "drops_per_game" = list(
       formula = function(df) df$drops / df$games,
       display_name = "Drops Per Game",
-      abbreviation = "D/GP"
+      abbreviation = "D/GP",
+      description = "Average number of drops per game."
     ),
     "receiver_ec_per_game" = list(
-      formula = function(df) df$receiver_ec,
+      formula = function(df) df$receiver_ec / df$games,
       display_name = "Receiver Expected Contribution Per Game",
-      abbreviation = "R-EC/GP"
+      abbreviation = "R-EC/GP",
+      description = "Average contribution towards a score from passes caught per game."
     ),
     "receiver_aec_per_game" = list(
-      formula = function(df) df$receiver_ec,
+      formula = function(df) df$receiver_aec / df$games,
       display_name = "Receiver Adjusted Expected Contribution Per Game",
-      abbreviation = "R-aEC/GP"
+      abbreviation = "R-aEC/GP",
+      description = "Average contribution towards a score from passes caught adjusted for comparison to goals per game."
     ),
     "turnovers_per_game" = list(
       formula = function(df) (df$throwAttempts - df$completions) / df$games,
       display_name = "Turnovers Per Game",
-      abbreviation = "Turns/GP"
+      abbreviation = "Turns/GP",
+      description = "Average number of turnovers per game."
     ),
     "assists_per_game" = list(
       formula = function(df) df$assists / df$games,
       display_name = "Assists Per Game",
-      abbreviation = "A/GP"
+      abbreviation = "A/GP",
+      description = "Average number of assists per game."
     ),
     "hockeyAssists_per_game" = list(
       formula = function(df) df$hockeyAssists / df$games,
       display_name = "Hockey Assists Per Game",
-      abbreviation = "HA/GP"
+      abbreviation = "HA/GP",
+      description = "Average number of hockey assists per game."
     ),
     "goals_per_game" = list(
       formula = function(df) df$goals / df$games,
       display_name = "Goals Per Game",
-      abbreviation = "G/GP"
+      abbreviation = "G/GP",
+      description = "Average number of goals per game."
     ),
     "blocks_per_game" = list(
       formula = function(df) df$blocks / df$games,
       display_name = "Blocks Per Game",
-      abbreviation = "B/GP"
+      abbreviation = "B/GP",
+      description = "Average number of blocks per game."
     ),
     "thrower_ec_per_game" = list(
       formula = function(df) df$thrower_ec / df$games,
       display_name = "Thrower Expected Contribution Per Game",
-      abbreviation = "T-EC/GP"
+      abbreviation = "T-EC/GP",
+      description = "Average contribution towards a score from thrown passes per game."
     ),
     "thrower_aec_per_game" = list(
       formula = function(df) df$thrower_aec / df$games,
       display_name = "Thrower Adjusted Expected Contribution Per Game",
-      abbreviation = "T-aEC/GP"
+      abbreviation = "T-aEC/GP",
+      description = "Average contribution towards a score from thrown passes adjusted for comparison to assists per game."
     ),
     "yardsThrown_per_game" = list(
       formula = function(df) df$yardsThrown / df$games,
       display_name = "Throwing Yards Per Game",
-      abbreviation = "TY/GP"
+      abbreviation = "TY/GP",
+      description = "Average throwing yards per game."
     ),
     "completions_per_game" = list(
-      formula = function(df) df$completions / df$games,  
+      formula = function(df) df$completions / df$games,
       display_name = "Completions Per Game",
-      abbreviation = "C/GP"
+      abbreviation = "C/GP",
+      description = "Average number of completions per game."
     ),
     "defensive_possessions_per_game" = list(
-      formula = function(df) df$dOpportunities,  
+      formula = function(df) df$dOpportunities / df$games,
       display_name = "Defensive Possessions Per Game",
-      abbreviation = "DP/GP"
+      abbreviation = "DP/GP",
+      description = "Average number of defensive possessions per game."
     ),
     "yardsReceived_per_game" = list(
-      formula = function(df) df$yardsReceived / df$games,  
+      formula = function(df) df$yardsReceived / df$games,
       display_name = "Receiving Yards Per Game",
-      abbreviation = "RY/GP"
-    ),"thrower_ec_per_game" = list(
-    formula = function(df) df$thrower_ec / df$games,
-    display_name = "Thrower Expected Contribution Per Game",
-    abbreviation = "T-EC/GP"
-    ),
-    "thrower_aec_per_game" = list(
-      formula = function(df) df$thrower_aec / df$games,
-      display_name = "Thrower Adjusted Expected Contribution Per Game",
-      abbreviation = "T-aEC/GP"
-    ),
-    "yardsThrown_per_game" = list(
-      formula = function(df) df$yardsThrown / df$games,
-      display_name = "Throwing Yards Per Game",
-      abbreviation = "TY/GP"
-    ),
-    "completions_per_game" = list(
-      formula = function(df) df$completions / df$games,  
-      display_name = "Completions Per Game",
-      abbreviation = "C/GP"
+      abbreviation = "RY/GP",
+      description = "Average receiving yards per game."
     ),
     "possessions_per_game" = list(
-      formula = function(df) df$oOpportunities / df$games,  
+      formula = function(df) df$oOpportunities / df$games,
       display_name = "Possessions Per Game",
-      abbreviation = "P/GP"
-    ),
-    "yardsReceived_per_game" = list(
-      formula = function(df) df$yardsReceived / df$games,  
-      display_name = "Receiving Yards Per Game",
-      abbreviation = "RY/GP"
+      abbreviation = "P/GP",
+      description = "Average number of offensive possessions per game."
     ),
     "plus_minus_per_game" = list(
       formula = function(df) (df$goals + df$assists + df$blocks + (df$hockeyAssists * 0.5 ) - df$throwaways - df$stalls - df$drops) / df$games,
       display_name = "Plus Minus Per Game",
-      abbreviation = "PM/GP"
+      abbreviation = "PM/GP",
+      description = "Average plus-minus score per game."
     ),
     "offensive_points_per_game" = list(
-      formula = function(df) df$oPointsPlayed / df$games,  
+      formula = function(df) df$oPointsPlayed / df$games,
       display_name = "Offensive Points Per Game",
-      abbreviation = "OP/GP"
+      abbreviation = "OP/GP",
+      description = "Average number of offensive points per game."
     ),
     "defensive_points_per_game" = list(
-      formula = function(df) df$dPointsPlayed / df$games,  
+      formula = function(df) df$dPointsPlayed / df$games,
       display_name = "Defensive Points Per Game",
-      abbreviation = "DP/GP"
+      abbreviation = "DP/GP",
+      description = "Average number of defensive points per game."
     ),
     ## Per 100 Possessions
     "receptions_per_possession" = list(
       formula = function(df) df$catches / df$games,
       display_name = "Receptions Per 100 Possessions",
-      abbreviation = "R/100P"
+      abbreviation = "R/100P",
+      description = "Average number of receptions per 100 offensive possessions."
     ),
     "drops_per_possession" = list(
       formula = function(df) (df$drops / df$oOpportunities) * 100,
       display_name = "Drops Per 100 Possessions",
-      abbreviation = "D/100P"
+      abbreviation = "D/100P",
+      description = "Average number of drops per 100 offensive possessions."
     ),
     "receiver_ec_per_possession" = list(
       formula = function(df) (df$receiver_ec / df$oOpportunities) * 100,
       display_name = "Receiver Expected Contribution Per 100 Possessions",
-      abbreviation = "R-EC/100P"
+      abbreviation = "R-EC/100P",
+      description = "Average contribution towards a score from catches per 100 offensive possessions."
     ),
     "receiver_aec_per_possession" = list(
       formula = function(df) (df$receiver_ec / df$oOpportunities) * 100,
       display_name = "Receiver Adjusted Expected Contribution Per 100 Possessions",
-      abbreviation = "R-aEC/100P"
+      abbreviation = "R-aEC/100P",
+      description = "Average contribution towards a score from catches, adjusted for comparison to goals per 100 offensive possessions."
     ),
     "thrower_ec_per_possession" = list(
-    formula = function(df) (df$thrower_ec / df$oOpportunities) * 100,
-    display_name = "Thrower Expected Contribution Per 100 Possessions",
-    abbreviation = "T-EC/100P"
+      formula = function(df) (df$thrower_ec / df$oOpportunities) * 100,
+      display_name = "Thrower Expected Contribution Per 100 Possessions",
+      abbreviation = "T-EC/100P",
+      description = "Average contribution towards a score from thrown passes per 100 offensive possessions."
     ),
     "thrower_aec_per_possession" = list(
       formula = function(df) (df$thrower_aec / df$oOpportunities) * 100,
       display_name = "Thrower Adjusted Expected Contribution Per 100 Possessions",
-      abbreviation = "T-aEC/100P"
+      abbreviation = "T-aEC/100P",
+      description = "Average contribution towards a score from thrown passes, adjusted for comparison to assists per 100 offensive possessions."
     ),
     "yardsThrown_per_possession" = list(
       formula = function(df) (df$yardsThrown / df$oOpportunities) * 100,
       display_name = "Throwing Yards Per 100 Possessions",
-      abbreviation = "TY/100P"
+      abbreviation = "TY/100P",
+      description = "Average throwing yards per 100 offensive possessions."
     ),
     "completions_per_possession" = list(
-      formula = function(df) (df$completions / df$oOpportunities) * 100,  
+      formula = function(df) (df$completions / df$oOpportunities) * 100,
       display_name = "Completions Per 100 Possessions",
-      abbreviation = "C/100P"
+      abbreviation = "C/100P",
+      description = "Average number of completions per 100 offensive possessions."
     ),
     "yardsReceived_per_possession" = list(
-      formula = function(df) (df$yardsReceived / df$oOpportunities) * 100,  
+      formula = function(df) (df$yardsReceived / df$oOpportunities) * 100,
       display_name = "Receiving Yards Per 100 Possessions",
-      abbreviation = "RY/100P"
+      abbreviation = "RY/100P",
+      description = "Average receiving yards per 100 offensive possessions."
     ),
     "assists_per_possession" = list(
       formula = function(df) (df$assists / df$oOpportunities) * 100,
       display_name = "Assists Per 100 Possessions",
-      abbreviation = "A/100P"
+      abbreviation = "A/100P",
+      description = "Average assists per 100 offensive possessions."
     ),
     "hockeyAssists_per_possession" = list(
       formula = function(df) (df$hockeyAssists / df$oOpportunities) * 100,
       display_name = "Hockey Assists Per 100 Possessions",
-      abbreviation = "HA/100P"
+      abbreviation = "HA/100P",
+      description = "Average hockey assists per 100 offensive possessions."
     ),
     "goals_per_possession" = list(
       formula = function(df) (df$goals / df$oOpportunities) * 100,
       display_name = "Goals Per 100 Possessions",
-      abbreviation = "G/100P"
+      abbreviation = "G/100P",
+      description = "Average goals per 100 offensive possessions."
     ),
     "blocks_per_possession" = list(
       formula = function(df) (df$blocks / df$dOpportunities) * 100,
       display_name = "Blocks Per 100 Possessions",
-      abbreviation = "B/100P"
+      abbreviation = "B/100P",
+      description = "Average blocks per 100 defensive possessions."
     ),
     "turnovers_per_possession" = list(
       formula = function(df) ((df$throwAttempts - df$completions) / df$oOpportunities) * 100,
       display_name = "Turnovers Per 100 Possessions",
-      abbreviation = "Turns/100P"
+      abbreviation = "Turns/100P",
+      description = "Average turnovers per 100 offensive possessions."
     ),
     "plus_minus_per_possession" = list(
       formula = function(df) (df$goals/df$oOpportunities + df$assists/df$oOpportunities + df$blocks/df$dOpportunities + (df$hockeyAssists * 0.5)/df$oOpportunities - df$throwaways/df$oOpportunities - df$stalls/df$oOpportunities - df$drops/df$oOpportunities) * 100,
       display_name = "Plus Minus Per 100 Possessions",
-      abbreviation = "PM/100P"
+      abbreviation = "PM/100P",
+      description = "Average plus-minus score per 100 offensive possessions."
     )
   )
   
@@ -740,16 +783,17 @@ map_metrics_to_formula <- function(df, metric_names) {
       result[[metric_name]] <- list(
         value = metric_value,
         display_name = metric_info$display_name,
-        abbreviation = metric_info$abbreviation
+        abbreviation = metric_info$abbreviation,
+        description = metric_info$description
       )
     } else {
       # If the metric name doesn't exist in the map, return an error
       result[[metric_name]] <- list(error = "Metric not found")
     }
   }
-  
   return(result)
 }
+
 
 # transforms numeric percentile to letter grades
 get_letter_grade <- function(percentile) {
