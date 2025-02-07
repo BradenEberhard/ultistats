@@ -39,7 +39,7 @@ mod_player_leaderboard_server <- function(id){
     ns <- session$ns
 
     pool <- get_db_pool()
-    player_link_name <- reactiveValues(player_name = "Jordan Kerr")
+    player_link_name <- reactiveValues(player_name = "")
 
     all_player_stats <- get_all_player_stats(pool)  
     metric_table_result <- reactive({

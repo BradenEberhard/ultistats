@@ -139,7 +139,6 @@ convert_to_metric_df <- function(input, df, all_metrics, selected_player=NULL, a
 
 # Fetch selected player stats
 get_selected_player_stats <- function(player_selector, year_selector, all_player_stats) {
-  req(player_selector, year_selector)
   all_player_stats %>%
     filter(.data$fullName == player_selector & .data$year == year_selector)
 }

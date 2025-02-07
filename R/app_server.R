@@ -11,6 +11,8 @@ app_server <- function(input, output, session) {
   mod_player_display_server("player_profile", player_link_name)
   mod_home_page_server("home_page")
   observeEvent(player_link_name(), {
-    updateTabsetPanel(session, 'main_nav', selected = 'player_profile')
+    if(player_link_name() != ""){
+      updateTabsetPanel(session, 'main_nav', selected = 'player_profile')
+    }
   })  
 }

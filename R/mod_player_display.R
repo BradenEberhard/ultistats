@@ -31,7 +31,9 @@ mod_player_display_ui <- function(id) {
       fluidRow(
         card(
           h2("Skill Percentiles"),
-          withSpinner(girafeOutput(ns("skill_percentiles_plot")))
+          girafeOutput(ns("skill_percentiles_plot"))  |> 
+            withSpinner() |> 
+            bslib::as_fill_carrier()
         )
       ),
       bslib::accordion(
@@ -136,10 +138,22 @@ mod_player_display_server <- function(id, player_name) {
     
     pool <- get_db_pool()
     all_player_stats <- get_all_player_stats(pool)  
-    
+
+    cached_player_name <- reactiveVal(NULL)
     observeEvent(input$player_selector, {
-      req(input$player_selector, all_player_stats)
-      stats <- all_player_stats %>% filter(.data$fullName == input$player_selector)
+      if(input$player_selector != ""){
+        cached_player_name(input$player_selector)
+      }
+    })
+
+    cached_player_year <- reactiveVal(NULL)
+    observeEvent(input$year_selector, {
+      cached_player_year(input$year_selector)
+    })
+    
+    observeEvent(cached_player_name(), {
+      req(cached_player_name(), all_player_stats)
+      stats <- all_player_stats %>% filter(.data$fullName == cached_player_name())
       output$player_name <- renderText({
         paste(stats$firstName[[1]], stats$lastName[[1]])
       })
@@ -153,8 +167,8 @@ mod_player_display_server <- function(id, player_name) {
     
     ### Inputs
     
-    observeEvent(input$player_selector, {
-      update_year_selector(input$player_selector, all_player_stats, session)
+    observeEvent(cached_player_name(), {
+      update_year_selector(cached_player_name(), all_player_stats, session)
     })
     
     observe({
@@ -164,45 +178,48 @@ mod_player_display_server <- function(id, player_name) {
     })
     
     ### Reactive Variables
-    selected_player_stats <- reactive(get_selected_player_stats(input$player_selector, input$year_selector, all_player_stats))
+    selected_player_stats <- reactive(get_selected_player_stats(cached_player_name(), cached_player_year(), all_player_stats))
     
     thrower_percentiles <- reactive({
-      req(input$player_selector, input$year_selector, !is.null(input$handler_switch_value), !is.null(input$offense_switch_value))
+      req(cached_player_name(), cached_player_year(), !is.null(input$handler_switch_value), !is.null(input$offense_switch_value))
       get_thrower_grade(
-        input = input,
+        input = list(player_selector = cached_player_name(), year_selector = cached_player_year(), handler_switch_value = input$handler_switch_value, offense_switch_value = input$offense_switch_value),
         df = all_player_stats,
-        selected_player = input$player_selector
+        selected_player = cached_player_name()
       )
     })
     
     receiver_percentiles <- reactive({
-      req(input$player_selector, input$year_selector, !is.null(input$handler_switch_value), !is.null(input$offense_switch_value))
+      req(cached_player_name(), cached_player_year(), !is.null(input$handler_switch_value), !is.null(input$offense_switch_value))
       get_receiver_grade(
-        input = input,
+        input = list(player_selector = cached_player_name(), year_selector = cached_player_year(), handler_switch_value = input$handler_switch_value, offense_switch_value = input$offense_switch_value),
         df = all_player_stats,
-        selected_player = input$player_selector
+        selected_player = cached_player_name()
       )
     })
     
     defense_percentiles <- reactive({
-      req(input$player_selector, input$year_selector, !is.null(input$handler_switch_value), !is.null(input$offense_switch_value))
+      req(cached_player_name(), cached_player_year(), !is.null(input$handler_switch_value), !is.null(input$offense_switch_value))
       get_defense_grade(
-        input = input,
+        input = list(player_selector = cached_player_name(), year_selector = cached_player_year(), handler_switch_value = input$handler_switch_value, offense_switch_value = input$offense_switch_value),
         df = all_player_stats,
-        selected_player = input$player_selector
+        selected_player = cached_player_name()
       )
     })
     
     ### Plots
-    observe({
-      input$player_selector
-      freezeReactiveValue(input, "year_selector")
-    })
 
     output$skill_percentiles_plot <- renderGirafe({
-      req(input$player_selector, input$year_selector, input$stat_category, !is.null(input$handler_switch_value), !is.null(input$offense_switch_value))
+      req(cached_player_name(), cached_player_year(), input$stat_category, !is.null(input$handler_switch_value), !is.null(input$offense_switch_value))
       isolate({
-        plot <- generate_skill_percentiles_plot(input, session, all_player_stats)
+        input_list = list(
+          player_selector = cached_player_name(),
+          year_selector = cached_player_year(),
+          stat_category = input$stat_category,
+          handler_switch_value = input$handler_switch_value,
+          offense_switch_value = input$offense_switch_value
+        )
+        plot <- generate_skill_percentiles_plot(input_list, session, all_player_stats)
       })
       plot
     })
@@ -210,9 +227,9 @@ mod_player_display_server <- function(id, player_name) {
     
     output$thrower_radial_histogram_plot <- renderPlot({
       generate_radial_histogram_plot(
-        input = input,
-        player_selector = input$player_selector,
-        year_selector = input$year_selector,
+        input = list(player_selector = cached_player_name(), year_selector = cached_player_year()),
+        player_selector = cached_player_name(),
+        year_selector = cached_player_year(),
         all_player_stats = all_player_stats,
         role = "thrower"
       )
@@ -220,22 +237,51 @@ mod_player_display_server <- function(id, player_name) {
     
     output$receiver_radial_histogram_plot <- renderPlot({
       generate_radial_histogram_plot(
-        input = input,
-        player_selector = input$player_selector,
-        year_selector = input$year_selector,
+        input = list(player_selector = cached_player_name(), year_selector = cached_player_year()),
+        player_selector = cached_player_name(),
+        year_selector = cached_player_year(),
         all_player_stats = all_player_stats,
         role = "receiver"
       )
     })
     
-    generate_plot_outputs("thrower", all_player_stats, input, output, thrower_plot_config)
+    generate_plot_outputs(
+      "thrower", all_player_stats, 
+      list(
+        player_selector = cached_player_name(), 
+        year_selector = cached_player_year(), 
+        handler_switch_value = input$handler_switch_value, 
+        offense_switch_value = input$offense_switch_value
+      ), 
+      output, 
+      thrower_plot_config
+    )
     
-    generate_plot_outputs("receiver", all_player_stats, input, output, receiver_plot_config)
+    generate_plot_outputs(
+      "receiver", all_player_stats, 
+      list(
+        player_selector = cached_player_name(), 
+        year_selector = cached_player_year(), 
+        handler_switch_value = input$handler_switch_value, 
+        offense_switch_value = input$offense_switch_value
+      ), 
+      output, 
+      thrower_plot_config
+    )   
     
-    generate_plot_outputs("defense", all_player_stats, input, output, defense_plot_config)
+    generate_plot_outputs(
+      "defense", all_player_stats, 
+      list(
+        player_selector = cached_player_name(), 
+        year_selector = cached_player_year(), 
+        handler_switch_value = input$handler_switch_value, 
+        offense_switch_value = input$offense_switch_value
+      ), 
+      output, 
+      thrower_plot_config
+    )    
     
     ### Grades
-    
     lapply(c("Overall", "Contribution", "Usage", "Efficiency", "Scores"), function(category) {
       category_lower <- tolower(category)
       
@@ -271,7 +317,7 @@ mod_player_display_server <- function(id, player_name) {
         paste0("(", defense_percentiles()[[paste0(category_lower, "_percentile")]], "th Percentile)")
       })
     })
-    })
+  })
 }
   
   
