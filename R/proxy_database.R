@@ -364,23 +364,32 @@ get_model_data_from_db <- function(filename) {
   }
 }
 
-get_team_players <- function(pool, team_id, year) {
+get_team_players <- function(pool, team_ids, year) {
+  # Convert team_ids to a properly formatted SQL condition
+  team_condition <- if (length(team_ids) > 1) {
+    paste0("IN (", paste0("'", team_ids, "'", collapse = ","), ")")
+  } else {
+    paste0("= '", team_ids, "'")
+  }
+
+  # Adjust query based on "Career" selection
   if (year == "Career") {
     query <- glue::glue("
       SELECT *
       FROM players
-      WHERE \"teamID\" = '{team_id}'
+      WHERE \"teamID\" {team_condition}
     ")
   } else {
     query <- glue::glue("
       SELECT *
       FROM players
-      WHERE \"teamID\" = '{team_id}' AND year = {year}
+      WHERE \"teamID\" {team_condition} AND year = {year}
     ")
   }
 
-  # Execute the query and fetch the data
+  # Execute the query and return results
   players_data <- DBI::dbGetQuery(pool, query)
   return(players_data)
 }
+
 

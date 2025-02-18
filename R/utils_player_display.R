@@ -1,28 +1,4 @@
 ### UI functions
-
-# HTML code for player page
-get_HTML <- function() {
-  output <- HTML("
-  .selectize-input {
-    color: white; /* Text color inside the input box */
-  }
-  .selectize-input input {
-    color: white; /* Typed text color */
-  }
-  .selectize-dropdown {
-    color: white; /* Text color in the dropdown options */
-  }
-  .selectize-dropdown .option:hover {
-    background-color: #1ABC9C !important;
-  }
-  .selectize-dropdown .active {
-    background-color: #1ABC9C !important; 
-    color: white !important; /* Text color of the active option */
-  }
-")
-  return(output)
-}
-
 # card formatting for grade
 generate_grade_card <- function(ns, category, role) {
   card(

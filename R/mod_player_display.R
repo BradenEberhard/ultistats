@@ -14,7 +14,6 @@ mod_player_display_ui <- function(id) {
   ns <- NS(id)
 
   tagList(
-    tags$style(get_HTML()),
     bslib::page_sidebar(
       shinybrowser::detect(),
       sidebar = sidebar(

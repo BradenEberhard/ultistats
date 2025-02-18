@@ -13,15 +13,15 @@ app_ui <- function(request) {
     title = "Game Dashboard",
     id = "main_nav",
     theme = bslib::bs_theme(
-      preset = "darkly",   # Choose the theme (e.g., "lux", "cosmo", "flatly", etc.)
+      preset = "spacelab",   # Choose the theme (e.g., "lux", "cosmo", "flatly", etc.)
       version = 5       # Ensure you're using Bootstrap 5
     ),
-    nav_panel(
-      title = "Home", 
-      value = "home", 
-      icon = shiny::icon("cogs"),
-      mod_home_page_ui("home_page")
-    ),
+    # nav_panel(
+    #   title = "Home", 
+    #   value = "home", 
+    #   icon = shiny::icon("cogs"),
+    #   mod_home_page_ui("home_page")
+    # ),
     nav_menu(
       title = "Player", 
       value = "player", 

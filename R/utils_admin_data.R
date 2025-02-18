@@ -13,7 +13,7 @@ fetch_and_process_player_stats <- function(pool, base_url) {
   player_game_data <- get_table_from_db(pool, table_name = "player_game_stats")
 
   # Preprocess games per player
-  games_per_player <- player_game_data %>% 
+  games_per_player <- player_game_data %>% filter((oOpportunities + dOpportunities) > 0) %>%
     mutate(year = as.numeric(substr(.data$gameID, 1, 4))) %>% 
     distinct(.data$playerID, .data$year, .data$gameID) %>% 
     group_by(.data$playerID,.data$ year) %>% 

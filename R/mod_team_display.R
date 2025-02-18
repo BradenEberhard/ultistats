@@ -11,7 +11,8 @@ mod_team_display_ui <- function(id) {
           inputId = ns("team_selector"),
           label = "Team",
           choices = get_teams_names(),
-          selected = "shred"
+          selected = NULL,
+          multiple = TRUE
         ),
         selectInput(ns("year_selector"), "Year", choices = current_year <- c(2021:as.numeric(format(Sys.Date(), "%Y")), "Career"), selected = 2024),
         selectizeInput(inputId = ns("metric_selector1"), label = "Metric 1", choices = get_table_choices(), selected = "Plus Minus"),
@@ -37,20 +38,13 @@ mod_team_display_server <- function(id) {
     ns <- session$ns
     pool <- get_db_pool()
     all_player_stats <- get_all_player_stats(pool) 
-
     players <- reactiveVal(NULL)
 
     observeEvent(c(input$team_selector, input$year_selector), {
       req(input$team_selector, input$year_selector)  # Ensure inputs are available
     
       pool <- get_db_pool()
-    
-      # If team_selector is set to "none", display all players
-      if (input$team_selector == "none") {
-        players_list <- get_all_players(pool)$fullName  # Get all players if 'none' is selected
-      } else {
-        players_list <- get_team_players(pool, input$team_selector, input$year_selector)$fullName  # Get players for the selected team
-      }
+      players_list <- get_team_players(pool, input$team_selector, input$year_selector)$fullName 
     
       players(players_list)  # Update the reactive value with the list of players
     })
