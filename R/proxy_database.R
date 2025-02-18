@@ -233,6 +233,17 @@ get_player_ids <- function(pool) {
   return(result$playerID)
 }
 
+#' @importFrom glue glue_sql
+get_throws_from_db <- function(pool, gameID) {
+  query <- glue_sql(
+    "SELECT * FROM \"throws\" 
+     {if (!is.null(gameID)) glue_sql('WHERE \"gameID\" = {gameID}', .con = pool)}",
+    .con = pool
+  )
+  result <- DBI::dbGetQuery(pool, query)
+  return(result)
+}
+
 
 get_table_from_db <- function(pool, table_name = "throws") {
   # Check if the connection is valid
@@ -279,7 +290,6 @@ get_all_player_stats <- function(pool) {
 
   # Execute the query and return the result
   all_player_stats <- DBI::dbGetQuery(pool, query)
-
   return(all_player_stats)
 }
 
@@ -355,13 +365,22 @@ get_model_data_from_db <- function(filename) {
 }
 
 get_team_players <- function(pool, team_id, year) {
-  query <- glue::glue("
-    SELECT *
-    FROM players
-    WHERE \"teamID\" = '{team_id}' AND year = {year}
-  ")
-  
+  if (year == "Career") {
+    query <- glue::glue("
+      SELECT *
+      FROM players
+      WHERE \"teamID\" = '{team_id}'
+    ")
+  } else {
+    query <- glue::glue("
+      SELECT *
+      FROM players
+      WHERE \"teamID\" = '{team_id}' AND year = {year}
+    ")
+  }
+
   # Execute the query and fetch the data
   players_data <- DBI::dbGetQuery(pool, query)
   return(players_data)
 }
+

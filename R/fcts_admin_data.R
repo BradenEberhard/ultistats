@@ -39,8 +39,31 @@ update_games <- function(pool, base_url) {
 #' 
 #' @return NULL This function does not return any value. It updates the `player_stats` table in the database.
 update_player_stats <- function(pool, base_url) {
-  # Fetch and process player stats data from external source
-  player_stats_data <- fetch_and_process_player_stats(pool, base_url) %>% compute_career_data_from_player_stats()
+  player_game_stats <- get_table_from_db(pool, "player_game_stats") %>%
+    mutate(year = substr(.data$gameID, 1, 4))
+
+
+  yearly_possession_stats <- player_game_stats %>%
+    group_by(playerID, year) %>%
+    summarise(
+      numPossessions = sum(numPossessions, na.rm = TRUE),
+      numPossessionsInvolved = sum(numPossessionsInvolved, na.rm = TRUE),
+      numPossessionsScored = sum(numPossessionsScored, na.rm = TRUE),
+      numPossessionsInvolvedScored = sum(numPossessionsInvolvedScored, na.rm = TRUE)
+    )
+  player_stats_data <- fetch_and_process_player_stats(pool, base_url) 
+
+  player_stats_data <- player_stats_data %>%
+    left_join(yearly_possession_stats, by = c("playerID", "year")) %>%
+    mutate(
+      numPossessions = coalesce(numPossessions, 0),
+      numPossessionsInvolved = coalesce(numPossessionsInvolved, 0),
+      numPossessionsScored = coalesce(numPossessionsScored, 0),
+      numPossessionsInvolvedScored = coalesce(numPossessionsInvolvedScored, 0)
+    )
+  
+  player_stats_data <- player_stats_data %>% compute_career_data_from_player_stats()
+  
   # Compute advanced stats (ec, xcp, etc.) using the advanced_stats table
 
   update_advanced_stats(pool, base_url)
@@ -55,6 +78,18 @@ update_player_stats <- function(pool, base_url) {
   
   # Process player stats for efficiency, full names, and other transformations
   player_stats_data <- process_player_stats(player_stats_data)
+
+  result <- get_table(pool, "throws")
+  years <- as.character(2021:as.integer(format(Sys.Date(), "%Y")))
+  years <- c(years, "Career")
+  all_OE_impact <- data.frame()
+  for (year in years) {
+    possession_matrices <- compute_possession_matrices(get_table(pool, "throws"), year)
+    if(length(possession_matrices$possession_matrix) == 0) next
+    OE_impact <- compute_OE_adjustment(possession_matrices$possession_matrix, possession_matrices$scoring_possession_matrix, year)
+    all_OE_impact <- bind_rows(all_OE_impact, OE_impact)
+  }
+  player_stats_data <- player_stats_data %>% left_join(all_OE_impact, by = c("playerID", "year"))
 
   # Insert or update player stats in the player_stats table
   create_table(pool=pool, table_name='player_stats', data=player_stats_data, index_cols="playerID", override=TRUE)
@@ -88,26 +123,100 @@ update_pulls <- function(pool, base_url) {
     for (i in seq_along(game_ids)) {
       current_game_id <- game_ids[[i]]
       game_data <- fetch_game(base_url, current_game_id)
-      pull_data <- get_pulls_from_id(game_data, current_game_id) %>% 
-        mutate(insertTimestamp = get_current_timestamp())
-      create_table(pool=pool, table_name='pulls', data=pull_data, index_cols="gameID", override=FALSE)
-      update_table(pool=pool, table_name='pulls', data=pull_data, index_col="gameID", whole_table = FALSE)
-      incProgress(1 / length(game_ids), detail = paste("Processing game ID", current_game_id))
+      if(length(game_data$homeEvents) + length(game_data$awayEvents)) {
+        pull_data <- get_pulls_from_id(game_data, current_game_id) %>% 
+          mutate(insertTimestamp = get_current_timestamp())
+        create_table(pool=pool, table_name='pulls', data=pull_data, index_cols="gameID", override=FALSE)
+        update_table(pool=pool, table_name='pulls', data=pull_data, index_col="gameID", whole_table = FALSE)
+        incProgress(1 / length(game_ids), detail = paste("Processing game ID", current_game_id))
+      }
     }
   })
 }
 
 # Function to process and update throws
+#' @importFrom tidyr pivot_longer
 update_player_game_stats <- function(pool, base_url) {
   game_ids <- get_game_ids(pool)
   withProgress(message = "Processing player game stats", value = 0, {
     for (i in seq_along(game_ids)) {
       current_game_id <- game_ids[[i]]
       game_data <- fetch_player_game_stats(base_url, current_game_id)
+      if (is.null(game_data)) next
       game_data <- game_data %>% mutate(gameID = current_game_id)
+      game_throws <- get_throws_from_db(pool, current_game_id)
 
-      create_table(pool=pool, table_name='player_game_stats', data=game_data, index_cols=list("gameID","playerID"), override=FALSE)
-      update_table(pool=pool, table_name='player_game_stats', data=game_data, index_col="gameID", whole_table = FALSE)
+      game_throws <- game_throws %>%
+        group_by(game_quarter, quarter_point, possession_num) %>%
+        mutate(line = strsplit(as.character(line), ",")) %>%
+        ungroup()
+      
+      # Identify possessions where a score occurred (receiver_y ≥ 100 & turnover = 0)
+      scoring_possessions <- game_throws %>%
+        filter(receiver_y >= 100, turnover == 0) %>%
+        distinct(game_quarter, quarter_point, possession_num)
+      
+      # Compute numPossessionsInvolved
+      num_possessions_involved_df <- game_throws %>%
+        bind_rows(
+          game_throws %>%
+            select(game_quarter, quarter_point, possession_num, thrower) %>%
+            rename(playerID = thrower),
+          game_throws %>%
+            select(game_quarter, quarter_point, possession_num, receiver) %>%
+            rename(playerID = receiver)
+        ) %>%
+        distinct(game_quarter, quarter_point, possession_num, playerID) %>%
+        group_by(playerID) %>%
+        summarise(numPossessionsInvolved = n_distinct(paste(game_quarter, quarter_point, possession_num)))
+      
+      # Compute numPossessions (player present in the line)
+      num_possessions_df <- game_throws %>%
+        unnest(line) %>%
+        rename(playerID = line) %>%
+        distinct(game_quarter, quarter_point, possession_num, playerID) %>%
+        group_by(playerID) %>%
+        summarise(numPossessions = n_distinct(paste(game_quarter, quarter_point, possession_num)))
+      
+      # Compute numPossessionsScored (team scored and player was in line)
+      num_possessions_scored_df <- game_throws %>%
+        unnest(line) %>%
+        rename(playerID = line) %>%
+        inner_join(scoring_possessions, by = c("game_quarter", "quarter_point", "possession_num")) %>%
+        distinct(game_quarter, quarter_point, possession_num, playerID) %>%
+        group_by(playerID) %>%
+        summarise(numPossessionsScored = n_distinct(paste(game_quarter, quarter_point, possession_num)))
+      
+      # Compute numPossessionsInvolvedScored (team scored and player was thrower or receiver)
+      num_possessions_involved_scored_df <- game_throws %>%
+        bind_rows(
+          game_throws %>%
+            select(game_quarter, quarter_point, possession_num, thrower) %>%
+            rename(playerID = thrower),
+          game_throws %>%
+            select(game_quarter, quarter_point, possession_num, receiver) %>%
+            rename(playerID = receiver)
+        ) %>%
+        inner_join(scoring_possessions, by = c("game_quarter", "quarter_point", "possession_num")) %>%
+        distinct(game_quarter, quarter_point, possession_num, playerID) %>%
+        group_by(playerID) %>%
+        summarise(numPossessionsInvolvedScored = n_distinct(paste(game_quarter, quarter_point, possession_num)))
+      
+      # Merge all data frames into final_df
+      final_df <- game_data %>%
+        left_join(num_possessions_df, by = "playerID") %>%
+        left_join(num_possessions_involved_df, by = "playerID") %>%
+        left_join(num_possessions_scored_df, by = "playerID") %>%
+        left_join(num_possessions_involved_scored_df, by = "playerID") %>%
+        mutate(
+          numPossessions = coalesce(numPossessions, 0),
+          numPossessionsInvolved = coalesce(numPossessionsInvolved, 0),
+          numPossessionsScored = coalesce(numPossessionsScored, 0),
+          numPossessionsInvolvedScored = coalesce(numPossessionsInvolvedScored, 0)
+        )
+
+      create_table(pool=pool, table_name='player_game_stats', data=final_df, index_cols=list("gameID","playerID"), override=FALSE)
+      update_table(pool=pool, table_name='player_game_stats', data=final_df, index_col="gameID", whole_table = FALSE)
       incProgress(1 / length(game_ids), detail = paste("Processing game ID", current_game_id))
     }
   })
@@ -120,18 +229,19 @@ update_throws <- function(pool, base_url) {
     for (i in seq_along(game_ids)) {
       current_game_id <- game_ids[[i]]
       game_data <- fetch_game(base_url, current_game_id)
-      throws_data <- get_throws_from_id(game_data, current_game_id) %>%
-        mutate(insertTimestamp = get_current_timestamp())
-      throws_data <- add_time_left(throws_data)
-      
-      # Engineer some additional features
-      throws_data$throw_distance <- sqrt((throws_data$receiver_x - throws_data$thrower_x)^2 + (throws_data$receiver_y - throws_data$thrower_y)^2)
-      throws_data$x_diff <- throws_data$receiver_x - throws_data$thrower_x
-      throws_data$y_diff <- throws_data$receiver_y - throws_data$thrower_y
-      throws_data$throw_angle <- atan2(throws_data$y_diff, throws_data$x_diff) * (180 / pi)
-      create_table(pool=pool, table_name='throws', data=throws_data, index_cols=list("gameID","thrower", "throwID"), override=FALSE)
-      update_table(pool=pool, table_name='throws', data=throws_data, index_col="gameID", whole_table = FALSE)
-      incProgress(1 / length(game_ids), detail = paste("Processing game ID", current_game_id))
+      if(length(game_data$homeEvents) + length(game_data$awayEvents)) {
+        throws_data <- get_throws_from_id(game_data, current_game_id) %>%
+          mutate(insertTimestamp = get_current_timestamp())
+        throws_data <- add_time_left(throws_data)
+        # Engineer some additional features
+        throws_data$throw_distance <- sqrt((throws_data$receiver_x - throws_data$thrower_x)^2 + (throws_data$receiver_y - throws_data$thrower_y)^2)
+        throws_data$x_diff <- throws_data$receiver_x - throws_data$thrower_x
+        throws_data$y_diff <- throws_data$receiver_y - throws_data$thrower_y
+        throws_data$throw_angle <- atan2(throws_data$y_diff, throws_data$x_diff) * (180 / pi)
+        create_table(pool=pool, table_name='throws', data=throws_data, index_cols=list("gameID","thrower", "throwID"), override=FALSE)
+        update_table(pool=pool, table_name='throws', data=throws_data, index_col="gameID", whole_table = FALSE)
+        incProgress(1 / length(game_ids), detail = paste("Processing game ID", current_game_id))
+      }
     }
   })
 }
@@ -143,11 +253,13 @@ update_blocks <- function(pool, base_url) {
     for (i in seq_along(game_ids)) {
       current_game_id <- game_ids[[i]]
       game_data <- fetch_game(base_url, current_game_id)
-      blocks_data <- get_blocks_from_id(game_data, current_game_id) %>%
-        mutate(insertTimestamp = get_current_timestamp())
-      create_table(pool=pool, table_name='blocks', data=blocks_data, index_cols="gameID", override=FALSE)
-      update_table(pool=pool, table_name='blocks', data=blocks_data, index_col="gameID", whole_table = FALSE)
-      incProgress(1 / length(game_ids), detail = paste("Processing game ID", current_game_id))
+      if(length(game_data$homeEvents) + length(game_data$awayEvents)) {
+        blocks_data <- get_blocks_from_id(game_data, current_game_id) %>%
+          mutate(insertTimestamp = get_current_timestamp())
+        create_table(pool=pool, table_name='blocks', data=blocks_data, index_cols="gameID", override=FALSE)
+        update_table(pool=pool, table_name='blocks', data=blocks_data, index_col="gameID", whole_table = FALSE)
+        incProgress(1 / length(game_ids), detail = paste("Processing game ID", current_game_id))
+      }
     }
   })
 }
@@ -159,11 +271,14 @@ update_penalties <- function(pool, base_url) {
     for (i in seq_along(game_ids)) {
       current_game_id <- game_ids[[i]]
       game_data <- fetch_game(base_url, current_game_id)
-      penalties_data <- get_penalties_from_id(game_data, current_game_id) %>%
-        mutate(insertTimestamp = get_current_timestamp())
-      create_table(pool=pool, table_name='penalties', data=penalties_data, index_cols="gameID", override=FALSE)
-      update_table(pool=pool, table_name='penalties', data=penalties_data, index_col="gameID", whole_table = FALSE)
-      incProgress(1 / length(game_ids), detail = paste("Processing game ID", current_game_id))
+
+      if(length(game_data$homeEvents) + length(game_data$awayEvents)) {
+        penalties_data <- get_penalties_from_id(game_data, current_game_id) %>%
+          mutate(insertTimestamp = get_current_timestamp())
+        create_table(pool=pool, table_name='penalties', data=penalties_data, index_cols="gameID", override=FALSE)
+        update_table(pool=pool, table_name='penalties', data=penalties_data, index_col="gameID", whole_table = FALSE)
+        incProgress(1 / length(game_ids), detail = paste("Processing game ID", current_game_id))
+      }
     }
   })
 }
@@ -203,13 +318,13 @@ update_all_tables <- function(pool, base_url) {
     table_updates <- list(
       list(update_func = update_games, table_name = "Games"),
       list(update_func = update_players, table_name = "Players"),
-      list(update_func = update_player_game_stats, table_name = "Player Game Stats"),
       list(update_func = update_throws, table_name = "Throws"),
+      list(update_func = update_player_game_stats, table_name = "Player Game Stats"),
       list(update_func = update_player_stats, table_name = "Player Stats"),
       list(update_func = update_teams, table_name = "Teams"),
       list(update_func = update_blocks, table_name = "Blocks"),
       list(update_func = update_pulls, table_name = "Pulls"),
-      list(update_func = update_penalties, table_name = "Penalties"),
+      list(update_func = update_penalties, table_name = "Penalties")
     )
     
     for (i in seq_along(table_updates)) { ##TODO increment progress isnt working correctly

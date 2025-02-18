@@ -124,6 +124,9 @@ fetch_player_game_stats <- function(base_url, gameID) {
   if (httr::status_code(response) == 200) {
     response_data <- jsonlite::fromJSON(httr::content(response, "text", encoding = "UTF-8"))
     player_game_stats_table <- response_data$data
+    if(length(player_game_stats_table) == 0) {
+      return(NULL)
+    }
     player_game_stats_table <- tidyr::unnest(player_game_stats_table, cols = c("player"))
   } else {
     warning("Failed to fetch data for game: ", paste(gameID))

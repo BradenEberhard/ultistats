@@ -132,7 +132,6 @@ convert_to_metric_df <- function(input, df, all_metrics, selected_player=NULL, a
       }
     })
   }
-
   return(do.call(rbind, lapply(metric_data, function(x) data.frame(x, stringsAsFactors = FALSE))))
 }
 
@@ -229,6 +228,7 @@ generate_yearly_percentile_plot <- function(metric_df, title) {
 # Plot for main skill percentiles
 #' @importFrom tidyr drop_na
 create_skill_percentiles_plot <- function(session, plot_data) {
+
   plot_data <- plot_data %>% drop_na()
 
   gg <- ggplot(plot_data, aes(
@@ -274,7 +274,8 @@ create_skill_percentiles_plot <- function(session, plot_data) {
       axis.text.y = element_blank(),
       axis.title.y = element_text(margin = margin(r = 25)),
       panel.grid.major.y = element_blank()
-    ) + coord_cartesian(clip="off")
+    ) + coord_cartesian(clip="off") +
+      scale_x_continuous(limits=c(NA, 100))
   
   interactive_plot <- girafe(ggobj = gg)
   interactive_plot <- girafe_options(
@@ -334,7 +335,7 @@ get_metrics <- function(category) {
   counting_metrics <- c("goals", "assists", "blocks", "completions", "hockeyAssists", 
                         "yardsThrown", "yardsReceived", "thrower_aec", "receiver_aec", "plus_minus")
   counting_metrics <- paste0(counting_metrics, addition)
-  percentage_metrics <- c("offensive_efficiency", "defensive_efficiency", "completion_percentage", "cpoe", "xcp")
+  percentage_metrics <- c("offensive_efficiency", "offensive_efficiency_involved", "offensive_involvement", "defensive_efficiency", "involved_efficiency_improvement", "completion_percentage", "cpoe", "xcp", "offensive_efficiency_above_replacement")
   return(c(counting_metrics, percentage_metrics))
 }
 
@@ -427,7 +428,7 @@ map_metrics_to_formula <- function(df, metric_names) {
       description = "Contribution towards a score from passes caught"
     ),
     "receiver_aec" = list(
-      formula = function(df) df$receiver_ec,
+      formula = function(df) df$receiver_aec,
       display_name = "Receiver Adjusted Expected Contribution",
       abbreviation = "R-aEC",
       description = "Contribution towards a score from passes caught adjusted for comparison to goals"
@@ -548,10 +549,34 @@ map_metrics_to_formula <- function(df, metric_names) {
       description = "Percentage of passes completed"
     ),
     "offensive_efficiency" = list(
-      formula = function(df) (df$oOpportunityScores / df$oOpportunities) * 100,  
+      formula = function(df) (df$numPossessionsScored / df$numPossessions) * 100,  
       display_name = "Offensive Efficiency",
       abbreviation = "OE",
       description = "Offensive success rate, based on percentage of scores vs opportunities"
+    ),
+    "offensive_efficiency_involved" = list(
+      formula = function(df) (df$numPossessionsInvolvedScored / df$numPossessionsInvolved) * 100,  
+      display_name = "Involved Offensive Efficiency",
+      abbreviation = "IOE",
+      description = "Involved offensive success rate, based on percentage of scores vs opportunities counting only possessions with one throw or catch"
+    ),
+    "involved_efficiency_improvement" = list(
+      formula = function(df) ((df$numPossessionsInvolvedScored / df$numPossessionsInvolved) - (df$numPossessionsScored / df$numPossessions)) * 100,  
+      display_name = "Involved Efficiency Improvement",
+      abbreviation = "IEI",
+      description = "Involved offensive success rate, based on percentage of scores vs opportunities counting only possessions with one throw or catch"
+    ),
+    "offensive_involvement" = list(
+      formula = function(df) (df$numPossessionsInvolved / df$numPossessions) * 100,  
+      display_name = "Offensive Involvement",
+      abbreviation = "OI",
+      description = "Involvement in offensive possessions, based on number of possessions with at least one throw/catch per total possessions"
+    ),
+    "offensive_efficiency_above_replacement" = list(
+      formula = function(df) df$OE_adjusted * 100,  
+      display_name = "Offensive Efficiency Above Replacement",
+      abbreviation = "OE-AR",
+      description = "Involved offensive success rate, based on percentage of scores vs opportunities counting only possessions with one throw or catch"
     ),
     "defensive_efficiency" = list(
       formula = function(df) (df$dOpportunityStops / df$dOpportunities) * 100,  
@@ -694,7 +719,7 @@ map_metrics_to_formula <- function(df, metric_names) {
       description = "Average contribution towards a score from catches per 100 offensive possessions."
     ),
     "receiver_aec_per_possession" = list(
-      formula = function(df) (df$receiver_ec / df$oOpportunities) * 100,
+      formula = function(df) (df$receiver_aec / df$oOpportunities) * 100,
       display_name = "Receiver Adjusted Expected Contribution Per 100 Possessions",
       abbreviation = "R-aEC/100P",
       description = "Average contribution towards a score from catches, adjusted for comparison to goals per 100 offensive possessions."

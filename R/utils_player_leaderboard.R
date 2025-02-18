@@ -51,7 +51,12 @@ get_table_choices <- function() {
     "Completion Percentage Over Expected" = "cpoe",
     "Completion Percentage" = "completion_percentage",
     "Offensive Efficiency" = "offensive_efficiency",
-    "Defensive Efficiency" = "defensive_efficiency"
+    "Offensive Efficiency Involved" = "offensive_efficiency_involved",
+    "Involved Efficiency Improvement" = "involved_efficiency_improvement",
+    "Offensive Involvement" = "offensive_involvement",
+    "Offensive Efficiency" = "offensive_efficiency",
+    "Defensive Efficiency" = "defensive_efficiency",
+    "Offensive Efficiency Above Replacement" = "offensive_efficiency_above_replacement"
   )
 }
 

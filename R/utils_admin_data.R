@@ -98,6 +98,10 @@ compute_career_data_from_player_stats <- function(player_stats_data) {
       dPointsPlayed = sum(.data$dPointsPlayed, na.rm = TRUE),
       dPointsScored = sum(.data$dPointsScored, na.rm = TRUE),
       secondsPlayed = sum(.data$secondsPlayed, na.rm = TRUE),
+      numPossessions = sum(.data$numPossessions, na.rm = TRUE),
+      numPossessionsScored = sum(.data$numPossessionsScored, na.rm = TRUE),
+      numPossessionsInvolved = sum(.data$numPossessionsInvolved, na.rm = TRUE),
+      numPossessionsInvolvedScored = sum(.data$numPossessionsInvolvedScored, na.rm = TRUE),
       oOpportunities = sum(.data$oOpportunities, na.rm = TRUE),
       oOpportunityScores = sum(.data$oOpportunityScores, na.rm = TRUE),
       dOpportunities = sum(.data$dOpportunities, na.rm = TRUE),
@@ -159,7 +163,7 @@ process_player_stats <- function(player_stats_data) {
   player_stats_data <- player_stats_data %>%
     mutate(
       total_points = .data$oPointsPlayed + .data$dPointsPlayed,
-      offensive_efficiency = if_else(.data$oOpportunities == 0, NA_real_, .data$oOpportunityScores / .data$oOpportunities),
+      offensive_efficiency = if_else(.data$numPossessions == 0, NA_real_, .data$numPossessionsScored / .data$numPossessions),
       defensive_efficiency = if_else(.data$dOpportunities == 0, NA_real_, .data$dOpportunityStops / .data$dOpportunities),
       completion_percentage = if_else(.data$throwAttempts == 0, NA_real_, .data$completions / .data$throwAttempts),
       cpoe = .data$completion_percentage - .data$xcp
@@ -217,7 +221,7 @@ update_quarter <- function(event_type, current_state) {
 start_point <- function(event, current_state) {
   if (event$type %in% c(1,2)) { # start D point, start O point
     current_state$point_start_time <- event$time
-    current_state$offensive_point <- ifelse(event$type == 1, TRUE, FALSE)
+    current_state$offensive_point <- ifelse(event$type == 1, FALSE, TRUE)
     current_state$possession_throw <- 0
     current_state$possession_num <- 1
   }
@@ -244,6 +248,7 @@ update_possession_throw <- function(event_type, current_state) {
 reset_possession_throw <- function(event_type, current_state) {
   if (event_type %in% c(19, 20, 22, 23, 24)) { # pass, score - recording team, drop, throwaway - recording team, callahan thrown, stall - recording team
     current_state$possession_throw <- 0
+    current_state$offensive_point <- ifelse(current_state$offensive_point, FALSE, TRUE)
   }
   return(current_state)
 }
@@ -294,6 +299,7 @@ get_throw_row <- function(current_state, thrower=NULL, thrower_x=NULL, thrower_y
   throw_row$point_start_time <- current_state$point_start_time
   throw_row$possession_num <- current_state$possession_num
   throw_row$possession_throw <- current_state$possession_throw
+  throw_row$start_on_offense <- current_state$offensive_point
   throw_row$throwID <- paste(gameID, current_state$game_quarter, current_state$quarter_point, current_state$possession_num, current_state$possession_throw, sep = "-")
   return(throw_row)
 }
@@ -436,5 +442,111 @@ scale_and_convert_to_dmatrix <- function(scaling_params, new_data) {
   dmatrix <- xgboost::xgb.DMatrix(data = as.matrix(scaled_data))
   
   return(dmatrix)
+}
+
+process_game_throws <- function(data, filter_year) {
+  data <- data %>%
+    group_by(game_quarter, quarter_point, possession_num) %>%
+    mutate(line = strsplit(as.character(line), ",")) %>%
+    ungroup() %>%
+    mutate(year = substr(gameID, 1, 4)) 
+
+  if(filter_year != "Career") {
+    data <- data %>%
+    filter(year == filter_year)
+  }
+  return(data)
+}
+
+process_player_possessions <- function(data) {
+  data %>%
+    unnest(line) %>%
+    rename(playerID = line) %>%
+    distinct(gameID, is_home_team, game_quarter, quarter_point, possession_num, playerID)
+}
+
+#' @importFrom tibble column_to_rownames
+#' @importFrom tidyr pivot_wider complete
+compute_pairwise_possessions <- function(data, all_players) {
+  data %>%
+    inner_join(data, by = c("gameID", "is_home_team", "game_quarter", "quarter_point", "possession_num"), relationship = "many-to-many") %>%
+    filter(playerID.x != playerID.y) %>%  # Remove self-pairs
+    count(playerID.x, playerID.y) %>%
+    complete(playerID.x = all_players, playerID.y = all_players, fill = list(n = 0)) %>%
+    pivot_wider(names_from = playerID.y, values_from = n, values_fill = 0) %>%
+    column_to_rownames(var = "playerID.x")
+}
+
+compute_raw_OE <- function(possession_matrix, scoring_possession_matrix) {
+  rowSums(scoring_possession_matrix) / rowSums(possession_matrix)
+}
+
+compute_teammate_OE <- function(possession_matrix, scoring_possession_matrix) {
+  OE_with <- scoring_possession_matrix / possession_matrix
+  
+  OE_without <- sapply(1:nrow(possession_matrix), function(i) {
+    exclude_i_possessions <- possession_matrix
+    exclude_i_scores <- scoring_possession_matrix
+    exclude_i_possessions[, i] <- 0
+    exclude_i_scores[, i] <- 0
+    rowSums(exclude_i_scores) / rowSums(exclude_i_possessions)
+  })
+
+  OE_without <- as.data.frame(OE_without)
+  rownames(OE_without) <- rownames(possession_matrix)
+  colnames(OE_without) <- colnames(possession_matrix)
+  
+  list(OE_with = OE_with, OE_without = t(OE_without))
+}
+
+compute_weights <- function(possession_matrix) {
+  possession_matrix / rowSums(possession_matrix)
+}
+
+compute_OE_adj <- function(OE_raw, OE_without, weights) {
+  OE_raw - rowSums(weights * OE_without, na.rm = TRUE) / rowSums(weights, na.rm = TRUE)
+}
+
+compute_OE_impact <- function(OE_raw, teammate_impact, weights) {
+  OE_raw - rowSums(weights * teammate_impact, na.rm = TRUE) / rowSums(weights, na.rm = TRUE)
+}
+
+compute_OE_adjustment <- function(possession_matrix, scoring_possession_matrix, year) {
+  OE_raw <- compute_raw_OE(possession_matrix, scoring_possession_matrix)
+  teammate_OE <- compute_teammate_OE(possession_matrix, scoring_possession_matrix)
+  OE_with <- teammate_OE$OE_with
+  OE_without <- teammate_OE$OE_without
+  teammate_impact <- OE_with - OE_without
+  weights <- compute_weights(possession_matrix)
+  OE_impact <- compute_OE_adj(OE_raw, OE_without, weights)
+  OE_impact <- data.frame(playerID = names(OE_impact), year = year, OE_adjusted = as.vector(OE_impact))
+  
+  return(OE_impact)
+}
+
+compute_possession_matrices <- function(result, filter_year = "Career") {
+  game_throws <- process_game_throws(result, filter_year)
+  
+  scoring_possessions <- result %>%
+    filter(receiver_y >= 100, turnover == 0) %>%
+    distinct(gameID, game_quarter, quarter_point, possession_num)
+  
+  scoring_game_throws <- process_game_throws(
+    semi_join(result, scoring_possessions, by = c("gameID", "game_quarter", "quarter_point", "possession_num")),
+    filter_year = filter_year
+  )
+  
+  player_possessions <- process_player_possessions(game_throws)
+  scoring_player_possessions <- process_player_possessions(scoring_game_throws)
+  
+  all_players <- distinct(player_possessions, playerID) %>% pull(playerID)
+  
+  possession_matrix <- compute_pairwise_possessions(player_possessions, all_players)
+  scoring_possession_matrix <- compute_pairwise_possessions(scoring_player_possessions, all_players)
+  
+  possession_matrix <- possession_matrix[order(rownames(possession_matrix)), order(colnames(possession_matrix))]
+  scoring_possession_matrix <- scoring_possession_matrix[order(rownames(scoring_possession_matrix)), order(colnames(scoring_possession_matrix))]
+  
+  return(list(possession_matrix = possession_matrix, scoring_possession_matrix = scoring_possession_matrix))
 }
 

@@ -30,6 +30,7 @@ mod_player_display_ui <- function(id) {
       ),
       fluidRow(
         card(
+          max_height = "500px",
           h2("Skill Percentiles"),
           girafeOutput(ns("skill_percentiles_plot"))  |> 
             withSpinner() |> 
@@ -84,12 +85,12 @@ mod_player_display_server <- function(id, player_name) {
     ns <- session$ns
     thrower_plot_config <- list(
       usage = list(
-        metrics = c("completions", "completions_per_possession", "games", "offensive_points_per_game"),
+        metrics = c("completions", "completions_per_possession", "games", "offensive_points_per_game", "offensive_involvement"),
         label = "usage",
         title = "Usage"
       ),
       efficiency = list(
-        metrics = c("completion_percentage", "xcp", "cpoe", "offensive_efficiency"),
+        metrics = c("completion_percentage", "xcp", "cpoe", "offensive_efficiency", "offensive_efficiency_involved", "involved_efficiency_improved", "offensive_efficiency_above_replacement"),
         label = "efficiency",
         title = "Efficiency"
       ),
@@ -112,7 +113,7 @@ mod_player_display_server <- function(id, player_name) {
         title = "Usage"
       ),
       efficiency = list(
-        metrics = c("offensive_efficiency", "receiver_aec_per_possession"),
+        metrics = c("offensive_efficiency", "receiver_aec_per_possession", "offensive_efficiency_above_replacement"),
         label = "efficiency",
         title = "Efficiency"
       ),
@@ -245,41 +246,47 @@ mod_player_display_server <- function(id, player_name) {
       )
     })
     
-    generate_plot_outputs(
-      "thrower", all_player_stats, 
-      list(
-        player_selector = cached_player_name(), 
-        year_selector = cached_player_year(), 
-        handler_switch_value = input$handler_switch_value, 
-        offense_switch_value = input$offense_switch_value
-      ), 
-      output, 
-      thrower_plot_config
-    )
+    observeEvent(cached_player_name(), {
+      generate_plot_outputs(
+        "thrower", all_player_stats, 
+        list(
+          player_selector = cached_player_name(), 
+          year_selector = cached_player_year(), 
+          handler_switch_value = input$handler_switch_value, 
+          offense_switch_value = input$offense_switch_value
+        ), 
+        output, 
+        thrower_plot_config
+      )
+    })
     
-    generate_plot_outputs(
-      "receiver", all_player_stats, 
-      list(
-        player_selector = cached_player_name(), 
-        year_selector = cached_player_year(), 
-        handler_switch_value = input$handler_switch_value, 
-        offense_switch_value = input$offense_switch_value
-      ), 
-      output, 
-      thrower_plot_config
-    )   
+    observeEvent(cached_player_name(), {
+      generate_plot_outputs(
+        "receiver", all_player_stats, 
+        list(
+          player_selector = cached_player_name(), 
+          year_selector = cached_player_year(), 
+          handler_switch_value = input$handler_switch_value, 
+          offense_switch_value = input$offense_switch_value
+        ), 
+        output, 
+        thrower_plot_config
+      ) 
+    })
     
-    generate_plot_outputs(
-      "defense", all_player_stats, 
-      list(
-        player_selector = cached_player_name(), 
-        year_selector = cached_player_year(), 
-        handler_switch_value = input$handler_switch_value, 
-        offense_switch_value = input$offense_switch_value
-      ), 
-      output, 
-      thrower_plot_config
-    )    
+    observeEvent(cached_player_name(), {
+      generate_plot_outputs(
+        "defense", all_player_stats, 
+        list(
+          player_selector = cached_player_name(), 
+          year_selector = cached_player_year(), 
+          handler_switch_value = input$handler_switch_value, 
+          offense_switch_value = input$offense_switch_value
+        ), 
+        output, 
+        defense_plot_config
+      )    
+    })
     
     ### Grades
     lapply(c("Overall", "Contribution", "Usage", "Efficiency", "Scores"), function(category) {
@@ -317,7 +324,7 @@ mod_player_display_server <- function(id, player_name) {
         paste0("(", defense_percentiles()[[paste0(category_lower, "_percentile")]], "th Percentile)")
       })
     })
-  })
+    })
 }
   
   

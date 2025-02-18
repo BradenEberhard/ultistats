@@ -64,11 +64,10 @@ get_passer_plot <- function(input, df, metrics, title) {
 
 #' @importFrom stats median
 get_thrower_grade <- function(input, df, selected_player) {
-  usage_metrics <- c("completions", "completions_per_possession", "games", "offensive_points_per_game")
-  efficiency_metrics <- c("cpoe", "xcp", "offensive_efficiency", "completion_percentage")
+  usage_metrics <- c("completions", "completions_per_possession", "games", "offensive_points_per_game", "offensive_involvement")
+  efficiency_metrics <- c("cpoe", "xcp", "offensive_efficiency", "completion_percentage", "offensive_efficiency_involved", "involved_efficiency_improvement", "offensive_efficiency_above_replacement")
   contribution_metrics <- c("thrower_ec_per_possession", "thrower_aec_per_possession", "yardsThrown_per_possession")
   scores_metrics <- c("assists_per_possession", "hockeyAssists_per_possession", "turnovers_per_possession")
-
 
   metric_data <- convert_to_metric_df(input, df, c(usage_metrics, efficiency_metrics, contribution_metrics, scores_metrics), selected_player)
 
@@ -88,8 +87,8 @@ get_thrower_grade <- function(input, df, selected_player) {
 
 #' @importFrom stats median
 get_receiver_grade <- function(input, df, selected_player) {
-  usage_metrics <- c("receptions", "receptions_per_possession", "games", "offensive_points_per_game")
-  efficiency_metrics <- c("offensive_efficiency", "receiver_aec_per_possession")
+  usage_metrics <- c("receptions", "receptions_per_possession", "games", "offensive_points_per_game", "offensive_involvement", "involved_efficiency_improvement")
+  efficiency_metrics <- c("offensive_efficiency", "receiver_aec_per_possession", "offensive_efficiency_involved", "offensive_efficiency_above_replacement")
   contribution_metrics <- c("goals_per_possession", "drops_per_possession", "yardsReceived_per_possession")
 
 
