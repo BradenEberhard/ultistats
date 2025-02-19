@@ -269,7 +269,7 @@ mod_player_display_server <- function(id, player_name) {
           offense_switch_value = input$offense_switch_value
         ), 
         output, 
-        thrower_plot_config
+        receiver_plot_config
       ) 
     })
     

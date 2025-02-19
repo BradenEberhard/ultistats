@@ -23,9 +23,7 @@ mod_player_leaderboard_ui <- function(id) {
           card(DT::dataTableOutput(ns("grade_table")), full_screen=TRUE) |> withSpinner() |> bslib::as_fill_carrier(),
           card(DT::dataTableOutput(ns("metrics_table")), full_screen=TRUE) |> withSpinner() |> bslib::as_fill_carrier(),
           min_height = "1100px"
-        ),
-        h4("Selected Name:"),
-        textOutput(ns("selected_name"))
+        )
       )
     )
   )
@@ -41,9 +39,19 @@ mod_player_leaderboard_server <- function(id){
     pool <- get_db_pool()
     player_link_name <- reactiveValues(player_name = "")
 
+    cached_metric <- reactiveVal(NULL)
+    observeEvent(input$metric_selector, {
+      if(input$metric_selector != ""){
+        cached_metric(input$metric_selector)
+      }
+    })
+
+
+
     all_player_stats <- get_all_player_stats(pool)  
     metric_table_result <- reactive({
-      get_metric_table(input, all_player_stats)
+      req(cached_metric())
+      get_metric_table(input, all_player_stats, cached_metric())
     })
     grade_table <- reactive({
       get_grade_table(input, all_player_stats)
@@ -77,9 +85,3 @@ mod_player_leaderboard_server <- function(id){
 
   })
 }
-    
-## To be copied in the UI
-# mod_player_leaderboard_ui("player_leaderboard_1")
-    
-## To be copied in the server
-# mod_player_leaderboard_server("player_leaderboard_1")

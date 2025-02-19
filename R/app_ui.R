@@ -15,7 +15,17 @@ app_ui <- function(request) {
     theme = bslib::bs_theme(
       preset = "spacelab",   # Choose the theme (e.g., "lux", "cosmo", "flatly", etc.)
       version = 5       # Ensure you're using Bootstrap 5
-    ),
+    )%>%
+      bs_add_rules("
+        .navbar-brand {
+          color: #333 !important;  /* Default text color */
+          font-weight: bold;       /* Optional: make title bold */
+        }
+        
+        .navbar-brand:hover {
+          color: #333 !important;  /* Prevent hover color change */
+        }
+      "),
     # nav_panel(
     #   title = "Home", 
     #   value = "home", 

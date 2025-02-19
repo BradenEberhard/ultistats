@@ -26,7 +26,7 @@ calculate_group_medians <- function(df, metrics) {
 }
 
 get_table_choices <- function() {
-  list(
+  metric_list <- list(
     "Plus Minus" = "plus_minus",
     "Goals" = "goals",
     "Assists" = "assists",
@@ -54,10 +54,11 @@ get_table_choices <- function() {
     "Offensive Efficiency Involved" = "offensive_efficiency_involved",
     "Involved Efficiency Improvement" = "involved_efficiency_improvement",
     "Offensive Involvement" = "offensive_involvement",
-    "Offensive Efficiency" = "offensive_efficiency",
     "Defensive Efficiency" = "defensive_efficiency",
     "Offensive Efficiency Above Replacement" = "offensive_efficiency_above_replacement"
   )
+  sorted_list <- metric_list[sort(names(metric_list))]
+  return(sorted_list)
 }
 
 remove_low_opportunities <- function(metric_table, percentage = 0.2) {

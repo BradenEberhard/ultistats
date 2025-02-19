@@ -1,5 +1,31 @@
 # Helper function to format the datatable
 format_dt <- function(metric_table, column_names) {
+  if (is.null(metric_table)) {
+    # Return a message or empty data frame when the table is empty
+    return(DT::datatable(
+      data.frame(Message = "No data available"),
+      rownames = FALSE,
+      colnames = "Message",
+      options = list(
+        pageLength = 1, 
+        autoWidth = TRUE,
+        select = list(
+          style = "os",
+          selector = 'tr>td:nth-child(1)'
+        )
+      ),
+      extensions = c("Select"),
+      selection = 'none',
+      class = "compact"
+    ) %>%
+      DT::formatStyle(
+        columns = "Message", 
+        fontSize = '12px', 
+        textAlign = 'center'
+      )
+    )
+  }
+
   DT::datatable(
     metric_table,
     rownames = FALSE,
@@ -44,12 +70,14 @@ get_grade_table <- function(input, all_player_stats) {
   filtered_stats <- calculate_overall_percentile(filtered_stats)
   filtered_stats <- filtered_stats[order(-filtered_stats$overall_percentile), ]
   metric_table <- filtered_stats %>% select(fullName, overall_percentile, thrower_percentile, receiver_percentile, defense_percentile, oOpportunities, dOpportunities)
-
+  if(nrow(metric_table) == 0) {
+    return(NULL)
+  }
   return(metric_table)
 }
 
-get_metric_table <- function(input, all_player_stats) {
-  current_metric <- paste0(input$metric_selector, ifelse(input$stat_category == "Total", "", "_per_possession"))
+get_metric_table <- function(input, all_player_stats, selected_metric) {
+  current_metric <- paste0(selected_metric, ifelse(input$stat_category == "Total", "", "_per_possession"))
   filtered_stats <- all_player_stats %>% filter(year == input$year_selector)
   filtered_stats <- remove_low_opportunities(filtered_stats, percentage = 0.2)
   mapped_metrics <- map_metrics_to_formula(filtered_stats, current_metric)
@@ -61,7 +89,7 @@ get_metric_table <- function(input, all_player_stats) {
   )
 
   if (nrow(metric_table) == 0) {
-    return(format_dt(metric_table, c("Name", "Metric", "O Possessions", "D Possessions", "%")))
+    return(metric_table)
   }
 
   metric_table$percentile <- sapply(metric_table$value, calc_percentile, all_values = mapped_metrics[[current_metric]]$value)

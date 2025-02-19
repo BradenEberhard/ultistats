@@ -14,11 +14,18 @@ mod_team_display_ui <- function(id) {
           selected = NULL,
           multiple = TRUE
         ),
+        selectizeInput(
+          inputId = ns("player_selector"),
+          label = "Players To Highlight",
+          choices = NULL, # Initially, we will set this to NULL until the team is selected
+          selected = NULL,
+          multiple = TRUE,
+        ),
         selectInput(ns("year_selector"), "Year", choices = current_year <- c(2021:as.numeric(format(Sys.Date(), "%Y")), "Career"), selected = 2024),
-        selectizeInput(inputId = ns("metric_selector1"), label = "Metric 1", choices = get_table_choices(), selected = "Plus Minus"),
+        selectizeInput(inputId = ns("metric_selector1"), label = "Metric 1", choices = get_table_choices(), selected = "assists"),
         selectInput(ns("stat_category1"), "Category 1", choices = c("Total", "Per Game", "Per Possession"), selected = "Total"),
-        selectizeInput(inputId = ns("metric_selector2"), label = "Metric 2", choices = get_table_choices(), selected = "Plus Minus"),
-        selectInput(ns("stat_category2"), "Category 2", choices = c("Total", "Per Game", "Per Possession"), selected = "Total"),
+        selectizeInput(inputId = ns("metric_selector2"), label = "Metric 2", choices = get_table_choices(), selected = "goals"),
+        selectInput(ns("stat_category2"), "Category 2", choices = c("Total", "Per Game", "Per Possession"), selected = "Per Possession"),
       ),
       page_fluid(
         card(
@@ -41,12 +48,18 @@ mod_team_display_server <- function(id) {
     players <- reactiveVal(NULL)
 
     observeEvent(c(input$team_selector, input$year_selector), {
-      req(input$team_selector, input$year_selector)  # Ensure inputs are available
+      req(input$year_selector)  # Ensure inputs are available
     
       pool <- get_db_pool()
       players_list <- get_team_players(pool, input$team_selector, input$year_selector)$fullName 
     
       players(players_list)  # Update the reactive value with the list of players
+      if (length(input$player_selector) > 0) {
+        selected_players <- input$player_selector[input$player_selector %in% players_list]
+        updateSelectizeInput(session, "player_selector", choices = players_list, selected = selected_players, server = TRUE)
+      } else {
+        updateSelectizeInput(session, "player_selector", choices = players_list, selected = NULL, server = TRUE)
+      }
     })
 
     output$scatter_plot <- renderGirafe({
@@ -76,13 +89,15 @@ mod_team_display_server <- function(id) {
         "<br>", metric2_info$abbreviation, ": ", round(plot_df$y_value, 2)
       )
 
+      plot_df$highlight <- ifelse(plot_df$fullName %in% input$player_selector, TRUE, FALSE)
+
       p <- ggplot(plot_df, aes(x = x_value, y = y_value, tooltip = tooltip_text)) +
         geom_point_interactive(
-          size = 1,               # Base size of points
+          size = ifelse(plot_df$highlight, 2.5, 1), 
           shape = 21,             # Circle with fill
-          fill = "navy",          # Translucent navy blue
-          color = "navy", 
-          alpha = 0.6,            # Semi-transparent
+          fill = ifelse(plot_df$highlight, "red", "navy"), 
+          color = ifelse(plot_df$highlight, "red", "navy"), 
+          alpha = ifelse(plot_df$highlight, 0.8, 0.6),            # Semi-transparent
         ) +
         theme_minimal() +
         labs(

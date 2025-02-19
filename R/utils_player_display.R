@@ -254,7 +254,7 @@ create_skill_percentiles_plot <- function(session, plot_data) {
     ) + coord_cartesian(clip="off") +
       scale_x_continuous(limits=c(NA, 100))
   
-  interactive_plot <- girafe(ggobj = gg)
+  interactive_plot <- girafe(ggobj = gg, width_svg = 6, height_svg = 4)
   interactive_plot <- girafe_options(
     interactive_plot,
     opts_hover(

@@ -15,3 +15,4 @@ run_dev <- function() {
   # Run the application
   run_app()
 }
+  

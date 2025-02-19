@@ -365,11 +365,16 @@ get_model_data_from_db <- function(filename) {
 }
 
 get_team_players <- function(pool, team_ids, year) {
-  # Convert team_ids to a properly formatted SQL condition
-  team_condition <- if (length(team_ids) > 1) {
-    paste0("IN (", paste0("'", team_ids, "'", collapse = ","), ")")
+  # If team_ids is NULL or empty, retrieve players from all teams
+  if (is.null(team_ids) || length(team_ids) == 0) {
+    team_condition <- "IS NOT NULL"  # All teams
   } else {
-    paste0("= '", team_ids, "'")
+    # Convert team_ids to a properly formatted SQL condition
+    team_condition <- if (length(team_ids) > 1) {
+      paste0("IN (", paste0("'", team_ids, "'", collapse = ","), ")")
+    } else {
+      paste0("= '", team_ids, "'")
+    }
   }
 
   # Adjust query based on "Career" selection
@@ -391,5 +396,6 @@ get_team_players <- function(pool, team_ids, year) {
   players_data <- DBI::dbGetQuery(pool, query)
   return(players_data)
 }
+
 
 
