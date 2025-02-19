@@ -126,6 +126,7 @@ get_selected_player_stats <- function(player_selector, year_selector, all_player
 #' @importFrom scales comma
 generate_yearly_percentile_plot <- function(metric_df, title) {
   metric_df$year <- as.numeric(metric_df$year)
+  metric_df <- metric_df %>% filter(year >= 2021)
   metric_df <- metric_df %>% filter(!is.na(value)) %>%
     filter(!(metric_full_name %in% c("Games Played", "Throwing Yards Per 100 Possessions", "Receiving Yards Per 100 Possessions", "Defensive Points Per Game", "Receptions Per 100 Possessions", "Offensive Points Per Game") & year < 2021))
 
