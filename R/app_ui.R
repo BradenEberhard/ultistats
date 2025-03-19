@@ -18,12 +18,12 @@ app_ui <- function(request) {
     )%>%
       bs_add_rules("
         .navbar-brand {
-          color: #333 !important;  /* Default text color */
+          color: #F4F4F4 !important;  /* Default text color */
           font-weight: bold;       /* Optional: make title bold */
         }
         
         .navbar-brand:hover {
-          color: #333 !important;  /* Prevent hover color change */
+          color: #F4F4F4  !important;  /* Prevent hover color change */
         }
       "),
     # nav_panel(
@@ -35,7 +35,7 @@ app_ui <- function(request) {
     nav_menu(
       title = "Player", 
       value = "player", 
-      icon = shiny::icon("chart-line"),
+      icon = shiny::icon("user"),
       nav_panel(
         title = "Profile",
         value = "player_profile",
@@ -50,8 +50,20 @@ app_ui <- function(request) {
     nav_panel(
       title = "Team", 
       value = "team", 
-      icon = shiny::icon("users"),
+      icon = shiny::icon("people-group"),
       mod_team_display_ui("team_display")
+    ),
+    nav_panel(
+      title = "Visualizations", 
+      value = "visualizations", 
+      icon = shiny::icon("chart-line"),
+      mod_visualizations_ui("visualizations")
+    ),
+    nav_panel(
+      title = "Game Center", 
+      value = "game_center", 
+      icon = shiny::icon("trophy"),
+      mod_game_center_ui("game_center")
     ),
     nav_panel(
       title = "Admin", 

@@ -140,9 +140,24 @@ mod_player_display_server <- function(id, player_name) {
     all_player_stats <- get_all_player_stats(pool)  
 
     cached_player_name <- reactiveVal(NULL)
+    cached_handler_value <- reactiveVal(NULL)
+    cached_offense_value <- reactiveVal(NULL)
+    observeEvent(input$handler_switch_value, {
+      req(!is.null(input$handler_switch_value))
+      cached_handler_value(input$handler_switch_value)
+    })
+    observeEvent(input$offense_switch_value, {
+      req(!is.null(input$offense_switch_value))
+      cached_offense_value(input$offense_switch_value)
+    })
+
     observeEvent(input$player_selector, {
       if(input$player_selector != ""){
         cached_player_name(input$player_selector)
+        update_year_selector(cached_player_name(), all_player_stats, session)
+        cached_player_year("Career")
+        cached_handler_value(NULL)
+        cached_offense_value(NULL)
       }
     })
 
@@ -150,6 +165,8 @@ mod_player_display_server <- function(id, player_name) {
     observeEvent(input$year_selector, {
       cached_player_year(input$year_selector)
     })
+
+    skills_percentile_plot_is_ready <- reactiveVal(FALSE)
     
     observeEvent(cached_player_name(), {
       req(cached_player_name(), all_player_stats)
@@ -158,23 +175,25 @@ mod_player_display_server <- function(id, player_name) {
         paste(stats$firstName[[1]], stats$lastName[[1]])
       })
       output$handler_switch <- renderUI({
+        cached_handler_value(FALSE)
         create_switch("handler_switch_value", selected_player_stats()$handler, "Handler", "Cutter", selected_player_stats, ns)
       })
       output$offense_switch <- renderUI({
+        cached_offense_value(FALSE)
         create_switch("offense_switch_value", selected_player_stats()$offense, "Offense", "Defense", selected_player_stats, ns)
       })
     })
     
     ### Inputs
-    
-    observeEvent(cached_player_name(), {
-      update_year_selector(cached_player_name(), all_player_stats, session)
-    })
-    
     observe({
       req(all_player_stats, player_name)
       relevant_players <- subset(all_player_stats, year >= 2021) %>% .[!duplicated(.$fullName), ] %>% pull(fullName)
       updateSelectizeInput(session, "player_selector", server = TRUE, choices = relevant_players, selected = player_name())
+    })
+
+    observe({
+      req(cached_player_name(), cached_player_year(), input$stat_category, !is.null(cached_handler_value()), !is.null(cached_offense_value()))
+      skills_percentile_plot_is_ready(TRUE)
     })
     
     ### Reactive Variables
@@ -208,21 +227,35 @@ mod_player_display_server <- function(id, player_name) {
     })
     
     ### Plots
+    # Create a reactive value to store the cached plot
+    cached_plot <- reactiveVal(NULL)
 
-    output$skill_percentiles_plot <- renderGirafe({
-      req(cached_player_name(), cached_player_year(), input$stat_category, !is.null(input$handler_switch_value), !is.null(input$offense_switch_value))
-      isolate({
-        input_list = list(
-          player_selector = cached_player_name(),
-          year_selector = cached_player_year(),
-          stat_category = input$stat_category,
-          handler_switch_value = input$handler_switch_value,
-          offense_switch_value = input$offense_switch_value
-        )
-        plot <- generate_skill_percentiles_plot(input_list, session, all_player_stats)
-      })
-      plot
+    # Separate observer to update the plot only when skills_percentile_plot_is_ready() is TRUE
+    observeEvent(skills_percentile_plot_is_ready(), {
+      if (skills_percentile_plot_is_ready()) {
+        isolate({
+          input_list <- list(
+            player_selector = cached_player_name(),
+            year_selector = cached_player_year(),
+            stat_category = input$stat_category,
+            handler_switch_value = cached_handler_value(),
+            offense_switch_value = cached_offense_value()
+          )
+
+          new_plot <- generate_skill_percentiles_plot(input_list, session, all_player_stats)
+          cached_plot(new_plot)  # Store the new plot
+          skills_percentile_plot_is_ready(FALSE)  # Reset ready state
+        })
+      }
     })
+
+    # Render output ONLY when cached_plot changes
+    output$skill_percentiles_plot <- renderGirafe({
+      req(cached_plot())
+      cached_plot()
+    })
+
+
     
     
     output$thrower_radial_histogram_plot <- renderPlot({

@@ -2155,13 +2155,7 @@
         "Maintainer": "Carson Sievert <cpsievert1@gmail.com>",
         "Repository": "CRAN",
         "Date/Publication": "2024-01-13 22:40:02 UTC",
-        "Built": "R 4.4.0; ; 2024-04-06 17:07:58 UTC; unix",
-        "RemoteType": "standard",
-        "RemotePkgRef": "plotly",
-        "RemoteRef": "plotly",
-        "RemoteRepos": "https://cran.rstudio.com/",
-        "RemotePkgPlatform": "aarch64-apple-darwin20",
-        "RemoteSha": "4.10.4"
+        "Built": "R 4.4.0; ; 2024-04-06 17:07:58 UTC; unix"
       }
     },
     "pool": {
@@ -3150,7 +3144,7 @@
   },
   "files": {
     ".env": {
-      "checksum": "c3ee422d001deb8f45bb1572b6a94350"
+      "checksum": "0685758b31e2159a5f1430dac9849512"
     },
     ".Rbuildignore": {
       "checksum": "c553ddf47c9e80e13d98831a8447d3c5"
@@ -3159,7 +3153,7 @@
       "checksum": "d456ef129e120c48c8211450db4becfc"
     },
     "DESCRIPTION": {
-      "checksum": "d8197d2cda1d0f64317befedc717df36"
+      "checksum": "4a85da30a689ca31d27de191a785c0d9"
     },
     "inst/app/www/favicon.ico": {
       "checksum": "81560d1b906a530c87fa0acbb2f5cca4"
@@ -3168,7 +3162,7 @@
       "checksum": "5aa70534cf8668dc51852033f454cd70"
     },
     "NAMESPACE": {
-      "checksum": "a63e55bfada4c522c973576af6ba6d66"
+      "checksum": "65b73a023d9ec7f1ef359478dc6a5216"
     },
     "R/_disable_autoload.R": {
       "checksum": "1178c335d6c11555fd1c4ec6098dfee6"
@@ -3177,10 +3171,10 @@
       "checksum": "c1911e82cf1d6a3a7e93885c90a97b91"
     },
     "R/app_server.R": {
-      "checksum": "63b65eacc6a1cdaa09bafeb11d2ac1d1"
+      "checksum": "fc81be50cf0ec6cba5211bba187d5cad"
     },
     "R/app_ui.R": {
-      "checksum": "5b91394f32a4a40154615b805bfbd79b"
+      "checksum": "3fed8a014cfb423a579eb8a6295b2c26"
     },
     "R/class_event_handlers.R": {
       "checksum": "2cabed04f75106fd4c7534b128527c04"
@@ -3194,47 +3188,56 @@
     "R/fcts_admin_data.R": {
       "checksum": "d79c96db1c4b2416c02ccb36596369ea"
     },
+    "R/fcts_game_center.R": {
+      "checksum": "c142334d3749f3662b78df907a6c6f4a"
+    },
     "R/fcts_player_display.R": {
       "checksum": "21e9e5f16d18e32eaa22fa2ec2c73662"
     },
     "R/fcts_player_leaderboard.R": {
-      "checksum": "d795a35de4899b2682c971a33e118413"
+      "checksum": "f62368f24d9205c8644bc84f3a544ef3"
     },
-    "R/fcts_team_display.R": {
-      "checksum": "978288cdc816ebd17d1c705471bb8081"
+    "R/fcts_visualizations.R": {
+      "checksum": "3eb73c150f7f0fe94b261bf672708cf9"
     },
     "R/mod_admin_data.R": {
       "checksum": "8257f86b35c50bdcd96e1c5d1d9bfea3"
+    },
+    "R/mod_game_center.R": {
+      "checksum": "808aa04ba7a14c49e4fdd4d6b8b5dc23"
     },
     "R/mod_home_page.R": {
       "checksum": "4fa6e1aadf149fcc663b74adc378957e"
     },
     "R/mod_player_display.R": {
-      "checksum": "e67579ba2eefd02bae128041f120cfcb"
+      "checksum": "68921aa5231b3231fd23a6a6bb1d49f8"
     },
     "R/mod_player_leaderboard.R": {
-      "checksum": "b53b6bd5c822c271bcc92eeab3dff6d7"
+      "checksum": "f80937f78fe9ad30412a22c288043c73"
     },
     "R/mod_team_display.R": {
-      "checksum": "05799e8261147cfc34fc2f313ebca2d2"
+      "checksum": "74f8e6ff8d41711d242ab164bca953d3"
+    },
+    "R/mod_visualizations.R": {
+      "checksum": "83238321fdbedd681372b220d2221f2e"
     },
     "R/proxy_api.R": {
       "checksum": "bb0c3b50897fb14c0e4cc217b13274ff"
     },
     "R/proxy_database.R": {
-      "checksum": "abf9b761a913c0033505c40ca1c87694"
+      "checksum": "ef5dcb641fcf670ec8fa0dca89405975"
     },
     "R/run_app.R": {
       "checksum": "070f9a924121c6b8744f8fe567d65801"
     },
     "R/utils_admin_data.R": {
-      "checksum": "5a8a4cb11b053026bf557cb898196ea9"
+      "checksum": "acbb40300d3489993c405634184160f6"
     },
     "R/utils_player_display.R": {
-      "checksum": "5b22a3374f1fe9212b3dfb54a7ea9c3a"
+      "checksum": "d4d8b16d6c94f0bb845e383946b1dc2f"
     },
     "R/utils_player_leaderboard.R": {
-      "checksum": "d584958bff1fc05354504226f5bbd809"
+      "checksum": "f7efa70bed63ad76219fe36cac67dd52"
     }
   },
   "users": null

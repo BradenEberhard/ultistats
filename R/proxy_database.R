@@ -308,6 +308,22 @@ get_table <- function(pool, table_name) {
   return(result)
 }
 
+get_game_info <- function(pool, game_id) {
+  # Check if the connection is valid
+  if (is.null(pool)) {
+    stop("The database connection is not open.")
+  }
+  
+  # Ensure game_id is safely quoted to prevent SQL injection
+  query <- glue::glue_sql('SELECT * FROM games WHERE "gameID" = {game_id};', .con = pool)
+  
+  # Execute the query
+  result <- DBI::dbGetQuery(pool, query)
+  
+  # Return the result as a data frame
+  return(result)
+}
+
 get_team_id <- function(pool, player_id, year) {
   # Ensure the connection is valid
   if (is.null(pool)) {

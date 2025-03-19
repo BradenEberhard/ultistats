@@ -541,7 +541,7 @@ map_metrics_to_formula <- function(df, metric_names) {
       formula = function(df) ((df$numPossessionsInvolvedScored / df$numPossessionsInvolved) - (df$numPossessionsScored / df$numPossessions)) * 100,  
       display_name = "Involved Efficiency Improvement",
       abbreviation = "IEI",
-      description = "Involved offensive success rate, based on percentage of scores vs opportunities counting only possessions with one throw or catch"
+      description = "Improvement in offensive efficiency when involved in the play"
     ),
     "offensive_involvement" = list(
       formula = function(df) (df$numPossessionsInvolved / df$numPossessions) * 100,  
