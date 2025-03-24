@@ -105,7 +105,7 @@ get_game_ids <- function(pool) {
   }
   
   # Query the games table to get unique gameID values
-  query <- "SELECT DISTINCT \"gameID\" FROM \"games\""
+  query <- "SELECT DISTINCT \"gameID\" FROM \"games\" WHERE \"status\" = 'Final'"
   result <- DBI::dbGetQuery(pool, query)
   
   # Return the vector of unique gameIDs
@@ -113,7 +113,7 @@ get_game_ids <- function(pool) {
 }
 
 
-create_table <- function(pool, table_name, data, index_cols = NULL, override = FALSE) {
+create_table <- function(pool, table_name, data, index_cols = NULL, override = FALSE, primary_key_col = NULL) {
   # Convert timestamp columns to POSIXct
   timestamp_cols <- grep("Timestamp", names(data), ignore.case = TRUE, value = TRUE)
   for (col in timestamp_cols) {
@@ -150,6 +150,10 @@ create_table <- function(pool, table_name, data, index_cols = NULL, override = F
     col_type <- map_r_to_sql_type(class(data[[col_name]])[1])  # Get the first class of the column
     paste0('"', col_name, '"', " ", col_type)  # Add double quotes around the column name
   })
+
+  if (!is.null(primary_key_col)) {
+    column_definitions <- c(column_definitions, paste0('"', primary_key_col, '"', " SERIAL PRIMARY KEY"))
+  }
   
   # Create the SQL query to create the table
   create_query <- paste0("CREATE TABLE IF NOT EXISTS \"", table_name, "\" (", paste(column_definitions, collapse = ", "), ");")
@@ -243,6 +247,30 @@ get_throws_from_db <- function(pool, gameID) {
   result <- DBI::dbGetQuery(pool, query)
   return(result)
 }
+
+get_game_prob <- function(pool, table1_name, table2_name, join_column, gameID) {
+  # Check if the connection is valid
+  if (is.null(pool)) {
+    stop("The database connection is not open.")
+  }
+  
+  # Construct the SQL query to join the two tables on the specified column
+  query <- glue("SELECT game_quarter, graphing_win_prob, game_time_left, 
+                        time_left, is_home_team, 
+                        thrower_y, home_team_score, away_team_score, 
+                        possession_num, possession_throw
+                 FROM \"{table1_name}\" t1
+                 LEFT JOIN \"{table2_name}\" t2
+                 ON t1.\"{join_column}\" = t2.\"{join_column}\"
+                 WHERE t1.\"gameID\" = '{gameID}';")
+  
+  # Execute the query
+  result <- DBI::dbGetQuery(pool, query)
+  
+  # Return the result as a data frame
+  return(result)
+}
+
 
 
 get_table_from_db <- function(pool, table_name = "throws") {

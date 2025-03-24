@@ -72,6 +72,7 @@ mod_admin_data_server <- function(id){
     create_observe_event(input, "update_penalties_button", update_penalties, timestamps, base_url)
     create_observe_event(input, "update_throws_button", update_throws, timestamps, base_url)
     create_observe_event(input, "update_player_game_stats_button", update_player_game_stats, timestamps, base_url)
+    create_observe_event(input, "update_advanced_stats_button", update_advanced_stats, timestamps, base_url, "Processing Advanced Stats")
     create_observe_event(input, "update_all", update_all_tables, timestamps, base_url)
 
 

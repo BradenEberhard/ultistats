@@ -212,7 +212,8 @@ update_player_game_stats <- function(pool, base_url) {
           numPossessions = coalesce(numPossessions, 0),
           numPossessionsInvolved = coalesce(numPossessionsInvolved, 0),
           numPossessionsScored = coalesce(numPossessionsScored, 0),
-          numPossessionsInvolvedScored = coalesce(numPossessionsInvolvedScored, 0)
+          numPossessionsInvolvedScored = coalesce(numPossessionsInvolvedScored, 0),
+          insertTimestamp = get_current_timestamp() 
         )
 
       create_table(pool=pool, table_name='player_game_stats', data=final_df, index_cols=list("gameID","playerID"), override=FALSE)
@@ -225,7 +226,7 @@ update_player_game_stats <- function(pool, base_url) {
 # Function to process and update throws
 update_throws <- function(pool, base_url) {
   game_ids <- get_game_ids(pool)
-  withProgress(message = "Processing throws", value = 0, {
+  withProgress(message = "Processing Throws", value = 0, {
     for (i in seq_along(game_ids)) {
       current_game_id <- game_ids[[i]]
       game_data <- fetch_game(base_url, current_game_id)
@@ -238,7 +239,7 @@ update_throws <- function(pool, base_url) {
         throws_data$x_diff <- throws_data$receiver_x - throws_data$thrower_x
         throws_data$y_diff <- throws_data$receiver_y - throws_data$thrower_y
         throws_data$throw_angle <- atan2(throws_data$y_diff, throws_data$x_diff) * (180 / pi)
-        create_table(pool=pool, table_name='throws', data=throws_data, index_cols=list("gameID","thrower", "throwID"), override=FALSE)
+        create_table(pool=pool, table_name='throws', data=throws_data, index_cols=list("gameID","thrower"), override=FALSE, primary_key_col="throwID")
         update_table(pool=pool, table_name='throws', data=throws_data, index_col="gameID", whole_table = FALSE)
         incProgress(1 / length(game_ids), detail = paste("Processing game ID", current_game_id))
       }
@@ -298,14 +299,17 @@ update_advanced_stats <- function(pool, base_url) {
   cp_preprocessing_info_filename <- Sys.getenv("CP_MODEL_INFO_FILENAME")
   
   throws_data <- get_table_from_db(pool, table_name = "throws")
+  throws_data <- get_win_probabilities(throws_data)
+
   fv_df <- predict_fv_for_throws(throws_data, fv_model_filename, fv_preprocessing_info_filename)
   advanced_stats_df <- predict_advanced_stats(throws_data, fv_df, cp_model_filename, cp_preprocessing_info_filename)
   advanced_stats_df <- mutate_advanced_stats(advanced_stats_df)
   advanced_stats_df <- calculate_aec(advanced_stats_df)
   advanced_stats_df <- clean_advanced_stats(advanced_stats_df)
+  final_df = inner_join(advanced_stats_df, throws_data %>% select(throwID, win_prob, graphing_win_prob, game_time_left), by="throwID")
 
-  create_table(pool=pool, table_name="advanced_stats", data=advanced_stats_df, index_cols="gameID", override=TRUE)
-  update_table(pool=pool, table_name='advanced_stats', data=advanced_stats_df, index_col="gameID", whole_table=TRUE)
+  create_table(pool=pool, table_name="advanced_stats", data=final_df, index_cols=list("gameID","throwID"), override=TRUE)
+  update_table(pool=pool, table_name='advanced_stats', data=final_df, index_col="throwID", whole_table=TRUE)
 }
 
 
@@ -587,10 +591,8 @@ predict_fv <- function(model_filename, preprocessing_info_filename, throws_data)
   receiver_pred_probs <- predict(xgb_model, receiver_throws_scaled)
   opponent_pred_probs <- predict(xgb_model, opponent_throws_scaled)
   
-  # Create ID column and return output
-  id_column <- paste(throws_data$gameID, throws_data$game_quarter, throws_data$quarter_point, throws_data$possession_num, throws_data$possession_throw, sep = "-")
   output_dataframe <- data.frame(
-    throwID = id_column,
+    throwID = throws_data$throwID,
     gameID = throws_data$gameID,
     fv_thrower = thrower_pred_probs,
     fv_receiver = receiver_pred_probs,
@@ -614,10 +616,8 @@ predict_cp <- function(model_filename, preprocessing_info_filename, throws_data)
   # Get predictions
   thrower_pred_probs <- predict(xgb_model, thrower_throws_scaled)
   
-  # Create ID column and return output
-  id_column <- paste(throws_data$gameID, throws_data$game_quarter, throws_data$quarter_point, throws_data$possession_num, throws_data$possession_throw, sep = "-")
   output_dataframe <- data.frame(
-    throwID = id_column,
+    throwID = throws_data$throwID,
     gameID = throws_data$gameID,
     cp = thrower_pred_probs,
     cpoe = ifelse(throws_data$turnover == 1, 0, 1) - thrower_pred_probs

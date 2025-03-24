@@ -300,7 +300,6 @@ get_throw_row <- function(current_state, thrower=NULL, thrower_x=NULL, thrower_y
   throw_row$possession_num <- current_state$possession_num
   throw_row$possession_throw <- current_state$possession_throw
   throw_row$start_on_offense <- current_state$offensive_point
-  throw_row$throwID <- paste(gameID, current_state$game_quarter, current_state$quarter_point, current_state$possession_num, current_state$possession_throw, sep = "-")
   return(throw_row)
 }
 

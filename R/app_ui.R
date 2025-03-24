@@ -13,8 +13,8 @@ app_ui <- function(request) {
     title = "Game Dashboard",
     id = "main_nav",
     theme = bslib::bs_theme(
-      preset = "spacelab",   # Choose the theme (e.g., "lux", "cosmo", "flatly", etc.)
-      version = 5       # Ensure you're using Bootstrap 5
+      preset = "spacelab",   
+      version = 5 
     )%>%
       bs_add_rules("
         .navbar-brand {

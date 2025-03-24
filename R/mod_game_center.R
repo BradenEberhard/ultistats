@@ -10,7 +10,7 @@
 mod_game_center_ui <- function(id) {
   ns <- NS(id)
   tagList(
-    selectInput(ns("game_id"), "Select Game ID:", choices = NULL),
+    selectInput(ns("game_id"), "Select Game ID:", choices = NULL, selected = character(0)),
     plotlyOutput(ns("win_prob_plot"))  |> 
       withSpinner() |> 
       bslib::as_fill_carrier()
@@ -26,21 +26,25 @@ mod_game_center_server <- function(id){
     ns <- session$ns
     
     pool <- get_db_pool()
-    throws_data <- get_table_from_db(pool, table_name = "throws")
-    updateSelectInput(session, "game_id", choices = unique(throws_data$gameID), selected = throws_data$gameID[1])
-    throws_data <- get_win_probabilities(throws_data)
-
+    game_ids <- get_game_ids(pool)
+    updateSelectInput(session, "game_id", choices = sort(game_ids), selected = character(0))
+    
+    win_prob_data_reactive <- reactiveVal(NULL)
+    observeEvent(input$game_id, {
+      req(input$game_id)
+      win_prob_data <- get_game_prob(pool, "throws", "advanced_stats", "throwID", input$game_id) 
+      win_prob_data <- win_prob_data %>% select(which(!duplicated(names(win_prob_data))))
+      win_prob_data_reactive(win_prob_data)
+    })
 
     output$win_prob_plot <- renderPlotly({
-      req(input$game_id)
+      req(input$game_id, win_prob_data_reactive())
       game_id_to_plot <- input$game_id
       game_info <- get_game_info(pool, input$game_id)
       away_team <- game_info$awayTeamID %>% tools::toTitleCase()
       home_team <- game_info$homeTeamID %>% tools::toTitleCase()
-      
-      game_data <- throws_data %>%
-        filter(gameID == game_id_to_plot,
-        game_quarter != 6,
+      game_data <- win_prob_data_reactive() %>%
+        filter(game_quarter != 6,
         !is.na(graphing_win_prob)) %>%
         arrange(game_time_left)
 
