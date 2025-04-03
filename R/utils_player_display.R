@@ -204,8 +204,9 @@ generate_yearly_percentile_plot <- function(metric_df, title) {
 
 # Plot for main skill percentiles
 #' @importFrom tidyr drop_na
-create_skill_percentiles_plot <- function(session, plot_data) {
-
+create_skill_percentiles_plot <- function(stat_category, plot_data) {
+  title_suffix <- ifelse(stat_category == "Total", "", ifelse(stat_category == "Per Game", "Per Game", "Per 100 Possessions"))
+  plot_data$metric_abbreviation <- sub("/.*", "", plot_data$metric_abbreviation)
   plot_data <- plot_data %>% drop_na()
 
   gg <- ggplot(plot_data, aes(
@@ -243,7 +244,7 @@ create_skill_percentiles_plot <- function(session, plot_data) {
       ),
       hjust = 1, size = 5, color = "black"
     ) +
-    labs(x = "Percentile", y = "Metric") +
+    labs(x = "Percentile", y = paste("Metric", title_suffix)) +
     theme_minimal(base_size = 16) +
     theme(
       axis.title = element_text(size = 20),
@@ -556,7 +557,7 @@ map_metrics_to_formula <- function(df, metric_names) {
       description = "Involved offensive success rate, based on percentage of scores vs opportunities counting only possessions with one throw or catch"
     ),
     "defensive_efficiency" = list(
-      formula = function(df) (df$dOpportunityStops / df$dOpportunities) * 100,  
+      formula = function(df) (df$numDPossessions / df$numDPossessionsStopped) * 100,  
       display_name = "Defensive Efficiency",
       abbreviation = "DE",
       description = "Defensive success rate, based on percentage of stops vs opportunities"

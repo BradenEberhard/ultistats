@@ -59,15 +59,9 @@ compute_advanced_stats <- function(advanced_stats) {
 }
 
 compute_career_data_from_player_stats <- function(player_stats_data) {
-  # Filter players with at least one year >= 2021
-  players_with_career_data <- player_stats_data %>%
-    filter(.data$year >= 2021) %>%
-    select(.data$playerID) %>%
-    distinct()
-
   # Summing career stats for each player and recalculating percentages
-  career_data <- player_stats_data %>%
-    filter(.data$playerID %in% players_with_career_data$playerID) %>%
+  career_data <- player_stats_data %>% 
+    filter(.data$year >= 2021) %>%
     group_by(.data$playerID) %>%
     summarise(
       firstName = first(.data$firstName),
@@ -99,7 +93,9 @@ compute_career_data_from_player_stats <- function(player_stats_data) {
       dPointsScored = sum(.data$dPointsScored, na.rm = TRUE),
       secondsPlayed = sum(.data$secondsPlayed, na.rm = TRUE),
       numPossessions = sum(.data$numPossessions, na.rm = TRUE),
+      numDPossessions = sum(.data$numDPossessions, na.rm = TRUE),
       numPossessionsScored = sum(.data$numPossessionsScored, na.rm = TRUE),
+      numDPossessionsStopped = sum(.data$numDPossessionsStopped, na.rm = TRUE),
       numPossessionsInvolved = sum(.data$numPossessionsInvolved, na.rm = TRUE),
       numPossessionsInvolvedScored = sum(.data$numPossessionsInvolvedScored, na.rm = TRUE),
       oOpportunities = sum(.data$oOpportunities, na.rm = TRUE),
@@ -164,7 +160,7 @@ process_player_stats <- function(player_stats_data) {
     mutate(
       total_points = .data$oPointsPlayed + .data$dPointsPlayed,
       offensive_efficiency = if_else(.data$numPossessions == 0, NA_real_, .data$numPossessionsScored / .data$numPossessions),
-      defensive_efficiency = if_else(.data$dOpportunities == 0, NA_real_, .data$dOpportunityStops / .data$dOpportunities),
+      defensive_efficiency = if_else(.data$numDPossessions == 0, NA_real_, .data$numDPossessionsStopped / .data$numDPossessions),
       completion_percentage = if_else(.data$throwAttempts == 0, NA_real_, .data$completions / .data$throwAttempts),
       cpoe = .data$completion_percentage - .data$xcp
     ) %>%
@@ -224,18 +220,22 @@ start_point <- function(event, current_state) {
     current_state$offensive_point <- ifelse(event$type == 1, FALSE, TRUE)
     current_state$possession_throw <- 0
     current_state$possession_num <- 1
+    current_state$line_changes <- 0
   }
   return(current_state)
 }
 
-update_line <- function(event, current_state) {
+update_line <- function(event, current_state, defensive_state) {
   if (event$type %in% c(1,2,3,4,5,25)) { # start D point, start O point, midpoint TO - recording team, midpoint TO - opposing team, injury
     if (!is.null(event$time) && !is.na(event$time)) {
       current_state$point_start_time <- event$time
     }
+    current_state$line_changes <- current_state$line_changes + 1
     current_state$current_line <- event$line 
+    new_row <- data.frame(game_quarter = current_state$game_quarter, quarter_point = current_state$quarter_point, line_changes = current_state$line_changes, line = paste(current_state$current_line, collapse = ","))
+    defensive_state <- rbind(defensive_state, new_row)
   }
-  return(current_state)
+  return(list(current_state = current_state, defensive_state = defensive_state))
 }
 
 update_possession_throw <- function(event_type, current_state) {
@@ -248,7 +248,6 @@ update_possession_throw <- function(event_type, current_state) {
 reset_possession_throw <- function(event_type, current_state) {
   if (event_type %in% c(19, 20, 22, 23, 24)) { # pass, score - recording team, drop, throwaway - recording team, callahan thrown, stall - recording team
     current_state$possession_throw <- 0
-    current_state$offensive_point <- ifelse(current_state$offensive_point, FALSE, TRUE)
   }
   return(current_state)
 }
@@ -272,13 +271,14 @@ reset_state <- function() {
     last_event_is_block = FALSE,
     current_line = c(),
     point_start_time = NULL,
-    quarter_point = 1
+    quarter_point = 1,
+    line_changes = 0
   )
   return(state)
 }
 
 # handle all info necessary for a throw
-get_throw_row <- function(current_state, thrower=NULL, thrower_x=NULL, thrower_y=NULL, receiver=NULL, receiver_x=NULL, receiver_y=NULL, turnover=0, drop=0, stall=0, is_home_team=NULL, gameID=NULL) {
+get_throw_row <- function(current_state, defensive_state, thrower=NULL, thrower_x=NULL, thrower_y=NULL, receiver=NULL, receiver_x=NULL, receiver_y=NULL, turnover=0, drop=0, stall=0, is_home_team=NULL, gameID=NULL) {
   throw_row <- list()
   throw_row$thrower <- thrower
   throw_row$thrower_x <- thrower_x
@@ -300,6 +300,7 @@ get_throw_row <- function(current_state, thrower=NULL, thrower_x=NULL, thrower_y
   throw_row$possession_num <- current_state$possession_num
   throw_row$possession_throw <- current_state$possession_throw
   throw_row$start_on_offense <- current_state$offensive_point
+  throw_row$defensive_state_id <- paste(current_state$game_quarter, current_state$quarter_point, current_state$line_changes, sep = '-')
   return(throw_row)
 }
 

@@ -3174,7 +3174,7 @@
       "checksum": "fc81be50cf0ec6cba5211bba187d5cad"
     },
     "R/app_ui.R": {
-      "checksum": "3fed8a014cfb423a579eb8a6295b2c26"
+      "checksum": "95eee19cb7dc5459b1237a136176a947"
     },
     "R/class_event_handlers.R": {
       "checksum": "2cabed04f75106fd4c7534b128527c04"
@@ -3186,13 +3186,13 @@
       "checksum": "c252c48e8fbf96ad7ba9559d9941f8aa"
     },
     "R/fcts_admin_data.R": {
-      "checksum": "d79c96db1c4b2416c02ccb36596369ea"
+      "checksum": "fdb80fc59ca479bbc006a78e5de39d2d"
     },
     "R/fcts_game_center.R": {
       "checksum": "c142334d3749f3662b78df907a6c6f4a"
     },
     "R/fcts_player_display.R": {
-      "checksum": "21e9e5f16d18e32eaa22fa2ec2c73662"
+      "checksum": "c62307fd8b11f3965316379c469946f6"
     },
     "R/fcts_player_leaderboard.R": {
       "checksum": "f62368f24d9205c8644bc84f3a544ef3"
@@ -3201,10 +3201,10 @@
       "checksum": "3eb73c150f7f0fe94b261bf672708cf9"
     },
     "R/mod_admin_data.R": {
-      "checksum": "8257f86b35c50bdcd96e1c5d1d9bfea3"
+      "checksum": "f962f7674ac5693f0653863906d7edb6"
     },
     "R/mod_game_center.R": {
-      "checksum": "808aa04ba7a14c49e4fdd4d6b8b5dc23"
+      "checksum": "b7c3875af9b0a027e018f25d33a440c9"
     },
     "R/mod_home_page.R": {
       "checksum": "4fa6e1aadf149fcc663b74adc378957e"
@@ -3219,22 +3219,22 @@
       "checksum": "74f8e6ff8d41711d242ab164bca953d3"
     },
     "R/mod_visualizations.R": {
-      "checksum": "83238321fdbedd681372b220d2221f2e"
+      "checksum": "89b67c558803a20778c84b4c7935d4bc"
     },
     "R/proxy_api.R": {
       "checksum": "bb0c3b50897fb14c0e4cc217b13274ff"
     },
     "R/proxy_database.R": {
-      "checksum": "ef5dcb641fcf670ec8fa0dca89405975"
+      "checksum": "f6dd7944e2d2016fb3c6eced3398971f"
     },
     "R/run_app.R": {
       "checksum": "070f9a924121c6b8744f8fe567d65801"
     },
     "R/utils_admin_data.R": {
-      "checksum": "acbb40300d3489993c405634184160f6"
+      "checksum": "52cc390fe1d541846a55344f57f2aa85"
     },
     "R/utils_player_display.R": {
-      "checksum": "d4d8b16d6c94f0bb845e383946b1dc2f"
+      "checksum": "938d2b98e65ff7b7be3b17e384d31ed5"
     },
     "R/utils_player_leaderboard.R": {
       "checksum": "f7efa70bed63ad76219fe36cac67dd52"

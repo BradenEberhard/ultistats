@@ -47,8 +47,10 @@ update_player_stats <- function(pool, base_url) {
     group_by(playerID, year) %>%
     summarise(
       numPossessions = sum(numPossessions, na.rm = TRUE),
+      numDPossessions = sum(numDPossessions, na.rm = TRUE),
       numPossessionsInvolved = sum(numPossessionsInvolved, na.rm = TRUE),
       numPossessionsScored = sum(numPossessionsScored, na.rm = TRUE),
+      numDPossessionsStopped = sum(numDPossessionsStopped, na.rm = TRUE),
       numPossessionsInvolvedScored = sum(numPossessionsInvolvedScored, na.rm = TRUE)
     )
   player_stats_data <- fetch_and_process_player_stats(pool, base_url) 
@@ -57,8 +59,10 @@ update_player_stats <- function(pool, base_url) {
     left_join(yearly_possession_stats, by = c("playerID", "year")) %>%
     mutate(
       numPossessions = coalesce(numPossessions, 0),
+      numDPossessions = coalesce(numDPossessions, 0),
       numPossessionsInvolved = coalesce(numPossessionsInvolved, 0),
       numPossessionsScored = coalesce(numPossessionsScored, 0),
+      numDPossessionsStopped = coalesce(numDPossessionsStopped, 0),
       numPossessionsInvolvedScored = coalesce(numPossessionsInvolvedScored, 0)
     )
   
@@ -148,13 +152,19 @@ update_player_game_stats <- function(pool, base_url) {
 
       game_throws <- game_throws %>%
         group_by(game_quarter, quarter_point, possession_num) %>%
-        mutate(line = strsplit(as.character(line), ",")) %>%
+        mutate(line = strsplit(as.character(line), ","), 
+               defensive_line = strsplit(as.character(defensive_line), ",")) %>%
         ungroup()
       
       # Identify possessions where a score occurred (receiver_y ≥ 100 & turnover = 0)
       scoring_possessions <- game_throws %>%
         filter(receiver_y >= 100, turnover == 0) %>%
         distinct(game_quarter, quarter_point, possession_num)
+
+      non_scoring_possessions <- game_throws %>%
+        distinct(game_quarter, quarter_point, possession_num) %>%
+        anti_join(scoring_possessions, by = c("game_quarter", "quarter_point", "possession_num"))
+  
       
       # Compute numPossessionsInvolved
       num_possessions_involved_df <- game_throws %>%
@@ -178,6 +188,14 @@ update_player_game_stats <- function(pool, base_url) {
         group_by(playerID) %>%
         summarise(numPossessions = n_distinct(paste(game_quarter, quarter_point, possession_num)))
       
+      num_Dpossessions_df <- game_throws %>%
+        unnest(defensive_line) %>%
+        rename(playerID = defensive_line) %>%
+        distinct(game_quarter, quarter_point, possession_num, playerID) %>%
+        group_by(playerID) %>%
+        summarise(numDPossessions = n_distinct(paste(game_quarter, quarter_point, possession_num)))
+      
+      
       # Compute numPossessionsScored (team scored and player was in line)
       num_possessions_scored_df <- game_throws %>%
         unnest(line) %>%
@@ -187,6 +205,14 @@ update_player_game_stats <- function(pool, base_url) {
         group_by(playerID) %>%
         summarise(numPossessionsScored = n_distinct(paste(game_quarter, quarter_point, possession_num)))
       
+      num_Dpossessions_stopped_df <- game_throws %>%
+        unnest(defensive_line) %>%
+        rename(playerID = defensive_line) %>%
+        inner_join(non_scoring_possessions, by = c("game_quarter", "quarter_point", "possession_num")) %>%
+        distinct(game_quarter, quarter_point, possession_num, playerID) %>%
+        group_by(playerID) %>%
+        summarise(numDPossessionsStopped = n_distinct(paste(game_quarter, quarter_point, possession_num)))
+
       # Compute numPossessionsInvolvedScored (team scored and player was thrower or receiver)
       num_possessions_involved_scored_df <- game_throws %>%
         bind_rows(
@@ -201,17 +227,20 @@ update_player_game_stats <- function(pool, base_url) {
         distinct(game_quarter, quarter_point, possession_num, playerID) %>%
         group_by(playerID) %>%
         summarise(numPossessionsInvolvedScored = n_distinct(paste(game_quarter, quarter_point, possession_num)))
-      
       # Merge all data frames into final_df
       final_df <- game_data %>%
         left_join(num_possessions_df, by = "playerID") %>%
         left_join(num_possessions_involved_df, by = "playerID") %>%
         left_join(num_possessions_scored_df, by = "playerID") %>%
         left_join(num_possessions_involved_scored_df, by = "playerID") %>%
+        left_join(num_Dpossessions_df, by = "playerID") %>%
+        left_join(num_Dpossessions_stopped_df, by = "playerID") %>%
         mutate(
           numPossessions = coalesce(numPossessions, 0),
+          numDPossessions = coalesce(numDPossessions, 0),
           numPossessionsInvolved = coalesce(numPossessionsInvolved, 0),
           numPossessionsScored = coalesce(numPossessionsScored, 0),
+          numDPossessionsStopped = coalesce(numDPossessionsStopped, 0),
           numPossessionsInvolvedScored = coalesce(numPossessionsInvolvedScored, 0),
           insertTimestamp = get_current_timestamp() 
         )
@@ -474,33 +503,51 @@ get_penalties_from_id = function(game, gameID) {
 get_throws_from_id = function(game, gameID) {
   rows <- list()
   current_state <- reset_state()
+  defensive_state <- data.frame(game_quarter = numeric(), quarter_point = numeric(), line_changes = numeric(), line = character(), stringsAsFactors = FALSE)
+
   process_throw_event <- function(event, is_home_team, gameID) {
     current_state <<- update_possession_throw(event$type, current_state)
 
     if (event$type %in% c(18, 19)) { # pass, score - recording team
-      throw_row <- get_throw_row(current_state, thrower=event$thrower, thrower_x=event$throwerX, thrower_y=event$throwerY, receiver=event$receiver, receiver_x=event$receiverX, receiver_y=event$receiverY, is_home_team=is_home_team, gameID=gameID)
+      throw_row <- get_throw_row(current_state, defensive_state, thrower=event$thrower, thrower_x=event$throwerX, thrower_y=event$throwerY, receiver=event$receiver, receiver_x=event$receiverX, receiver_y=event$receiverY, is_home_team=is_home_team, gameID=gameID)
       rows <<- append(rows, list(throw_row))
     } else if (event$type %in% c(22,23)) { # throwaway - recording team, callahan thrown
-      throw_row <- get_throw_row(current_state, thrower=event$thrower, thrower_x=event$throwerX, thrower_y=event$throwerY, receiver_x=event$turnoverX, receiver_y=event$turnoverY, turnover=1, is_home_team=is_home_team, gameID=gameID)
+      throw_row <- get_throw_row(current_state, defensive_state, thrower=event$thrower, thrower_x=event$throwerX, thrower_y=event$throwerY, receiver_x=event$turnoverX, receiver_y=event$turnoverY, turnover=1, is_home_team=is_home_team, gameID=gameID)
       rows <<- append(rows, list(throw_row))
     } else if (event$type == 20) { # drop
-      throw_row <- get_throw_row(current_state, thrower=event$thrower, thrower_x=event$throwerX, thrower_y=event$throwerY, receiver=event$receiver, receiver_x=event$receiverX, receiver_y=event$receiverY, turnover=1, drop=1, is_home_team=is_home_team, gameID=gameID)
+      throw_row <- get_throw_row(current_state, defensive_state, thrower=event$thrower, thrower_x=event$throwerX, thrower_y=event$throwerY, receiver=event$receiver, receiver_x=event$receiverX, receiver_y=event$receiverY, turnover=1, drop=1, is_home_team=is_home_team, gameID=gameID)
       rows <<- append(rows, list(throw_row))
     } else if (event$type == 24) { # stall
-      throw_row <- get_throw_row(current_state, thrower=event$thrower, thrower_x=event$throwerX, thrower_y=event$throwerY, receiver_x=event$throwerX, receiver_y=event$throwerY, turnover=1, stall=1, is_home_team=is_home_team, gameID=gameID)
+      throw_row <- get_throw_row(current_state, defensive_state, thrower=event$thrower, thrower_x=event$throwerX, thrower_y=event$throwerY, receiver_x=event$throwerX, receiver_y=event$throwerY, turnover=1, stall=1, is_home_team=is_home_team, gameID=gameID)
       rows <<- append(rows, list(throw_row))
     }
     current_state <<- update_score(event$type, is_home_team, current_state)
     current_state <<- start_point(event, current_state)
-    current_state <<- update_line(event, current_state)
+    result <- update_line(event, current_state, defensive_state)
+    current_state <<- result$current_state
+    defensive_state <<- result$defensive_state
     current_state <<- update_quarter(event$type, current_state)
     current_state <<- update_possession_num(event$type, current_state)
     current_state <<- reset_possession_throw(event$type, current_state)
   }
   apply(game$homeEvents, 1, function(row) process_throw_event(row, is_home_team = TRUE, gameID = gameID))
+  home_lines <- defensive_state
+  defensive_state <- data.frame(game_quarter = numeric(), quarter_point = numeric(), line_changes = numeric(), line = character(), stringsAsFactors = FALSE)
   current_state <- reset_state()
   apply(game$awayEvents, 1, function(row) process_throw_event(row, is_home_team = FALSE, gameID = gameID))      
-  return(dplyr::bind_rows(rows))
+  away_lines <- defensive_state
+  throws_df <- dplyr::bind_rows(rows)
+
+  away_lines <- away_lines %>% mutate(defensive_state_id = paste(game_quarter, quarter_point, line_changes, sep = "-")) %>% distinct(defensive_state_id, .keep_all = TRUE)
+  home_lines <- home_lines %>% mutate(defensive_state_id = paste(game_quarter, quarter_point, line_changes, sep = "-")) %>% distinct(defensive_state_id, .keep_all = TRUE)
+
+  throws_df <- throws_df %>%
+    left_join(away_lines %>% select(defensive_state_id, away_line = line), by = "defensive_state_id") %>%
+    left_join(home_lines %>% select(defensive_state_id, home_line = line), by = "defensive_state_id") %>%
+    mutate(defensive_line = ifelse(is_home_team, away_line, home_line)) %>%
+    select(-away_line, -home_line, -defensive_state_id)
+
+  return(throws_df)
 }
 
 

@@ -53,7 +53,7 @@ generate_skill_percentiles_plot <- function(input, session, all_player_stats) {
   req(input$player_selector, input$year_selector, input$stat_category, !is.null(input$handler_switch_value), !is.null(input$offense_switch_value))
   all_metrics <- get_metrics(input$stat_category)
   plot_data <- convert_to_metric_df(input, all_player_stats, all_metrics)
-  create_skill_percentiles_plot(session, plot_data)
+  create_skill_percentiles_plot(input$stat_category, plot_data)
 }
 
 get_passer_plot <- function(input, df, metrics, title) {
